@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/hooks/blogService.tsx", "next.config.js", "scripts/fetch-blog-data.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/hooks/blogService.tsx", "next.config.js", "scripts/fetch-blog-data.js", "src/app/components/clientProvider", "src/app/components/server"],
   "exclude": ["node_modules"]
 }
