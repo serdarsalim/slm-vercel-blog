@@ -1,0 +1,19 @@
+// Create a folder in your public directory for blog images
+// public/blog-images/
+
+// You'll need to add the following images for the sample blog posts:
+// 1. nextjs.jpg - An image related to Next.js framework
+// 2. css-grid.jpg - An image showing CSS grid layout
+// 3. javascript.jpg - An image related to JavaScript programming
+// 4. performance.jpg - An image representing website optimization/performance
+// 5. typescript.jpg - An image related to TypeScript
+
+// You can use stock images or create your own. These images should be placed in the 
+// public/blog-images/ directory as referenced in the CSV file.
+
+// If you don't have specific images, you can use placeholder services like:
+// https://placehold.co/600x400/333/white?text=Next.js
+// https://placehold.co/600x400/333/white?text=CSS+Grid
+// etc.
+
+// Just save these placeholder images with the appropriate filenames in your public/blog-images/ directory.
