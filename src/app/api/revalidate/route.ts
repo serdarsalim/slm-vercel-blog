@@ -1,4 +1,7 @@
 // src/app/api/update-blog-data/route.ts
+
+export const runtime = 'nodejs';
+
 import { put } from '@vercel/blob';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
