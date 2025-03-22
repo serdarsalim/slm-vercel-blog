@@ -139,7 +139,7 @@ async function fetchAndProcessPosts(url: string, isFallback = false): Promise<Bl
 export async function loadBlogPosts(): Promise<BlogPost[]> {
   try {
     // Primary source is now the fallback CSV that's updated during build
-    return await fetchAndProcessPosts(FALLBACK_URL);
+    return await fetchAndProcessPosts(BLOB_URL);
   } catch (error) {
     console.error("All blog post sources failed:", error);
     return []; // Return empty array as last resort
@@ -150,7 +150,7 @@ export async function loadBlogPosts(): Promise<BlogPost[]> {
 export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   try {
     // Primary source is now the fallback CSV that's updated during build
-    const posts = await fetchAndProcessPosts(FALLBACK_URL);
+    const posts = await fetchAndProcessPosts(BLOB_URL);
     return posts.find(p => p.slug === slug) || null;
   } catch (error) {
     console.error(`Failed to get post ${slug}:`, error);
