@@ -6,55 +6,33 @@ import { revalidatePath } from 'next/cache';
 // Set runtime to nodejs (required for blob operations)
 export const runtime = 'nodejs';
 
-// The secret token - using a fallback for development
-const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET || 'thisneetstoworkchangethen';
-
 // GET handler to respond to browser requests
 export async function GET(request: NextRequest) {
   try {
-    console.log('GET request received');
-    
     return NextResponse.json({ 
       message: "This endpoint accepts POST requests to update blog content" 
-    }, {
-      headers: {
-        // Add CORS headers to allow browser access
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      }
     });
   } catch (error) {
-    console.error('Error in GET handler:', error);
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : 'Unknown error' 
     }, { 
-      status: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*'
-      }
+      status: 500 
     });
   }
 }
 
 // POST handler for the Google Apps Script
 export async function POST(request: NextRequest) {
-  console.log('POST request received');
+  const secretToken = process.env.REVALIDATION_SECRET;
   
   try {
     // Parse the request body
     const body = await request.json();
-    console.log('Request body received, validating token...');
     
     // Validate the secret token
-    if (body.secret !== REVALIDATION_SECRET) {
+    if (body.secret !== secretToken) {
       console.log('Token validation failed');
-      return NextResponse.json({ error: 'Invalid token' }, { 
-        status: 401,
-        headers: {
-          'Access-Control-Allow-Origin': '*'
-        }
-      });
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
     
     // Handle the CSV content
@@ -83,19 +61,12 @@ export async function POST(request: NextRequest) {
         success: true, 
         message: "CSV processed and site revalidated",
         url: blob.url
-      }, {
-        headers: {
-          'Access-Control-Allow-Origin': '*'
-        }
       });
     } else {
       return NextResponse.json({ 
         error: 'No CSV content provided' 
       }, { 
-        status: 400,
-        headers: {
-          'Access-Control-Allow-Origin': '*'
-        }
+        status: 400 
       });
     }
   } catch (error) {
@@ -103,26 +74,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : 'Unknown error' 
     }, { 
-      status: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*'
-      }
+      status: 500 
     });
   }
-}
-
-// OPTIONS handler for CORS preflight requests
-export async function OPTIONS(request: NextRequest) {
-  console.log('OPTIONS request received');
-  
-  // Return a 204 No Content response with CORS headers
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400', // 24 hours
-    },
-  });
 }
