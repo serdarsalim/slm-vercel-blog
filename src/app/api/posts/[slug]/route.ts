@@ -1,29 +1,59 @@
-// src/app/api/posts/[slug]/route.ts
+// src/app/api/revalidate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getPostBySlugServer } from '@/app/utils/loadBlogServer';
+import { put } from '@vercel/blob';
+import { revalidatePath } from 'next/cache';
 
-export const runtime = 'nodejs';
-
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { slug: string } }
-) {
+// Add this handler to continue serving the file on GET requests
+export async function GET(request: NextRequest) {
   try {
-    const post = await getPostBySlugServer(params.slug);
+    // Redirect to the actual blob storage URL where your CSV is stored
+    // (If you want to keep the direct download functionality)
+    return NextResponse.redirect('https://your-blob-storage-url/blogPosts.csv');
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to serve CSV' }, { status: 500 });
+  }
+}
+
+// This is the handler your Google Apps Script needs for POST requests
+export async function POST(request: NextRequest) {
+  const secretToken = process.env.REVALIDATION_SECRET;
+  
+  try {
+    const body = await request.json();
     
-    if (!post) {
-      return NextResponse.json(
-        { error: `Post with slug "${params.slug}" not found` },
-        { status: 404 }
-      );
+    // Validate the secret token
+    if (body.secret !== secretToken) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
     
-    return NextResponse.json(post);
+    // Handle the CSV content and store it
+    if (body.csvContent) {
+      // Upload to Vercel Blob
+      const blob = await put('blogPosts.csv', body.csvContent, {
+        access: 'public',
+        contentType: 'text/csv'
+      });
+      
+      // Revalidate paths
+      if (body.path) {
+        revalidatePath(body.path);
+      }
+      revalidatePath('/');
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: "CSV processed and site revalidated",
+        url: blob.url
+      });
+    } else {
+      return NextResponse.json({ error: 'No CSV content provided' }, { status: 400 });
+    }
   } catch (error) {
-    console.error('Error fetching post:', error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    console.error("Error in revalidation API:", error);
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }, { 
+      status: 500 
+    });
   }
 }

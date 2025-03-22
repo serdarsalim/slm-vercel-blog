@@ -11,6 +11,7 @@
     "prebuild": "npm run fetch-blog-data"
   },
   "dependencies": {
+    "@vercel/blob": "^0.27.3",
     "framer-motion": "^12.5.0",
     "fuse.js": "^7.1.0",
     "next": "^14.2.25",
