@@ -125,6 +125,12 @@ const nextConfig = {
         pathname: '/**',
       },
       
+      {
+        protocol: 'https',
+        hostname: '*.public.blob.vercel-storage.com',
+        pathname: '/**',
+      },
+      
       // Vimeo (already have vimeocdn but adding official domains)
       {
         protocol: 'https',
