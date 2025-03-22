@@ -1,5 +1,5 @@
 // src/app/page.tsx
-import { loadBlogPostsServer } from "@/app/utils/loadBlogServerPost";
+import { loadBlogPostsServer } from '@/app/utils/loadBlogServer';
 import BlogClientContent from "@/app/components/BlogClientContent";
 
 // This is now a Server Component (no "use client" directive)

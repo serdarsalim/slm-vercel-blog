@@ -1,6 +1,6 @@
 // src/app/api/posts/[slug]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getPostBySlugServer } from '@/app/utils/loadBlogServerPost';
+import { getPostBySlugServer } from '@/app/utils/loadBlogServer';
 
 export const runtime = 'nodejs';
 
