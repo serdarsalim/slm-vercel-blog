@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     const blob = await put('blogPosts.csv', csvContent, {
       contentType: 'text/csv',
       access: 'public',
+      addRandomSuffix: false
     });
     
     // Revalidate blog pages
