@@ -1,49 +1,65 @@
-// src/app/api/update-blog-data/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
 
-import { put } from '@vercel/blob';
-import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
-
-const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET;
-
-export async function POST(request: NextRequest) {
+/**
+ * GET handler that proxies requests to Vercel Blob Storage
+ * This avoids CORS issues when fetching from the client
+ */
+export async function GET(request: NextRequest) {
   try {
-    const body = await request.json();
-    
-    // Validate token
-    if (body.secret !== REVALIDATION_SECRET) {
-      return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
-    }
-    
-    // Get CSV content and validate
-    const csvContent = body.csvContent;
-    if (!csvContent) {
-      return NextResponse.json({ message: 'No CSV content provided' }, { status: 400 });
-    }
-    
-    // Upload to Vercel Blob
-    const blob = await put('blogPosts.csv', csvContent, {
-      contentType: 'text/csv',
-      access: 'public',
-      addRandomSuffix: false
+    // Fetch the CSV file from Vercel Blob storage
+    const response = await fetch('https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/blogPosts.csv', {
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
     });
     
-    // Revalidate blog pages
-    revalidatePath('/blog');
+    if (!response.ok) {
+      console.error(`Failed to fetch from blob storage: ${response.status} ${response.statusText}`);
+      return NextResponse.json({ 
+        error: 'Failed to fetch data from blob storage'
+      }, { 
+        status: response.status 
+      });
+    }
     
-    return NextResponse.json({ 
-      success: true, 
-      url: blob.url,
-      message: 'Blog data updated successfully' 
+    // Get the CSV content
+    const csvData = await response.text();
+    
+    // Return the CSV data with appropriate headers
+    return new NextResponse(csvData, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv',
+        'Cache-Control': 'public, max-age=60', // Cache for 1 minute
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Access-Control-Allow-Headers': '*',
+      }
     });
     
   } catch (error) {
-    console.error('Update error:', error);
+    console.error('Proxy error:', error);
     return NextResponse.json({ 
-      message: 'Error updating blog data',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+      error: error instanceof Error ? error.message : 'Unknown error fetching CSV data'
+    }, { 
+      status: 500 
+    });
   }
+}
+
+/**
+ * OPTIONS handler to handle preflight requests
+ */
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET',
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Max-Age': '86400', // 24 hours
+    },
+  });
 }

@@ -9,8 +9,8 @@ interface ExtendedBlogPost extends BlogPost {
 
 // In production, we primarily use the fallback file which is updated during build
 // Google Sheets is only used as a fallback for development or in case the file is missing
-const BLOB_URL = 'https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/blogPosts.csv';
-const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQY0mDz0IreKP5ZdYTcPu0T0XIm5vbpcagposyo7sW0S4JVCdCRwWaluF7y2tX1PbNfh0n9Jy9qqt49/pub?gid=337002501&single=true&output=csv';
+const BLOB_URL = '/api/revalidate';
+const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzuUNByiRaAKH5LpQXusWmoCTku7SG7FEjEtPSHVkQDC5x5g1KLlpJJhf2GxUBIC9EgClwqS1PG-j8/pub?gid=1366419500&single=true&output=csv';
 const TIMEOUT_MS = 3000; // 3 second timeout
 
 // Event to notify subscribers when data changes
