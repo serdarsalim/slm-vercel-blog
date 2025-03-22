@@ -2,6 +2,7 @@
 const nextConfig = {
   images: {
     remotePatterns: [
+
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
@@ -17,6 +18,8 @@ const nextConfig = {
         hostname: 'source.unsplash.com',
         pathname: '/**',
       },
+      
+
       {
         protocol: 'https',
         hostname: 'pbs.twimg.com',
@@ -133,33 +136,7 @@ const nextConfig = {
         hostname: '*.vimeo.com',
         pathname: '/**',
       },
-      
-      // Vercel Blob Storage
-      {
-        protocol: 'https',
-        hostname: '9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.public.blob.vercel-storage.com',
-        pathname: '/**',
-      },
     ],
-  },
-  
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Credentials', value: 'true' },
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,DELETE,PATCH,POST,PUT' },
-          { key: 'Access-Control-Allow-Headers', value: 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Cache-Control' },
-        ],
-      },
-    ];
   },
 };
 
