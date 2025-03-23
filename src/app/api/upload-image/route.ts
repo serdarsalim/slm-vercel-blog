@@ -1,95 +1,83 @@
-// src/app/api/upload-image/route.ts
+// src/app/api/upload-csv/route.ts
+
+// Set the runtime to Node.js for blob operations and force dynamic routing
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 
-// Set the runtime to Node.js for blob operations and force dynamic
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
-// Generate a unique filename without external dependencies
-function generateUniqueId() {
-  const timestamp = Date.now().toString(36);
-  const randomChars = Math.random().toString(36).substring(2, 10);
-  return `${timestamp}-${randomChars}`;
-}
-
-export async function OPTIONS(request: NextRequest) {
-  // Handle CORS preflight request
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400'
-    }
-  });
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    // Check if the request contains the secret token
-    const authHeader = request.headers.get('Authorization');
-    
-    // IMPORTANT: Make sure UPLOAD_SECRET is set in your environment variables
-    const secret = process.env.UPLOAD_SECRET;
-    
-    // Verify auth token
-    if (!secret || !authHeader || !authHeader.startsWith('Bearer ') || authHeader.slice(7) !== secret) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    // Parse the multipart form data
-    const formData = await request.formData();
-    const file = formData.get('image') as File | null;
-    
-    // Validate the file
-    if (!file) {
-      return NextResponse.json(
-        { error: 'No image file provided' },
-        { status: 400 }
-      );
-    }
-
-    // Check file type
-    const fileType = file.type;
-    if (!fileType.startsWith('image/')) {
-      return NextResponse.json(
-        { error: 'File must be an image' },
-        { status: 400 }
-      );
-    }
-
-    // Get file extension
-    const fileExt = fileType.split('/')[1] || 'png';
-    
-    // Generate a unique filename
-    const fileName = `${generateUniqueId()}.${fileExt}`;
-    
-    // Upload to Vercel Blob storage
-    const blob = await put(fileName, file, {
-      access: 'public',
-      contentType: fileType,
-      addRandomSuffix: false // Use our own ID for predictable URLs
-    });
-
-    // Return success with the URL
-    return NextResponse.json({
-      success: true,
-      url: blob.url,
-      size: file.size,
-      type: fileType
-    }, {
+// GET handler – for testing and basic info
+export async function GET(request: NextRequest) {
+  console.log('GET request to /api/upload-csv');
+  return NextResponse.json(
+    { message: "This endpoint accepts POST requests for CSV uploads" },
+    {
       headers: {
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
       }
+    }
+  );
+}
+
+// POST handler – receives CSV data, saves it to Vercel Blob, and returns the file URL
+export async function POST(request: NextRequest) {
+  console.log('POST request to /api/upload-csv');
+
+  // Use your environment variable or a fallback for the secret token
+  const secretToken = process.env.UPLOAD_SECRET || 'your_default_secret';
+
+  try {
+    const body = await request.json();
+    console.log('Received request body:', body);
+
+    // Validate the secret token
+    if (body.secret !== secretToken) {
+      console.log('Invalid token provided');
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+
+    // Ensure CSV content is provided
+    if (!body.csvContent) {
+      console.log('No CSV content provided');
+      return NextResponse.json({ error: 'No CSV content provided' }, { status: 400 });
+    }
+
+    // Define a fixed filename for the CSV
+    const filename = 'blogPosts.csv';
+    
+    console.log('Uploading CSV to Vercel Blob...');
+    // Upload the CSV to Blob storage
+    const blob = await put(filename, body.csvContent, {
+      access: 'public',
+      contentType: 'text/csv',
+      addRandomSuffix: false // Ensure a consistent filename (overwriting the previous file)
     });
+    
+    console.log('CSV uploaded successfully, blob URL:', blob.url);
+    
+    // Clean the URL (remove any query parameters)
+    const cleanUrl = new URL(blob.url);
+    cleanUrl.search = '';
+    console.log('Clean persistent URL:', cleanUrl.toString());
+
+    // Return a success response with the URL
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'CSV uploaded successfully',
+        url: cleanUrl.toString(),
+        originalUrl: blob.url // Original URL included for debugging if needed
+      },
+      {
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        }
+      }
+    );
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error('Error processing request:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -97,13 +85,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET method for testing if the endpoint is working
-export async function GET() {
-  return NextResponse.json({
-    message: 'Image upload API is working. Use POST to upload images.'
-  }, {
+// OPTIONS handler for CORS preflight requests
+export async function OPTIONS() {
+  console.log('OPTIONS request to /api/upload-csv');
+  return new NextResponse(null, {
+    status: 204,
     headers: {
-      'Access-Control-Allow-Origin': '*'
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
     }
   });
 }
