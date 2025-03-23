@@ -6,28 +6,9 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 
-// Generate a unique filename without external dependencies
-function generateUniqueId() {
-  const timestamp = Date.now().toString(36);
-  const randomChars = Math.random().toString(36).substring(2, 10);
-  return `${timestamp}-${randomChars}`;
-}
-
-export async function OPTIONS(request: NextRequest) {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400'
-    }
-  });
-}
-
 export async function GET(request: NextRequest) {
   return NextResponse.json(
-    { message: "This endpoint accepts POST requests for image uploads." },
+    { message: "This endpoint accepts POST requests for image uploads" },
     {
       headers: {
         'Access-Control-Allow-Origin': '*',
@@ -38,61 +19,79 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  console.log('Processing image upload request');
+  
+  // Verify authorization
+  const authHeader = request.headers.get('Authorization');
   const secretToken = process.env.UPLOAD_SECRET || 'your_default_secret';
+  
+  if (!authHeader || authHeader !== `Bearer ${secretToken}`) {
+    console.log('Invalid or missing authorization');
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   try {
-    // Verify the Authorization header
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ') || authHeader.slice(7) !== secretToken) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Parse formData and get the file
+    // For multipart form data, we need to use formData()
     const formData = await request.formData();
-    const file = formData.get('image') as File | null;
-    if (!file) {
-      return NextResponse.json({ error: 'No image file provided' }, { status: 400 });
+    const file = formData.get('file');
+    
+    if (!file || !(file instanceof Blob)) {
+      return NextResponse.json({ error: 'No file provided or invalid file' }, { status: 400 });
     }
-    const fileType = file.type;
-    if (!fileType.startsWith('image/')) {
-      return NextResponse.json({ error: 'File must be an image' }, { status: 400 });
-    }
-    const fileExt = fileType.split('/')[1] || 'png';
-    const fileName = `${generateUniqueId()}.${fileExt}`;
 
-    // Convert the file to a Buffer (Node.js expects a Buffer for binary data)
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Get filename from form data or generate a random one
+    const filename = formData.get('filename')?.toString() || 
+                     `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    
+    // Get the file extension from the content type
+    const contentType = file.type;
+    const fileExtension = contentType.split('/')[1] || 'png';
+    
+    // Construct the full filename with extension
+    const fullFilename = filename.endsWith(`.${fileExtension}`) 
+                         ? filename 
+                         : `${filename}.${fileExtension}`;
+    
+    // Convert the file to a format Vercel Blob can handle
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Upload to Vercel Blob storage
-    const blob = await put(fileName, buffer, {
+    // Upload to Vercel Blob
+    console.log(`Uploading file: ${fullFilename}, Content-Type: ${contentType}`);
+    const blob = await put(fullFilename, buffer, {
       access: 'public',
-      contentType: fileType,
-      addRandomSuffix: false
+      contentType: contentType,
+      addRandomSuffix: true // Ensure uniqueness for image files
     });
 
-    // Clean the URL (remove query parameters, if any)
+    console.log('Upload successful, blob URL:', blob.url);
+    
+    // Return a clean URL (no query parameters)
     const cleanUrl = new URL(blob.url);
     cleanUrl.search = '';
-
-    return NextResponse.json(
-      {
-        success: true,
-        url: cleanUrl.toString(),
-        size: file.size,
-        type: fileType
-      },
-      {
-        headers: {
-          'Access-Control-Allow-Origin': '*'
-        }
-      }
-    );
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Image uploaded successfully',
+      url: cleanUrl.toString(),
+      originalUrl: blob.url
+    });
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error('Error processing image upload:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
 }
