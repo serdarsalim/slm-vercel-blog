@@ -106,7 +106,7 @@ function BlogPostContent() {
   const renderHtml = (htmlContent: string) => {
     let processedContent = htmlContent;
     
-    // Add ids to headings for TOC linking - fixed regex to match headings with or without existing attributes
+    // Add ids to headings for TOC linking
     processedContent = processedContent.replace(
       /<h([2-3])(?:\s[^>]*)?>(.*?)<\/h\1>/g,
       (match, level, content) => {
@@ -127,85 +127,83 @@ function BlogPostContent() {
         style={{ width: `${readingProgress}%` }}
       />
       
-  {/* Hero section with featured image - improved title readability */}
-{post.featuredImage && (
-  <div className="relative h-[30vh] sm:h-[40vh] md:h-[50vh] w-full overflow-hidden">
-    <Image 
-      src={post.featuredImage || defaultImage}
-      alt={post.title}
-      fill
-      className="object-cover"
-      sizes="100vw"
-      priority
-    />
-    {/* Stronger gradient overlay for better text contrast */}
-    <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-black/70"></div>
-    
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="container mx-auto px-4 text-center">
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-3xl md:text-4xl lg:text-5xl font-bold text-white max-w-4xl mx-auto leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]"
-        >
-          {post.title}
-        </motion.h1>
-      </div>
-    </div>
-  </div>
-)}
-      
       <div className="container max-w-4xl mx-auto px-4 py-10">
-        {/* If no featured image, show title here */}
-        {!post.featuredImage && (
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
-          >
-            {post.title}
-          </motion.h1>
-        )}
-        
-        {/* Post metadata */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-400 mb-8"
-        >
-      
-          
-          <span className="flex items-center">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            {formatDate(post.date)}
-          </span>
-          
-          <span className="flex items-center">
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {readingTime} min read
-          </span>
-          
-          {/* Categories */}
-          {post.categories && Array.isArray(post.categories) && post.categories.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {post.categories.map((category, idx) => (
-                <span 
-                  key={idx} 
-                  className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full"
-                >
-                  {category}
+        {/* Header Section with Title and Optional Image */}
+        <div className="mb-10">
+          <div className="flex flex-col md:flex-row md:items-start gap-8">
+            <div className="flex-1">
+              {/* Title */}
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.7 }}
+                className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
+              >
+                {post.title}
+              </motion.h1>
+              
+              {/* Post metadata */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="flex flex-wrap items-center gap-4 text-gray-600 dark:text-gray-400 mb-4"
+              >
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {formatDate(post.date)}
                 </span>
-              ))}
+                
+                <span className="flex items-center">
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {readingTime} min read
+                </span>
+              </motion.div>
+              
+              {/* Categories */}
+              {post.categories && Array.isArray(post.categories) && post.categories.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="flex flex-wrap gap-2 mb-6"
+                >
+                  {post.categories.map((category, idx) => (
+                    <span 
+                      key={idx} 
+                      className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full"
+                    >
+                      {category}
+                    </span>
+                  ))}
+                </motion.div>
+              )}
             </div>
-          )}
-        </motion.div>
+            
+            {/* Featured image - small and to the right */}
+            {post.featuredImage && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="md:w-[280px] w-full h-[200px] md:h-[200px] relative rounded-lg overflow-hidden shadow-md flex-shrink-0"
+              >
+                <Image 
+                  src={post.featuredImage || defaultImage}
+                  alt={post.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 280px"
+                  priority
+                />
+              </motion.div>
+            )}
+          </div>
+        </div>
         
         {/* Table of Contents (if post has headings) */}
         {tableOfContents.length > 0 && (
@@ -215,13 +213,13 @@ function BlogPostContent() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mb-10 p-5 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-100 dark:border-slate-700"
           >
-            <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Table of Contents</h2>
+            <h2 className="text-lg font-bold -mb-2 text-gray-900 dark:text-white">Table of Contents</h2>
             <nav className="space-y-1">
               {tableOfContents.map((heading, i) => (
                 <a 
                   key={i} 
                   href={`#${heading.id}`}
-                  className={`block hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1 pl-${heading.level === '3' ? '4' : '0'}`}
+                  className={`block hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1 pl-${heading.level === '3' ? '4' : '0'} text-gray-700 dark:text-gray-300`}
                 >
                   {heading.text}
                 </a>
@@ -277,19 +275,18 @@ function BlogPostContent() {
         />
         
         {/* Comments section */}
-<motion.div
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.8, delay: 0.4 }}
->
-  <Utterances 
-    repo="serdarsalim/blog-comments" 
-    issueTerm="pathname" 
-    label="blog-comment" 
-  />
-</motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
+          <Utterances 
+            repo="serdarsalim/blog-comments" 
+            issueTerm="pathname" 
+            label="blog-comment" 
+          />
+        </motion.div>
        
-        
         {/* Share section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
