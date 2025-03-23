@@ -1,266 +1,234 @@
 .blogArticle {
-  max-width: 800px; /* Slightly narrower for that focused Apple look */
+  max-width: 800px;
   margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  font-family: Georgia, "Times New Roman", Times, serif;
 }
 
-.featuredImageContainer {
+
+/* Hero image section with gradient */
+.heroContainer {
   position: relative;
   width: 100%;
-  height: 0;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio like Apple uses */
-  margin-bottom: 3rem;
   overflow: hidden;
-  border-radius: 0.5rem; /* Subtle rounded corners */
 }
 
-.featuredImage {
-  object-fit: cover;
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.7) 100%);
 }
 
-.postTitle {
-  font-weight: 700;
-  font-size: 2rem !important; /* Reduced from 2.5rem */
-  letter-spacing: -0.015em;
-  line-height: 1.1;
-  margin-bottom: 1.5rem;
+.heroTitle {
+  text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+}
+
+/* Reading progress bar */
+.progressBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 4px;
+  background-color: #0066cc;
+  z-index: 50;
+  transition: width 0.1s;
+}
+
+:global(.dark) .progressBar {
+  background-color: #2997ff;
+}
+
+/* Table of contents styling */
+.tableOfContents {
+  background-color: #f5f5f7;
+  border-radius: 12px;
+  border: 1px solid #e5e5e7;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+:global(.dark) .tableOfContents {
+  background-color: rgba(30, 30, 32, 0.5);
+  border-color: #333335;
+}
+
+.tableOfContents h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
   color: #111;
 }
 
-:global(.dark) .postTitle {
+:global(.dark) .tableOfContents h2 {
   color: #f5f5f7;
 }
 
-.postMeta {
-  font-size: 1rem;
-  color: #666;
-  margin-bottom: 2.5rem;
+.tableOfContents a {
+  display: block;
+  color: #333;
+  padding: 0.5rem 0;
+  border-radius: 4px;
+  transition: color 0.2s;
 }
 
-:global(.dark) .postMeta {
+.tableOfContents a:hover {
+  color: #0066cc;
+}
+
+:global(.dark) .tableOfContents a {
   color: #a1a1a6;
 }
 
-.postContent {
-  font-size: 1.05rem; /* Reduced from 1.125rem */
-  line-height: 1.6;
-  font-weight: 400;
-  color: #333;
-  letter-spacing: -0.003em;
+:global(.dark) .tableOfContents a:hover {
+  color: #2997ff;
 }
+
+.tocLevel3 {
+  padding-left: 1rem;
+}
+
+/* Post content styling - works with prose classes */
+.postContent {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  font-weight: 400;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  color: #333;
+  letter-spacing: 0;
+}
+
 
 /* Dark mode styling */
 :global(.dark) .postContent {
   color: #f5f5f7;
 }
 
-/* Override Tailwind prose styles for Apple-like formatting */
-.postContent :global(h2) {
-  font-size: 1.6rem; /* Reduced from 1.75rem */
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  margin-top: 2.5rem;
-  margin-bottom: 1.25rem;
-  color: #111;
-  line-height: 1.2;
-  border-bottom: none; /* No border in Apple's clean design */
-}
-
-:global(.dark) .postContent :global(h2) {
-  color: #f5f5f7;
-}
-
+/* Make sure headings have proper margin for anchor links */
+.postContent :global(h2), 
 .postContent :global(h3) {
-  font-size: 1.35rem; /* Reduced from 1.5rem */
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  margin-top: 2rem;
-  margin-bottom: 1rem;
-  color: #111;
-}
-
-:global(.dark) .postContent :global(h3) {
-  color: #f5f5f7;
-}
-
-.postContent :global(p) {
-  margin-bottom: 1.5rem;
-  color: #333;
-}
-
-:global(.dark) .postContent :global(p) {
-  color: #a1a1a6;
-}
-
-.postContent :global(a) {
-  color: #0066cc; /* Apple's blue */
-  text-decoration: none;
-}
-
-.postContent :global(a:hover) {
-  text-decoration: underline;
-}
-
-:global(.dark) .postContent :global(a) {
-  color: #2997ff; /* Apple's dark mode blue */
-}
-
-.postContent :global(ul),
-.postContent :global(ol) {
-  padding-left: 1.25rem;
-  margin-bottom: 1.5rem;
-}
-
-.postContent :global(li) {
-  margin-bottom: 0.75rem;
-}
-
-.postContent :global(ul li) {
-  list-style-type: disc;
-}
-
-.postContent :global(ol li) {
-  list-style-type: decimal;
-}
-
-.postContent :global(blockquote) {
-  border-left: 2px solid #0066cc; /* Apple's blue */
-  padding-left: 1.5rem;
-  font-style: italic;
-  margin: 2rem 0;
-  color: #555;
-  background: none; /* No background in Apple's clean design */
-}
-
-:global(.dark) .postContent :global(blockquote) {
-  color: #a1a1a6;
-  border-left-color: #2997ff;
-}
-
-.postContent :global(code) {
-  background-color: #f5f5f7; /* Apple's light gray */
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
-  font-size: 0.875rem;
-  color: #333;
-}
-
-:global(.dark) .postContent :global(code) {
-  background-color: #1d1d1f; /* Apple's dark mode background */
-  color: #f5f5f7;
+  scroll-margin-top: 100px;
+  position: relative;
 }
 
 .postContent :global(pre) {
-  background-color: #f5f5f7; /* Apple's light gray */
-  padding: 1.25rem;
-  border-radius: 4px;
-  overflow-x: auto;
+  position: relative;
+  padding: 1.5rem;
   margin: 1.5rem 0;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.postContent :global(pre::before) {
+  content: attr(data-language);
+  position: absolute;
+  top: 0.25rem;
+  right: 0.5rem;
+  font-size: 0.75rem;
+  color: #94a3b8;
   font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
 }
 
-:global(.dark) .postContent :global(pre) {
-  background-color: #1d1d1f; /* Apple's dark mode background */
-}
-
-.postContent :global(pre code) {
-  background-color: transparent;
-  padding: 0;
+.postContent :global(code) {
+  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
 }
 
 .postContent :global(img) {
-  max-width: 100%;
-  height: auto;
-  border-radius: 4px;
   margin: 2rem 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Subtle shadow */
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.postContent :global(figure) {
-  margin: 2.5rem 0;
+.postContent :global(blockquote) {
+  font-style: italic;
+  position: relative;
+  border-left-width: 4px;
+  border-left-color: #0066cc;
 }
 
-.postContent :global(figcaption) {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  color: #666;
-  text-align: center;
-}
-
-:global(.dark) .postContent :global(figcaption) {
-  color: #a1a1a6;
-}
-
-.postContent :global(table) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 2rem 0;
-  font-size: 0.9rem;
-}
-
-.postContent :global(table th),
-.postContent :global(table td) {
-  border-bottom: 1px solid #d2d2d7; /* Apple's border color */
-  padding: 0.75rem;
-  text-align: left;
-}
-
-:global(.dark) .postContent :global(table th),
-:global(.dark) .postContent :global(table td) {
-  border-color: #424245;
-}
-
-.postContent :global(table th) {
-  font-weight: 600;
-}
-
-/* No drop caps in Apple style */
-.postContent :global(p:first-of-type:first-letter) {
-  font-size: inherit;
-  float: none;
-  margin: 0;
-  font-weight: inherit;
-  color: inherit;
-}
-
-/* Apple-style callout box for important info */
-.postContent :global(.callout) {
-  background-color: rgba(0, 102, 204, 0.05); /* Light blue bg */
-  border-left: 4px solid #0066cc;
-  padding: 1.5rem;
-  margin: 2rem 0;
-  border-radius: 4px;
-}
-
-:global(.dark) .postContent :global(.callout) {
-  background-color: rgba(41, 151, 255, 0.1);
+:global(.dark) .postContent :global(blockquote) {
   border-left-color: #2997ff;
 }
 
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .postContent {
-    font-size: 0.95rem; /* Reduced from 1rem */
-  }
-  
-  .postTitle {
-    font-size: 1.8rem !important; /* Reduced from 2rem */
-  }
-  
-  .featuredImageContainer {
-    padding-bottom: 66.67%; /* 3:2 aspect on mobile */
-    margin-bottom: 2rem;
-  }
-}
-
-/* Clean and minimal footer */
-.postFooter {
+/* Author section styling */
+.authorSection {
+  background-color: #f5f5f7;
+  border-radius: 12px;
+  border: 1px solid #e5e5e7;
+  padding: 2rem;
   margin-top: 4rem;
-  padding-top: 2rem;
-  border-top: 1px solid #d2d2d7;
 }
 
-:global(.dark) .postFooter {
-  border-color: #424245;
+:global(.dark) .authorSection {
+  background-color: rgba(30, 30, 32, 0.5);
+  border-color: #333335;
+}
+
+.authorImage {
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+/* Share buttons */
+.shareSection {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e5e7;
+}
+
+:global(.dark) .shareSection {
+  border-color: #333335;
+}
+
+.shareButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+/* Back to top button */
+.backToTop {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: #0066cc;
+  color: white;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: opacity 0.2s;
+  z-index: 30;
+}
+
+.backToTop:hover {
+  background-color: #004c99;
+}
+
+:global(.dark) .backToTop {
+  background-color: #2997ff;
+}
+
+:global(.dark) .backToTop:hover {
+  background-color: #0077e6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .postContent :global(h2) {
+    font-size: 1.5rem;
+  }
+  
+  .postContent :global(h3) {
+    font-size: 1.25rem;
+  }
+  
+  .postContent {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
 }

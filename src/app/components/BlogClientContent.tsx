@@ -124,7 +124,7 @@ export default function BlogClientContent({
   };
 
   // Default fallback image for posts
-  const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640";
+  const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920";
 
   return (
     <>
@@ -280,12 +280,12 @@ export default function BlogClientContent({
                     <div className="flex flex-row bg-gray-50 dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md hover:bg-blue-50 transition-shadow duration-300 border border-gray-100 dark:border-slate-800">
                       {/* Content section */}
                       <div className="p-4 flex-1 overflow-hidden flex flex-col">
-                        <h3 className="text-base font-bold line-clamp-2 mb-1 text-slate-800 dark:text-gray-100">
+                        <h3 className="text-base sm:text-lg font-bold line-clamp-2 mb-1 text-slate-800 dark:text-gray-100">
                           {post.title}
                         </h3>
 
                         {/* Excerpt - hidden on mobile */}
-                        <p className="text-xs text-gray-600 dark:text-gray-300 mb-auto line-clamp-2 hidden sm:block">
+                        <p className="text-xs sm:text-sm  text-gray-600 dark:text-gray-300 mb-auto line-clamp-2 hidden sm:block">
                           {post.excerpt}
                         </p>
 

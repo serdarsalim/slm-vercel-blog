@@ -58,7 +58,7 @@ export function useBlogPosts(initialPosts: BlogPost[] = []) {
                   post.categories.split(',').map((cat: string) => cat.trim()) : 
                   Array.isArray(post.categories) ? post.categories : []
                 ) : [],
-              featuredImage: post.featuredImage || 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640',
+              featuredImage: post.featuredImage || 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920',
               featured: post.featured === 'TRUE' || post.featured === 'true' || post.featured === true
             }));
             
