@@ -45,13 +45,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No CSV content provided' }, { status: 400 });
     }
 
-    // Upload the CSV to Vercel Blob storage
+    // Upload the CSV to Vercel Blob storage with consistent path and filename
     console.log('Uploading CSV to Vercel Blob...');
-    const blob = await put('blogPosts.csv', body.csvContent, {
-      access: 'public',
-      contentType: 'text/csv'
-    });
-    console.log('CSV uploaded successfully, blob URL:', blob.url);
+    const filename = 'blogPosts.csv'; // Fixed, consistent filename
+    
+    // Upload the CSV to Blob storage
+    const blob = await (async () => {
+      try {
+        const result = await put(filename, body.csvContent, {
+          access: 'public',
+          contentType: 'text/csv',
+          addRandomSuffix: false // Ensure no random suffix is added
+          // Note: 'overwrite' is not needed - using the same filename with addRandomSuffix:false
+          // will naturally overwrite the existing file
+        });
+        
+        console.log('CSV uploaded successfully, blob URL:', result.url);
+        
+        // Store the URL without any cache-busting parameters
+        const cleanUrl = new URL(result.url);
+        cleanUrl.search = ''; // Remove any query parameters
+        console.log('Clean persistent URL:', cleanUrl.toString());
+        
+        // Verify the upload by checking if the URL contains the expected filename
+        if (!result.url.includes(filename)) {
+          console.warn(`Warning: Blob URL doesn't contain expected filename '${filename}'. URL: ${result.url}`);
+        }
+        
+        return result;
+      } catch (error) {
+        console.error('Error uploading to Vercel Blob:', error);
+        throw new Error(`Failed to upload to Vercel Blob: ${error.message}`);
+      }
+    })();
 
     // Revalidate the specific path, if provided
     if (body.path) {
@@ -62,12 +88,16 @@ export async function POST(request: NextRequest) {
     console.log('Revalidating homepage');
     revalidatePath('/');
 
-    // Return a success response
+    // Return a success response with the clean URL
+    const cleanUrl = new URL(blob.url);
+    cleanUrl.search = ''; // Remove any query parameters
+    
     return NextResponse.json(
       {
         success: true,
         message: 'Blog updated and pages revalidated',
-        url: blob.url
+        url: cleanUrl.toString(),
+        originalUrl: blob.url // Include original URL for debugging if needed
       },
       {
         headers: {
