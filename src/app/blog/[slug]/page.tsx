@@ -7,6 +7,7 @@ import { usePostBySlug } from "@/app/hooks/blogService";
 import Link from "next/link";
 import Image from "next/image";
 import styles from './BlogPost.module.css';  
+import Utterances from "@/app/components/Utterances";
 
 export default function BlogPostPage() {
   return (
@@ -105,11 +106,12 @@ function BlogPostContent() {
   const renderHtml = (htmlContent: string) => {
     let processedContent = htmlContent;
     
-    // Add ids to headings for TOC linking
+    // Add ids to headings for TOC linking - fixed regex to match headings with or without existing attributes
     processedContent = processedContent.replace(
-      /<h([2-3])>(.*?)<\/h\1>/g,
+      /<h([2-3])(?:\s[^>]*)?>(.*?)<\/h\1>/g,
       (match, level, content) => {
-        const id = content.toLowerCase().replace(/[^\w]+/g, '-');
+        const plainText = content.replace(/<[^>]*>/g, '');
+        const id = plainText.toLowerCase().replace(/[^\w]+/g, '-');
         return `<h${level} id="${id}">${content}</h${level}>`;
       }
     );
@@ -137,7 +139,7 @@ function BlogPostContent() {
       priority
     />
     {/* Stronger gradient overlay for better text contrast */}
-    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/70"></div>
+    <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-black/70"></div>
     
     <div className="absolute inset-0 flex items-center justify-center">
       <div className="container mx-auto px-4 text-center">
@@ -234,41 +236,58 @@ function BlogPostContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
           className={`
-          prose prose-base md:prose-lg
-  dark:prose-invert 
-  font-serif
-  prose-p:text-gray-700 dark:prose-p:text-gray-300 
-  prose-p:leading-relaxed prose-p:my-6
-  prose-headings:font-sans prose-headings:font-bold
-  prose-headings:tracking-tight prose-headings:scroll-mt-24
-  prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6
-  prose-h3:text-xl md:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4
-  prose-headings:text-gray-900 dark:prose-headings:text-white
-  prose-a:text-blue-700 dark:prose-a:text-blue-400 
-  prose-a:font-medium prose-a:no-underline hover:prose-a:underline
-  prose-a:transition-colors prose-a:duration-200
-  prose-img:rounded-xl prose-img:shadow-md prose-img:mx-auto prose-img:my-8
-  prose-hr:my-12 prose-hr:border-gray-200 dark:prose-hr:border-gray-800
-  prose-ol:pl-6 prose-ul:pl-6 prose-li:my-3
-  prose-code:font-normal prose-code:text-blue-700 dark:prose-code:text-blue-400 
-  prose-code:bg-blue-50 dark:prose-code:bg-blue-900/20 prose-code:px-1.5 prose-code:py-0.5 
-  prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
-  prose-pre:bg-gray-900 dark:prose-pre:bg-gray-950 prose-pre:p-4 prose-pre:rounded-lg 
-  prose-pre:shadow-md prose-pre:overflow-x-auto prose-pre:text-sm prose-pre:my-8
-  prose-blockquote:border-l-4 prose-blockquote:border-blue-500 
-  prose-blockquote:bg-blue-50/30 dark:prose-blockquote:bg-blue-900/10 
-  prose-blockquote:px-6 prose-blockquote:py-3 prose-blockquote:my-8
-  prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-gray-700
-  dark:prose-blockquote:text-gray-300
-  prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-white
-  prose-table:rounded-lg prose-table:overflow-hidden prose-table:shadow-sm
-  prose-th:bg-gray-100 dark:prose-th:bg-gray-800 prose-th:p-3
-  prose-td:p-3 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700
-  max-w-none
+      prose prose-base md:prose-lg
+    dark:prose-invert 
+    font-serif
+    [&>ul>li::marker]:text-blue-600 dark:[&>ul>li::marker]:text-blue-400
+    [&>ol>li::marker]:text-blue-600 dark:[&>ol>li::marker]:text-blue-400
+    prose-p:text-gray-700 dark:prose-p:text-gray-300 
+    prose-p:leading-relaxed prose-p:my-6
+    prose-headings:font-sans prose-headings:font-bold
+    prose-headings:tracking-tight prose-headings:scroll-mt-24
+    prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6
+    prose-h3:text-xl md:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4
+    prose-headings:text-gray-900 dark:prose-headings:text-white
+    prose-a:text-blue-700 dark:prose-a:text-blue-400 
+    prose-a:font-medium prose-a:no-underline hover:prose-a:underline
+    prose-a:transition-colors prose-a:duration-200
+    prose-img:rounded-xl prose-img:shadow-md prose-img:mx-auto prose-img:my-8
+    prose-hr:my-12 prose-hr:border-gray-200 dark:prose-hr:border-gray-800
+    prose-ol:pl-6 prose-ul:pl-6 prose-li:my-3
+    prose-li:text-gray-800 dark:prose-li:text-gray-200
+    prose-ol:text-gray-800 dark:prose-ol:text-gray-200
+    prose-ul:text-gray-800 dark:prose-ul:text-gray-200
+    prose-code:font-normal prose-code:text-blue-700 dark:prose-code:text-blue-400 
+    prose-code:bg-blue-50 dark:prose-code:bg-blue-900/20 prose-code:px-1.5 prose-code:py-0.5 
+    prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
+    prose-pre:bg-gray-900 dark:prose-pre:bg-gray-950 prose-pre:p-4 prose-pre:rounded-lg 
+    prose-pre:shadow-md prose-pre:overflow-x-auto prose-pre:text-sm prose-pre:my-8
+    prose-blockquote:border-l-4 prose-blockquote:border-blue-500 
+    prose-blockquote:bg-blue-50/30 dark:prose-blockquote:bg-blue-900/10 
+    prose-blockquote:px-6 prose-blockquote:py-3 prose-blockquote:my-8
+    prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-gray-700
+    dark:prose-blockquote:text-gray-300
+    prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-white
+    prose-table:rounded-lg prose-table:overflow-hidden prose-table:shadow-sm
+    prose-th:bg-gray-100 dark:prose-th:bg-gray-800 prose-th:p-3
+    prose-td:p-3 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700
+    max-w-none
           `}
           dangerouslySetInnerHTML={renderHtml(post.content)}
         />
         
+        {/* Comments section */}
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.8, delay: 0.4 }}
+>
+  <Utterances 
+    repo="serdarsalim/blog-comments" 
+    issueTerm="pathname" 
+    label="blog-comment" 
+  />
+</motion.div>
        
         
         {/* Share section */}
@@ -363,6 +382,7 @@ function BlogPostContent() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18" />
         </svg>
       </motion.button>
+      
     </article>
   );
 }

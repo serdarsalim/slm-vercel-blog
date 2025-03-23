@@ -7,6 +7,7 @@ import { BlogProvider } from "./blogContext";
 import GoogleTagManager from "./components/GoogleTagManager";
 import Analytics from "./components/analytics";
 
+
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],

@@ -22,7 +22,7 @@ export default function BlogClientContent({
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [contentReady, setContentReady] = useState(false);
   
-  // Create Fuse instance for search - MUST be before any conditional returns
+  // Create Fuse instance for search functionality
   const fuse = useMemo(
     () =>
       new Fuse(posts, {
@@ -32,7 +32,7 @@ export default function BlogClientContent({
     [posts]
   );
   
-  // Effect to delay rendering
+  // Effect to delay rendering for proper UI loading sequence
   useEffect(() => {
     setIsVisible(true);
     
@@ -41,11 +41,10 @@ export default function BlogClientContent({
       setContentReady(true);
     }, 1);
     
-    // Cleanup function
     return () => clearTimeout(timer);
   }, []);
 
-  // Handle category selection
+  // Handle category selection logic
   const handleCategoryClick = (cat: string) => {
     setSelectedCategories((prev) => {
       if (cat === "all") return ["all"];
@@ -56,26 +55,25 @@ export default function BlogClientContent({
     });
   };
 
-  // NOW we can do the conditional return (after all hooks are called)
   if (!contentReady) {
     return null; // Return nothing until navbar has had time to load
   }
 
-  // Filter posts based on search term and categories
+  // Filter posts based on search term and selected categories
   const filteredPosts = searchTerm
     ? fuse.search(searchTerm).map((result) => result.item)
     : posts.filter((p) => {
-        // Always show all posts if "all" is selected
+        // Show all posts if "all" is selected
         if (selectedCategories.includes("all")) return true;
 
-        // Make sure categories exist and are handled as an array
+        // Handle categories consistently as an array
         const postCategories = Array.isArray(p.categories)
           ? p.categories
           : p.categories
           ? [p.categories]
           : [];
 
-        // Do case-insensitive comparison and trim whitespace
+        // Case-insensitive comparison with trimmed whitespace
         return selectedCategories.some((selectedCat) =>
           postCategories.some(
             (postCat) =>
@@ -91,9 +89,8 @@ export default function BlogClientContent({
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
 
-  // Calculate category counts for the filter buttons
+  // Calculate category counts for filter buttons
   const categoryCounts = posts.reduce((acc, post) => {
-    // Make sure categories exist and are always handled as an array
     const categories = Array.isArray(post.categories)
       ? post.categories
       : post.categories
@@ -102,7 +99,6 @@ export default function BlogClientContent({
 
     categories.forEach((cat) => {
       if (cat) {
-        // Check that category is defined
         const lowerCat = cat.toLowerCase().trim();
         acc[lowerCat] = (acc[lowerCat] || 0) + 1;
       }
@@ -110,6 +106,7 @@ export default function BlogClientContent({
     return acc;
   }, {} as Record<string, number>);
 
+  // Animation variants for card appearance
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({
@@ -123,19 +120,19 @@ export default function BlogClientContent({
     }),
   };
 
-  // Default fallback image for posts
+  // Default fallback image for posts without featured images
   const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920";
 
   return (
     <>
-         {/* Hero Section with immediate loading and subtle animations */}
-         <section className="py-10 bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
+      {/* Hero Section */}
+      <section className="py-10 bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
         <div className="max-w-3xl mx-auto px-4">
           <motion.div
-            initial={{ opacity: 1 }} // Start fully visible
+            initial={{ opacity: 1 }}
             className="relative text-center mb-6"
           >
-            {/* Subtle floating shape - only animate after content is visible */}
+            {/* Floating shape animation */}
             <motion.div
               className="absolute -top-10 left-1/2 w-40 h-40 rounded-full bg-blue-100/60 dark:bg-blue-400/10 filter blur-3xl opacity-60 dark:opacity-30"
               animate={{
@@ -147,20 +144,18 @@ export default function BlogClientContent({
                 repeat: Infinity,
                 duration: 12,
                 ease: "easeInOut",
-                delay: 0.5, // Short delay to ensure content is visible first
+                delay: 0.5,
               }}
             />
 
-            {/* Title - no initial animation, just hover effect */}
-            <h2 className="text-md text-gray-600 dark:text-gray-400 font-semibold mb-4 select-none">
-              Digital notes on some interests. 📚✨
+            <h2 className="text-lg text-gray-600 dark:text-gray-400 font-semibold mb-4 select-none">
+              Digital notes on some interests. 🧶
             </h2>
 
-            {/* Subtle gradient glow - already visible, animate subtly */}
             <div className="absolute -z-10 inset-0 bg-gradient-radial from-blue-50/50 via-transparent to-transparent dark:from-blue-500/5 dark:via-transparent dark:to-transparent" />
           </motion.div>
 
-          {/* Category filters - No initial animation, just hover/tap effects */}
+          {/* Category filters */}
           <div className="w-full flex flex-wrap justify-center gap-2 mb-6 select-none">
             {[
               { name: "all", count: posts.length },
@@ -214,7 +209,7 @@ export default function BlogClientContent({
             ))}
           </div>
 
-          {/* Search bar with softer styling */}
+          {/* Search bar */}
           <div className="relative w-full mb-6">
             <input
               type="text"
@@ -243,11 +238,13 @@ export default function BlogClientContent({
       </section>
 
       {/* Blog Post List Section */}
+          {/* Blog Post List Section */}
       <section
         id="blog"
-        className="py-10 bg-white dark:bg-slate-900 -mt-14 relative"
+        className="py-10 bg-white dark:bg-slate-900 -mt-14 relative w-full"
       >
-        <div className="max-w-3xl mx-auto px-4 mb-20">
+        {/* Fixed container formatting and made sure it's full width */}
+        <div className="w-full px-4 mb-20 sm:max-w-3xl sm:mx-auto">
           {sortedPosts.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
@@ -260,7 +257,6 @@ export default function BlogClientContent({
               </p>
             </motion.div>
           ) : (
-            /* Blog post cards in single column with softer color palette */
             <motion.div
               className="space-y-4"
               initial={{ opacity: 0 }}
@@ -269,25 +265,29 @@ export default function BlogClientContent({
             >
               {sortedPosts.map((post, index) => (
                 <motion.div
-                  key={post.id}
+                  key={post.id || post.slug}
                   custom={index}
                   initial="hidden"
                   animate="visible"
                   variants={cardVariants}
+                  className="w-full" // Ensure full width on all screens
                 >
-                                   <Link href={`/blog/${post.slug}`} className="block h-full">
-                    {/* Card with square image */}
-                    <div className="flex flex-row bg-gray-50 dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md hover:bg-blue-50 transition-shadow duration-300 border border-gray-100 dark:border-slate-800">
+                  <Link href={`/blog/${post.slug}`} className="block h-full">
+                    {/* Card with responsive layout */}
+                    <div className="flex flex-row bg-gray-50 dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md hover:bg-blue-50 dark:hover:bg-slate-700 transition-shadow duration-300 border border-gray-100 dark:border-slate-800">
                       {/* Content section */}
                       <div className="p-4 flex-1 overflow-hidden flex flex-col">
-                        <h3 className="text-base sm:text-lg font-bold line-clamp-2 mb-1 text-slate-800 dark:text-gray-100">
+                        {/* Title: Normal on mobile, bold on desktop */}
+                        <h3 className="text-sm sm:text-lg font-bold line-clamp-3 sm:line-clamp-2 mb-1 text-slate-800 dark:text-gray-100">
                           {post.title}
                         </h3>
 
-                        {/* Excerpt - hidden on mobile */}
-                        <p className="text-xs sm:text-sm  text-gray-600 dark:text-gray-300 mb-auto line-clamp-2 hidden sm:block">
-                          {post.excerpt}
-                        </p>
+{/* Excerpt with proper 3-line clamp */}
+<p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-auto line-clamp-3">
+  {post.excerpt && post.excerpt.length > 220 
+    ? `${post.excerpt.substring(0, 220).trim()}...` 
+    : post.excerpt}
+</p>
 
                         {/* Date display */}
                         <div className="flex items-center mt-2">
@@ -304,8 +304,8 @@ export default function BlogClientContent({
                         </div>
                       </div>
 
-                  {/* Rectangular image for desktop, square for mobile */}
-                  <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3">
+                      {/* Responsive image: Square on mobile, rectangular on desktop */}
+                      <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3">
                         <Image
                           src={post.featuredImage || defaultImage}
                           alt={post.title}
