@@ -20,12 +20,9 @@ export default function BlogClientContent({
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [isVisible, setIsVisible] = useState(false);
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
+  const [contentReady, setContentReady] = useState(false);
   
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
-
-  // Create Fuse instance for search
+  // Create Fuse instance for search - MUST be before any conditional returns
   const fuse = useMemo(
     () =>
       new Fuse(posts, {
@@ -34,6 +31,19 @@ export default function BlogClientContent({
       }),
     [posts]
   );
+  
+  // Effect to delay rendering
+  useEffect(() => {
+    setIsVisible(true);
+    
+    // Small delay to ensure navbar is loaded first
+    const timer = setTimeout(() => {
+      setContentReady(true);
+    }, 1);
+    
+    // Cleanup function
+    return () => clearTimeout(timer);
+  }, []);
 
   // Handle category selection
   const handleCategoryClick = (cat: string) => {
@@ -45,6 +55,11 @@ export default function BlogClientContent({
       return newCategories.length === 0 ? ["all"] : newCategories;
     });
   };
+
+  // NOW we can do the conditional return (after all hooks are called)
+  if (!contentReady) {
+    return null; // Return nothing until navbar has had time to load
+  }
 
   // Filter posts based on search term and categories
   const filteredPosts = searchTerm
@@ -109,58 +124,44 @@ export default function BlogClientContent({
   };
 
   // Default fallback image for posts
-  const defaultImage = "https://picsum.photos/id/1039/1000/600";
+  const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640";
 
   return (
     <>
-      {/* Hero Section with soft gradient */}
-      <section className="py-10 bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-800 dark:to-slate-800/90">
+         {/* Hero Section with immediate loading and subtle animations */}
+         <section className="py-10 bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
         <div className="max-w-3xl mx-auto px-4">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.5 }}
+            initial={{ opacity: 1 }} // Start fully visible
             className="relative text-center mb-6"
           >
-            {/* Subtle floating shape in background */}
+            {/* Subtle floating shape - only animate after content is visible */}
             <motion.div
               className="absolute -top-10 left-1/2 w-40 h-40 rounded-full bg-blue-100/60 dark:bg-blue-400/10 filter blur-3xl opacity-60 dark:opacity-30"
               animate={{
                 x: [0, 10, -10, 0],
                 y: [0, -10, 10, 0],
+                scale: [1, 1.05, 0.95, 1],
               }}
               transition={{
                 repeat: Infinity,
                 duration: 12,
                 ease: "easeInOut",
+                delay: 0.5, // Short delay to ensure content is visible first
               }}
             />
 
-            {/* Title and subtitle */}
-            <motion.h2
-              className="text-md text-gray-600 dark:text-gray-400 font-semibold mb-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{
-                duration: 1,
-                delay: 0.3,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-            >
+            {/* Title - no initial animation, just hover effect */}
+            <h2 className="text-md text-gray-600 dark:text-gray-400 font-semibold mb-4 select-none">
               Digital notes on some interests. 📚✨
-            </motion.h2>
+            </h2>
 
-            {/* Subtle gradient glow */}
-            <motion.div
-              className="absolute -z-10 inset-0 bg-gradient-radial from-blue-50/50 via-transparent to-transparent dark:from-blue-500/5 dark:via-transparent dark:to-transparent"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 2 }}
-            />
+            {/* Subtle gradient glow - already visible, animate subtly */}
+            <div className="absolute -z-10 inset-0 bg-gradient-radial from-blue-50/50 via-transparent to-transparent dark:from-blue-500/5 dark:via-transparent dark:to-transparent" />
           </motion.div>
 
-          {/* Category filters - Softer colors */}
-          <div className="w-full flex flex-wrap justify-center gap-2 mb-6">
+          {/* Category filters - No initial animation, just hover/tap effects */}
+          <div className="w-full flex flex-wrap justify-center gap-2 mb-6 select-none">
             {[
               { name: "all", count: posts.length },
               ...Object.entries(categoryCounts)
@@ -184,8 +185,8 @@ export default function BlogClientContent({
                   cursor-pointer
                   ${
                     selectedCategories.includes(name)
-                      ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-                      : "bg-white dark:bg-slate-700 hover:bg-gray-50 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-slate-600"
+                      ? "bg-blue-200 text-slate-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-400 dark:border-blue-800"
+                      : "bg-white dark:bg-slate-700 hover:bg-blue-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
                   }
                 `}
               >
@@ -244,7 +245,7 @@ export default function BlogClientContent({
       {/* Blog Post List Section */}
       <section
         id="blog"
-        className="py-10 bg-white dark:bg-slate-800 -mt-14 relative"
+        className="py-10 bg-white dark:bg-slate-900 -mt-14 relative"
       >
         <div className="max-w-3xl mx-auto px-4 mb-20">
           {sortedPosts.length === 0 ? (
@@ -274,29 +275,43 @@ export default function BlogClientContent({
                   animate="visible"
                   variants={cardVariants}
                 >
-                  <Link href={`/blog/${post.slug}`} className="block h-full">
-                    {/* Softer card colors */}
-                    <div className="flex flex-row bg-slate-100 dark:bg-slate-700 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-300 h-32 border border-gray-100 dark:border-slate-600">
-                      {/* Content - 4/5 of the space */}
-                      <div className="p-4 flex-1 w-4/5 overflow-hidden flex flex-col">
-                        <h3 className="text-base font-bold line-clamp-2 mb-1 text-gray-700 dark:text-gray-100">
+                                   <Link href={`/blog/${post.slug}`} className="block h-full">
+                    {/* Card with square image */}
+                    <div className="flex flex-row bg-gray-50 dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md hover:bg-blue-50 transition-shadow duration-300 border border-gray-100 dark:border-slate-800">
+                      {/* Content section */}
+                      <div className="p-4 flex-1 overflow-hidden flex flex-col">
+                        <h3 className="text-base font-bold line-clamp-2 mb-1 text-slate-800 dark:text-gray-100">
                           {post.title}
                         </h3>
 
-                        {/* Excerpt - added here with line clamp */}
-                        <p className="text-xs text-gray-600 dark:text-gray-300 mb-auto line-clamp-2">
+                        {/* Excerpt - hidden on mobile */}
+                        <p className="text-xs text-gray-600 dark:text-gray-300 mb-auto line-clamp-2 hidden sm:block">
                           {post.excerpt}
                         </p>
+
+                        {/* Date display */}
+                        <div className="flex items-center mt-2">
+                          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            {new Date(post.date).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Image - 1/5 of the space */}
-                      <div className="relative w-1/5 min-w-[80px]">
+                  {/* Rectangular image for desktop, square for mobile */}
+                  <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3">
                         <Image
                           src={post.featuredImage || defaultImage}
                           alt={post.title}
                           fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 80px, 120px"
+                          className="object-cover rounded-md"
+                          sizes="(max-width: 768px) 80px, 192px"
                           priority={index < 3}
                         />
                       </div>

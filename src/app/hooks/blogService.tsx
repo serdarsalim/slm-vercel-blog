@@ -58,7 +58,7 @@ export function useBlogPosts(initialPosts: BlogPost[] = []) {
                   post.categories.split(',').map((cat: string) => cat.trim()) : 
                   Array.isArray(post.categories) ? post.categories : []
                 ) : [],
-              featuredImage: post.featuredImage || 'https://picsum.photos/id/1039/1000/600',
+              featuredImage: post.featuredImage || 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640',
               featured: post.featured === 'TRUE' || post.featured === 'true' || post.featured === true
             }));
             
@@ -147,7 +147,7 @@ export function usePostBySlug(slug: string, initialPost: BlogPost | null = null)
             author: foundPost.author || 'Anonymous',
             date: foundPost.date || new Date().toISOString().split('T')[0],
             categories: categories,
-            featuredImage: foundPost.featuredImage || 'https://picsum.photos/id/1039/1000/600',
+            featuredImage: foundPost.featuredImage || 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640',
             featured: foundPost.featured === 'TRUE' || foundPost.featured === 'true'
           };
           

@@ -45,7 +45,7 @@ function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
           item.categories.split(',').map((cat: string) => cat.trim()) : 
           Array.isArray(item.categories) ? item.categories : []
         ) : [],
-      featuredImage: item.featuredImage || 'https://picsum.photos/id/1039/1000/600',
+      featuredImage: item.featuredImage || 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640',
       featured: item.featured === 'TRUE' || item.featured === 'true' || item.featured === true
     };
   } catch (error) {
@@ -60,7 +60,7 @@ function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
       author: 'System',
       date: new Date().toISOString().split('T')[0],
       categories: ['error'],
-      featuredImage: 'https://picsum.photos/id/1039/1000/600',
+      featuredImage: 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640',
       featured: false
     };
   }

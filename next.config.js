@@ -18,6 +18,11 @@ const nextConfig = {
         hostname: 'source.unsplash.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      
+      },
       
 
       {
