@@ -129,7 +129,7 @@ function BlogPostContent() {
       
   {/* Hero section with featured image - improved title readability */}
 {post.featuredImage && (
-  <div className="relative h-[40vh] sm:h-[50vh] md:h-[60vh] w-full overflow-hidden">
+  <div className="relative h-[30vh] sm:h-[40vh] md:h-[50vh] w-full overflow-hidden">
     <Image 
       src={post.featuredImage || defaultImage}
       alt={post.title}

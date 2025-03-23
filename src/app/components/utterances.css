@@ -1,0 +1,22 @@
+/* Custom styles for Utterances comments */
+.utterances {
+    max-width: 100% !important;
+  }
+  
+  /* Remove the default margin when the comments are loaded */
+  .utterances-frame {
+    margin: 0 !important;
+  }
+  
+  /* Add padding to match your blog's design */
+  .utterances-container {
+    position: relative;
+    width: 100%;
+  }
+  
+  /* Add responsive styles */
+  @media (max-width: 768px) {
+    .utterances-container {
+      padding: 0;
+    }
+  }
