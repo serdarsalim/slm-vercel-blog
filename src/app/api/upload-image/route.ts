@@ -20,26 +20,37 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   console.log('Processing image upload request');
-  
-  // Verify authorization
-  const authHeader = request.headers.get('Authorization');
-  const secretToken = process.env.UPLOAD_SECRET || 'your_default_secret';
-  
-  if (!authHeader || authHeader !== `Bearer ${secretToken}`) {
-    console.log('Invalid or missing authorization');
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+
+  // Use your environment variable or a fallback for the secret token
+  const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
 
   try {
-    // For multipart form data, we need to use formData()
+    // Get the form data
     const formData = await request.formData();
-    const file = formData.get('file');
+    
+    // Support BOTH authentication methods:
+    // 1. Secret in form data (like your CSV route)
+    // 2. Bearer token in Authorization header (like your Google Apps Script)
+    const formSecret = formData.get('secret')?.toString();
+    const authHeader = request.headers.get('Authorization');
+    const bearerToken = authHeader && authHeader.startsWith('Bearer ') 
+      ? authHeader.substring(7) 
+      : null;
+    
+    // Check if either authentication method is valid
+    if (formSecret !== secretToken && bearerToken !== secretToken) {
+      console.log('Invalid token provided');
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+    
+    // Get the file - check BOTH field names: 'file' (your API) and 'image' (Google Script)
+    const file = formData.get('file') || formData.get('image');
     
     if (!file || !(file instanceof Blob)) {
-      return NextResponse.json({ error: 'No file provided or invalid file' }, { status: 400 });
+      return NextResponse.json({ error: 'No image provided or invalid file' }, { status: 400 });
     }
 
-    // Get filename from form data or generate a random one
+    // Get filename or generate one
     const filename = formData.get('filename')?.toString() || 
                      `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
     
