@@ -35,6 +35,17 @@ function BlogIndexContent() {
     setIsVisible(true);
   }, []);
 
+  // Function to extract first image from post content
+  const getFirstImageFromContent = (content: string): string | null => {
+    if (!content) return null;
+    const imgRegex = /<img[^>]+src="([^">]+)"/i;
+    const match = content.match(imgRegex);
+    return match ? match[1] : null;
+  };
+  
+  // Default fallback image if no images are found
+  const defaultImage = "https://via.placeholder.com/800x450?text=Blog+Post";
+
   const fuse = useMemo(
     () =>
       new Fuse(posts, {
@@ -243,43 +254,50 @@ function BlogIndexContent() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              {sortedPosts.map((post, index) => (
-                <motion.div
-                  key={post.id}
-                  custom={index}
-                  initial="hidden"
-                  animate="visible"
-                  variants={cardVariants}
-                  className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transform transition-all duration-300 hover:shadow-md hover:translate-y-[-2px]"
-                >
-                  <Link href={`/blog/${post.slug}`} className="block h-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg">
-                    {/* Image area with subtle hover effect */}
-                    <div className="relative h-48 overflow-hidden">
-                      <Image
-                        src={post.featuredImage}
-                        alt={post.title}
-                        className="object-cover transition-transform duration-500 hover:scale-[1.03]"
-                        fill
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-                    </div>
-
-                    <div className="p-5 flex flex-col flex-grow">
-                      <h2 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white line-clamp-2">
-                        {post.title}
-                      </h2>
-                      
-                      <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 mb-4">
-                        {post.excerpt}
-                      </p>
-                      
-                      <div className="mt-auto text-xs text-gray-500 dark:text-gray-400">
-                        {post.date}
+              {sortedPosts.map((post, index) => {
+                // Determine image source with fallback logic
+                const imageSource = post.featuredImage || 
+                                    getFirstImageFromContent(post.content) || 
+                                    defaultImage;
+                
+                return (
+                  <motion.div
+                    key={post.id}
+                    custom={index}
+                    initial="hidden"
+                    animate="visible"
+                    variants={cardVariants}
+                    className="flex flex-col h-full bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden transform transition-all duration-300 hover:shadow-md hover:translate-y-[-2px]"
+                  >
+                    <Link href={`/blog/${post.slug}`} className="block h-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg">
+                      {/* Image area with subtle hover effect */}
+                      <div className="relative h-48 overflow-hidden">
+                        <Image
+                          src={imageSource}
+                          alt={post.title}
+                          className="object-cover transition-transform duration-500 hover:scale-[1.03]"
+                          fill
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
                       </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+
+                      <div className="p-5 flex flex-col flex-grow">
+                        <h2 className="text-lg font-semibold mb-2 text-gray-800 dark:text-white line-clamp-2">
+                          {post.title}
+                        </h2>
+                        
+                        <p className="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 mb-4">
+                          {post.excerpt}
+                        </p>
+                        
+                        <div className="mt-auto text-xs text-gray-500 dark:text-gray-400">
+                          {post.date}
+                        </div>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </motion.div>
           )}
         </div>

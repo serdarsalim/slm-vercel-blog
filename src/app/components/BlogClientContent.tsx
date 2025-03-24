@@ -285,7 +285,7 @@ export default function BlogClientContent({
 {/* Excerpt with proper 3-line clamp */}
 <p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-auto line-clamp-3">
   {post.excerpt && post.excerpt.length > 220 
-    ? `${post.excerpt.substring(0, 220).trim()}...` 
+    ? `${post.excerpt.substring(0, 200).trim()}...` 
     : post.excerpt}
 </p>
 
