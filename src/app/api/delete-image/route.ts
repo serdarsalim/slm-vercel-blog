@@ -9,7 +9,7 @@ async function handleDeleteImages(request: NextRequest, requestBody: any) {
   console.log('Processing delete images request');
 
   // Use your environment variable or a fallback for the secret token
-  const secretToken = process.env.REVALIDATION_SECRET || 'bugunyapicamlanseni';
+  const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
 
   try {
     // Check authorization with Bearer token
