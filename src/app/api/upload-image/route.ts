@@ -51,30 +51,54 @@ export async function POST(request: NextRequest) {
     }
 
     // Get filename or generate one
-    const filename = formData.get('filename')?.toString() || 
-                     `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    let filename = formData.get('filename')?.toString() || 
+                   `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+    
+    // Ensure filename has images/ prefix
+    if (!filename.startsWith('images/')) {
+      filename = `images/${filename}`;
+    }
     
     // Get the file extension from the content type
     const contentType = file.type;
-    const fileExtension = contentType.split('/')[1] || 'png';
+    let fileExtension = '';
+    
+    // Map content types to appropriate extensions
+    if (contentType === 'image/jpeg' || contentType === 'image/jpg') {
+      fileExtension = '.jpg';
+    } else if (contentType === 'image/png') {
+      fileExtension = '.png';
+    } else if (contentType === 'image/gif') {
+      fileExtension = '.gif';
+    } else if (contentType === 'image/webp') {
+      fileExtension = '.webp';
+    } else if (contentType === 'image/svg+xml') {
+      fileExtension = '.svg';
+    } else {
+      fileExtension = `.${contentType.split('/')[1] || 'bin'}`;
+    }
+    
+    // Check if the filename already has a valid extension
+    const hasValidExtension = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(filename);
     
     // Construct the full filename with extension
-    const fullFilename = filename.endsWith(`.${fileExtension}`) 
+    const fullFilename = hasValidExtension 
                          ? filename 
-                         : `${filename}.${fileExtension}`;
+                         : `${filename}${fileExtension}`;
     
     // Convert the file to a format Vercel Blob can handle
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // Upload to Vercel Blob
+    // Upload to Vercel Blob WITHOUT random suffix
     console.log(`Uploading file: ${fullFilename}, Content-Type: ${contentType}`);
     const blob = await put(fullFilename, buffer, {
       access: 'public',
       contentType: contentType,
-      addRandomSuffix: true // Ensure uniqueness for image files
+      addRandomSuffix: false  // KEY CHANGE: No random suffix
     });
 
     console.log('Upload successful, blob URL:', blob.url);
+    console.log('Exact pathname:', blob.pathname);
     
     // Return a clean URL (no query parameters)
     const cleanUrl = new URL(blob.url);
@@ -84,7 +108,8 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Image uploaded successfully',
       url: cleanUrl.toString(),
-      originalUrl: blob.url
+      originalUrl: blob.url,
+      pathname: blob.pathname  // Include exact pathname for reference
     });
   } catch (error) {
     console.error('Error processing image upload:', error);
