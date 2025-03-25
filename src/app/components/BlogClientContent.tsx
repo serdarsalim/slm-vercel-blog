@@ -24,12 +24,21 @@ export default function BlogClientContent({
   
   // Create Fuse instance for search functionality
   const fuse = useMemo(
-    () =>
-      new Fuse(posts, {
-        keys: ["title", "excerpt", "categories", "author"],
-        threshold: 0.4,
-      }),
-    [posts]
+    () => {
+      // Only create a new index if we have posts and they've changed
+      if (posts && posts.length > 0) {
+        return new Fuse(posts, {
+          keys: ["title", "excerpt", "categories", "author"],
+          threshold: 0.4,
+          // Add these options to make it more efficient
+          ignoreLocation: true,
+          useExtendedSearch: true,
+        });
+      }
+      return null;
+    },
+    // Use JSON.stringify to properly detect array changes
+    [JSON.stringify(posts?.map(p => p.id))]
   );
   
   // Effect to delay rendering for proper UI loading sequence
@@ -60,9 +69,9 @@ export default function BlogClientContent({
   }
 
   // Filter posts based on search term and selected categories
-  const filteredPosts = searchTerm
-    ? fuse.search(searchTerm).map((result) => result.item)
-    : posts.filter((p) => {
+  const filteredPosts = searchTerm && fuse
+  ? fuse.search(searchTerm).map((result) => result.item)
+  : posts.filter((p) => {
         // Show all posts if "all" is selected
         if (selectedCategories.includes("all")) return true;
 

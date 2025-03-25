@@ -47,12 +47,21 @@ function BlogIndexContent() {
   const defaultImage = "https://via.placeholder.com/800x450?text=Blog+Post";
 
   const fuse = useMemo(
-    () =>
-      new Fuse(posts, {
-        keys: ["title", "excerpt", "categories", "author"],
-        threshold: 0.4,
-      }),
-    [posts]
+    () => {
+      // Only create a new index if we have posts and they've changed
+      if (posts && posts.length > 0) {
+        return new Fuse(posts, {
+          keys: ["title", "excerpt", "categories", "author"],
+          threshold: 0.4,
+          // Add these options to make it more efficient
+          ignoreLocation: true,
+          useExtendedSearch: true,
+        });
+      }
+      return null;
+    },
+    // Use JSON.stringify to properly detect array changes
+    [JSON.stringify(posts?.map(p => p.id))]
   );
 
   const handleCategoryClick = (cat: string) => {
@@ -65,9 +74,9 @@ function BlogIndexContent() {
     });
   };
 
-  const filteredPosts = searchTerm
-    ? fuse.search(searchTerm).map((result) => result.item)
-    : posts.filter(
+  const filteredPosts = searchTerm && fuse
+  ? fuse.search(searchTerm).map((result) => result.item)
+  : posts.filter(
         (p) =>
           selectedCategories.includes("all") ||
           selectedCategories.every((cat) =>
