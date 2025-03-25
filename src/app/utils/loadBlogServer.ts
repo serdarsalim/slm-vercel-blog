@@ -46,7 +46,9 @@ function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
           Array.isArray(item.categories) ? item.categories : []
         ) : [],
       featuredImage: item.featuredImage || 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920',
-      featured: item.featured === 'TRUE' || item.featured === 'true' || item.featured === true
+      featured: item.featured === 'TRUE' || item.featured === 'true' || item.featured === true,
+      comment: item.comment === 'TRUE' || item.comment === 'true' || item.comment === true || (item.comment === undefined),
+      socmed: item.socmed === 'TRUE' || item.socmed === 'true' || item.socmed === true || (item.socmed === undefined)  
     };
   } catch (error) {
     console.error("Error parsing blog post data:", error, item);
@@ -61,7 +63,9 @@ function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
       date: new Date().toISOString().split('T')[0],
       categories: ['error'],
       featuredImage: 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920',
-      featured: false
+      featured: false,
+      comment: false,
+      socmed: false
     };
   }
 }

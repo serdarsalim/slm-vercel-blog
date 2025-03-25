@@ -10,4 +10,6 @@ export interface BlogPost {
   featuredImage?: string;
   featured?: boolean;
   load?: boolean; 
+  comment: boolean;
+  socmed: boolean;
 }
