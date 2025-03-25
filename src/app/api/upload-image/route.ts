@@ -4,7 +4,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { put, list } from '@vercel/blob';
 
 export async function GET(request: NextRequest) {
   return NextResponse.json(
@@ -86,6 +86,23 @@ export async function POST(request: NextRequest) {
                          ? filename 
                          : `${filename}${fileExtension}`;
     
+    // NEW: Check if file with same name already exists
+    console.log(`Checking if file exists: ${fullFilename}`);
+    const existingBlobs = await list({
+      prefix: fullFilename,
+      limit: 1
+    });
+    
+    if (existingBlobs.blobs.some(blob => blob.pathname === fullFilename)) {
+      console.log(`File already exists: ${fullFilename}`);
+      return NextResponse.json({
+        success: false,
+        error: 'A file with this name already exists',
+        message: 'Please upload with a different filename to avoid overwriting existing files',
+        existingFile: fullFilename
+      }, { status: 409 }); // 409 Conflict
+    }
+    
     // Convert the file to a format Vercel Blob can handle
     const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -94,7 +111,7 @@ export async function POST(request: NextRequest) {
     const blob = await put(fullFilename, buffer, {
       access: 'public',
       contentType: contentType,
-      addRandomSuffix: false  // KEY CHANGE: No random suffix
+      addRandomSuffix: false  // No random suffix
     });
 
     console.log('Upload successful, blob URL:', blob.url);
