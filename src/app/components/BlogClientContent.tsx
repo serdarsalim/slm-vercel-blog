@@ -283,8 +283,17 @@ export default function BlogClientContent({
                 >
                   <Link href={`/blog/${post.slug}`} className="block h-full">
                     {/* Card with responsive layout */}
-                    <div className="flex flex-row bg-gray-50 dark:bg-slate-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md hover:bg-blue-50 dark:hover:bg-slate-700 transition-shadow duration-300 border border-gray-100 dark:border-slate-800">
-                      {/* Content section */}
+                    <div className="flex flex-row bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-800/90 
+  rounded-xl overflow-hidden 
+  shadow-[0_3px_10px_-1px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] 
+  dark:shadow-[0_3px_10px_-1px_rgba(0,0,0,0.3),0_2px_4px_-2px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.02)] 
+  hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(66,153,225,0.15)] 
+  dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_0_0_1px_rgba(66,153,225,0.08)]
+  border border-gray-300/60 dark:border-slate-600/60
+  hover:border-blue-200 dark:hover:border-blue-800/60
+  hover:bg-blue-50/50 dark:hover:bg-slate-700/80
+  transform hover:-translate-y-0.5
+  transition-all duration-300 ease-out">                    {/* Content section */}
                       <div className="p-4 flex-1 overflow-hidden flex flex-col">
                         {/* Title: Normal on mobile, bold on desktop */}
                         <h3 className="text-sm sm:text-lg font-bold line-clamp-3 sm:line-clamp-2 mb-1 text-slate-800 dark:text-gray-100">
