@@ -148,7 +148,9 @@ export function usePostBySlug(slug: string, initialPost: BlogPost | null = null)
             date: foundPost.date || new Date().toISOString().split('T')[0],
             categories: categories,
             featuredImage: foundPost.featuredImage || 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640',
-            featured: foundPost.featured === 'TRUE' || foundPost.featured === 'true'
+            featured: foundPost.featured === 'TRUE' || foundPost.featured === 'true',
+            comment: foundPost.comment === 'TRUE' || foundPost.comment === 'true' || foundPost.comment === true || (foundPost.comment === undefined),
+            socmed: foundPost.socmed === 'TRUE' || foundPost.socmed === 'true' || foundPost.socmed === true || (foundPost.socmed === undefined)
           };
           
           if (isMounted) {
