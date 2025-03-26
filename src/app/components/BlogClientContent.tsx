@@ -23,24 +23,35 @@ export default function BlogClientContent({
   const [contentReady, setContentReady] = useState(false);
   
   // Create Fuse instance for search functionality
-  const fuse = useMemo(
-    () => {
-      // Only create a new index if we have posts and they've changed
-      if (posts && posts.length > 0) {
-        return new Fuse(posts, {
-          keys: ["title", "excerpt", "categories", "author"],
-          threshold: 0.4,
-          // Add these options to make it more efficient
-          ignoreLocation: true,
-          useExtendedSearch: true,
-        });
-      }
-      return null;
-    },
-    // Use JSON.stringify to properly detect array changes
-    [JSON.stringify(posts?.map(p => p.id))]
-  );
-  
+ const fuse = useMemo(
+  () => {
+    if (posts && posts.length > 0) {
+      return new Fuse(posts, {
+        keys: [
+          { name: 'title', weight: 1.8 },     // Higher weight for title
+          { name: 'excerpt', weight: 1.2 },   // Medium priority
+          { name: 'content', weight: 1.0 },   // Normal priority for content
+          { name: 'categories', weight: 1.5 } // High weight for categories
+        ],
+        threshold: 0.2,              // Strict threshold (requires 80% match)
+        ignoreLocation: true,        // Better for blog content
+        useExtendedSearch: false,    // Simpler algorithm
+        minMatchCharLength: 3,       // Keep minimum match length
+        distance: 200,               // Increased for content but not too large
+        includeScore: true,          // Include match score for debugging
+        
+        // Keep only these options
+        shouldSort: true,
+        findAllMatches: false
+        // tokenize and matchAllTokens removed
+      });
+    }
+    return null;
+  },
+  [posts]
+);
+
+
   // Effect to delay rendering for proper UI loading sequence
   useEffect(() => {
     setIsVisible(true);
