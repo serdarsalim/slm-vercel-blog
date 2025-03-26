@@ -581,10 +581,7 @@ const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
 
               {/* Separate style block for font size and color handling */}
               <style jsx global>{`
-                /* Ensure inline font sizes take precedence */
-                .prose [style*="font-size"] {
-                  font-size: inherit !important;
-                }
+               
 
                 /* Base dark mode color handling */
                 .dark .prose [data-dynamic-color="true"] {
