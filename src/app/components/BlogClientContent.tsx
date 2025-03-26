@@ -68,35 +68,40 @@ export default function BlogClientContent({
     return null; // Return nothing until navbar has had time to load
   }
 
-  // Filter posts based on search term and selected categories
-  const filteredPosts = searchTerm && fuse
+// First apply filters and search to all posts
+const filteredPosts = searchTerm && fuse
   ? fuse.search(searchTerm).map((result) => result.item)
   : posts.filter((p) => {
-        // Show all posts if "all" is selected
-        if (selectedCategories.includes("all")) return true;
+      // Show all posts if "all" is selected
+      if (selectedCategories.includes("all")) return true;
 
-        // Handle categories consistently as an array
-        const postCategories = Array.isArray(p.categories)
-          ? p.categories
-          : p.categories
-          ? [p.categories]
-          : [];
+      // Handle categories consistently as an array
+      const postCategories = Array.isArray(p.categories)
+        ? p.categories
+        : p.categories
+        ? [p.categories]
+        : [];
 
-        // Case-insensitive comparison with trimmed whitespace
-        return selectedCategories.some((selectedCat) =>
-          postCategories.some(
-            (postCat) =>
-              postCat &&
-              typeof postCat === "string" &&
-              postCat.toLowerCase().trim() === selectedCat.toLowerCase().trim()
-          )
-        );
-      });
+      // Case-insensitive comparison with trimmed whitespace
+      return selectedCategories.some((selectedCat) =>
+        postCategories.some(
+          (postCat) =>
+            postCat &&
+            typeof postCat === "string" &&
+            postCat.toLowerCase().trim() === selectedCat.toLowerCase().trim()
+        )
+      );
+    });
 
-  // Sort posts by date (newest first)
-  const sortedPosts = [...filteredPosts].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+// Separate featured and non-featured posts
+const featuredPosts = filteredPosts.filter(post => post.featured);
+const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
+
+// Combine: featured posts first, then non-featured posts
+// Both groups maintain their original CSV order
+const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
+   
+
 
   // Calculate category counts for filter buttons
   const categoryCounts = posts.reduce((acc, post) => {
