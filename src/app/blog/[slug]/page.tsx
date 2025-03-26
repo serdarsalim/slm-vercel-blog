@@ -122,63 +122,68 @@ function BlogPostContent() {
   }, [post?.content, isDarkMode]);
 
   // Modified to accept isDarkMode as a parameter
-  const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
-    // First process font sizes
-    let processedContent = htmlContent.replace(
-      /style="([^"]*)font-size:\s*(\d+)px([^"]*)"/g,
-      (match, before, size, after) => {
-        let scaledValue = parseInt(size, 10);
-        scaledValue = Math.round(scaledValue * 1.7);
-        return `style="${before}font-size: ${scaledValue}px${after}"`;
+  // Modified to accept isDarkMode as a parameter
+const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
+  // First process font sizes (keep this part)
+  let processedContent = htmlContent.replace(
+    /style="([^"]*)font-size:\s*(\d+)px([^"]*)"/g,
+    (match, before, size, after) => {
+      let scaledValue = parseInt(size, 10);
+      scaledValue = Math.round(scaledValue * 1.7);
+      return `style="${before}font-size: ${scaledValue}px${after}"`;
+    }
+  );
+  
+  // FONT TAG COLOR TRANSFORMATION - Only if in dark mode
+  if (isDark) {
+    processedContent = processedContent.replace(
+      /<font\s+color="(#[0-9a-f]{3,6})"([^>]*)>/gi,
+      (match, color, rest) => {
+        // Parse the hex color
+        const r = parseInt(color.slice(1, 3) || color.slice(1, 2), 16);
+        const g = parseInt(color.slice(3, 5) || color.slice(2, 3), 16);
+        const b = parseInt(color.slice(5, 7) || color.slice(3, 4), 16);
+        
+        // Special case for black or very dark colors
+        if ((r < 30 && g < 30 && b < 30) || color.toLowerCase() === "#000000" || color.toLowerCase() === "#000") {
+          // Use light gray instead of trying to brighten black
+          return `<font color="#CCCCCC"${rest}>`;
+        }
+        
+        // Rest of your existing code for other colors
+        let brightR, brightG, brightB;
+        const isReddish = r > 180 && g < 100;
+        const isYellowish = r > 180 && g > 180;
+        
+        if (isReddish) {
+          // Less intense adjustment for red
+          brightR = Math.min(255, Math.round(r * 1.2));
+          brightG = Math.min(255, Math.round(g * 1.8));
+          brightB = Math.min(255, Math.round(b * 2.2));
+        } else if (isYellowish) {
+          // Modest adjustment for yellow to prevent washing out
+          brightR = Math.min(255, Math.round(r * 1.1));
+          brightG = Math.min(255, Math.round(g * 1.1));
+          brightB = Math.min(255, Math.round(b * 2.5));
+        } else {
+          // Default adjustment for other colors
+          brightR = Math.min(255, Math.round(r * 2.2));
+          brightG = Math.min(255, Math.round(g * 2.2));
+          brightB = Math.min(255, Math.round(b * 2.5));
+        }
+        
+        // Create new hex color
+        const newColor = `#${brightR.toString(16).padStart(2, '0')}${
+          brightG.toString(16).padStart(2, '0')}${
+          brightB.toString(16).padStart(2, '0')}`;
+          
+        return `<font color="${newColor}"${rest}>`;
       }
     );
-    
-    // FONT TAG COLOR TRANSFORMATION - Only if in dark mode
-    if (isDark) {
-      processedContent = processedContent.replace(
-        /<font\s+color="(#[0-9a-f]{3,6})"([^>]*)>/gi,
-        (match, color, rest) => {
-          // Parse the hex color
-          const r = parseInt(color.slice(1, 3) || color.slice(1, 2), 16);
-          const g = parseInt(color.slice(3, 5) || color.slice(2, 3), 16);
-          const b = parseInt(color.slice(5, 7) || color.slice(3, 4), 16);
-          
-          // Smart brightness adjustment based on color
-          let brightR, brightG, brightB;
-          
-          // Detect if color is mostly red or yellow
-          const isReddish = r > 180 && g < 100;
-          const isYellowish = r > 180 && g > 180;
-          
-          if (isReddish) {
-            // Less intense adjustment for red
-            brightR = Math.min(255, Math.round(r * 1.2));
-            brightG = Math.min(255, Math.round(g * 1.8));
-            brightB = Math.min(255, Math.round(b * 2.2));
-          } else if (isYellowish) {
-            // Modest adjustment for yellow to prevent washing out
-            brightR = Math.min(255, Math.round(r * 1.1));
-            brightG = Math.min(255, Math.round(g * 1.1));
-            brightB = Math.min(255, Math.round(b * 2.5));
-          } else {
-            // Default adjustment for other colors
-            brightR = Math.min(255, Math.round(r * 2.2));
-            brightG = Math.min(255, Math.round(g * 2.2));
-            brightB = Math.min(255, Math.round(b * 2.5));
-          }
-          
-          // Create new hex color
-          const newColor = `#${brightR.toString(16).padStart(2, '0')}${
-            brightG.toString(16).padStart(2, '0')}${
-            brightB.toString(16).padStart(2, '0')}`;
-            
-          return `<font color="${newColor}"${rest}>`;
-        }
-      );
-    }
-    
-    return processedContent;
-  };
+  }
+  
+  return processedContent;
+};
 
   // Process HTML content for headings
   const renderHtml = () => {
