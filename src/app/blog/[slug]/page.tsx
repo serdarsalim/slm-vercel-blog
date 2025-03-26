@@ -56,37 +56,55 @@ function BlogPostContent() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [processedContent, setProcessedContent] = useState("");
 
-  // Calculate reading progress on scroll and extract headings for TOC
-  useEffect(() => {
-    if (!post) return;
 
-    // Extract headings for the table of contents
-    if (post.content) {
-      const headings = [];
-      const regex = /<h([2-3])[^>]*>(.*?)<\/h\1>/g;
-      let match;
-      while ((match = regex.exec(post.content)) !== null) {
-        const level = match[1];
-        const text = match[2].replace(/<[^>]*>/g, "");
-        const id = text.toLowerCase().replace(/[^\w]+/g, "-");
-        headings.push({ id, text, level });
-      }
-      setTableOfContents(headings);
+  
+
+
+// Calculate reading progress on scroll and extract headings for TOC
+useEffect(() => {
+  if (!post) return;
+  
+  // Extract headings for the table of contents
+  if (post.content) {
+    // Extract headings code (keep as is)
+    const headings = [];
+    const regex = /<h([2-3])[^>]*>(.*?)<\/h\1>/g;
+    let match;
+    while ((match = regex.exec(post.content)) !== null) {
+      const level = match[1];
+      const text = match[2].replace(/<[^>]*>/g, "");
+      const id = text.toLowerCase().replace(/[^\w]+/g, "-");
+      headings.push({ id, text, level });
     }
+    setTableOfContents(headings);
+  }
 
-    const updateReadingProgress = () => {
-      const currentProgress = window.scrollY;
-      const scrollHeight = document.body.scrollHeight - window.innerHeight;
-      if (scrollHeight) {
-        setReadingProgress(
-          Number((currentProgress / scrollHeight).toFixed(2)) * 100
-        );
-      }
-    };
+  // Check if content contains YouTube videos
+  const hasYouTubeVideo = post.content && 
+    (post.content.includes('youtube.com/embed') || 
+     post.content.includes('youtu.be'));
+  
+  // Skip scroll tracking if YouTube videos are present
+  if (hasYouTubeVideo) {
+    console.log("YouTube video detected - disabling reading progress tracking");
+    setReadingProgress(0); // Reset progress
+    return; // Exit early - don't add scroll listener
+  }
 
-    window.addEventListener("scroll", updateReadingProgress);
-    return () => window.removeEventListener("scroll", updateReadingProgress);
-  }, [post]);
+  // Only add scroll event listener if no YouTube videos present
+  const updateReadingProgress = () => {
+    const currentProgress = window.scrollY;
+    const scrollHeight = document.body.scrollHeight - window.innerHeight;
+    if (scrollHeight) {
+      setReadingProgress(
+        Number((currentProgress / scrollHeight).toFixed(2)) * 100
+      );
+    }
+  };
+
+  window.addEventListener("scroll", updateReadingProgress);
+  return () => window.removeEventListener("scroll", updateReadingProgress);
+}, [post]);
 
   // Add effect to detect dark mode changes
   useEffect(() => {
