@@ -39,16 +39,19 @@ const openSharePopup = (url: string, title: string = "Share") => {
 function BlogPostContent() {
   const params = useParams();
   const router = useRouter();
-  const slug = typeof params.slug === "string" 
-    ? params.slug 
-    : Array.isArray(params.slug) ? params.slug[0] : "";
-    
+  const slug =
+    typeof params.slug === "string"
+      ? params.slug
+      : Array.isArray(params.slug)
+      ? params.slug[0]
+      : "";
+
   const { post, loading, error } = usePostBySlug(slug);
   const [readingProgress, setReadingProgress] = useState(0);
   const [tableOfContents, setTableOfContents] = useState<
     { id: string; text: string; level: string }[]
   >([]);
-  
+
   // Add state for dark mode tracking and processed content
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [processedContent, setProcessedContent] = useState("");
@@ -89,25 +92,25 @@ function BlogPostContent() {
   useEffect(() => {
     // Check dark mode immediately
     const checkDarkMode = () => {
-      const isDark = document.documentElement.classList.contains('dark');
+      const isDark = document.documentElement.classList.contains("dark");
       setIsDarkMode(isDark);
     };
-    
+
     // Run on mount
     checkDarkMode();
-    
+
     // Set up observer for theme changes
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
+        if (mutation.attributeName === "class") {
           checkDarkMode();
         }
       });
     });
-    
+
     // Start observing
     observer.observe(document.documentElement, { attributes: true });
-    
+
     // Clean up
     return () => observer.disconnect();
   }, []);
@@ -115,80 +118,141 @@ function BlogPostContent() {
   // Process content when dark mode changes or content changes
   useEffect(() => {
     if (!post?.content) return;
-    
+
     // Process the HTML content with current dark mode state
-    const htmlWithProcessedColors = processHtmlContent(post.content, isDarkMode);
+    const htmlWithProcessedColors = processHtmlContent(
+      post.content,
+      isDarkMode
+    );
     setProcessedContent(htmlWithProcessedColors);
   }, [post?.content, isDarkMode]);
 
   // Modified to accept isDarkMode as a parameter
-  // Modified to accept isDarkMode as a parameter
-const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
-  // First process font sizes (keep this part)
-  let processedContent = htmlContent.replace(
-    /style="([^"]*)font-size:\s*(\d+)px([^"]*)"/g,
-    (match, before, size, after) => {
-      let scaledValue = parseInt(size, 10);
-      scaledValue = Math.round(scaledValue * 1.7);
-      return `style="${before}font-size: ${scaledValue}px${after}"`;
-    }
-  );
+  const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
+    let processedContent = htmlContent;
+
+    // Add this function inside processHtmlContent
+const processImageTag = (match) => {
+  // Extract src and other attributes
+  const srcMatch = match.match(/src=["']([^"']*)["']/i);
+  const src = srcMatch ? srcMatch[1] : '';
+  const classMatch = match.match(/class=["']([^"']*)["']/i);
+  const classAttr = classMatch ? ` class="${classMatch[1]}"` : '';
+  const altMatch = match.match(/alt=["']([^"']*)["']/i);
+  const alt = altMatch ? ` alt="${altMatch[1]}"` : '';
   
-  // FONT TAG COLOR TRANSFORMATION - Only if in dark mode
-  if (isDark) {
-    processedContent = processedContent.replace(
-      /<font\s+color="(#[0-9a-f]{3,6})"([^>]*)>/gi,
-      (match, color, rest) => {
-        // Parse the hex color
-        const r = parseInt(color.slice(1, 3) || color.slice(1, 2), 16);
-        const g = parseInt(color.slice(3, 5) || color.slice(2, 3), 16);
-        const b = parseInt(color.slice(5, 7) || color.slice(3, 4), 16);
-        
-        // Special case for black or very dark colors
-        if ((r < 30 && g < 30 && b < 30) || color.toLowerCase() === "#000000" || color.toLowerCase() === "#000") {
-          // Use light gray instead of trying to brighten black
-          return `<font color="#CCCCCC"${rest}>`;
-        }
-        
-        // Rest of your existing code for other colors
-        let brightR, brightG, brightB;
-        const isReddish = r > 180 && g < 100;
-        const isYellowish = r > 180 && g > 180;
-        
-        if (isReddish) {
-          // Less intense adjustment for red
-          brightR = Math.min(255, Math.round(r * 1.2));
-          brightG = Math.min(255, Math.round(g * 1.8));
-          brightB = Math.min(255, Math.round(b * 2.2));
-        } else if (isYellowish) {
-          // Modest adjustment for yellow to prevent washing out
-          brightR = Math.min(255, Math.round(r * 1.1));
-          brightG = Math.min(255, Math.round(g * 1.1));
-          brightB = Math.min(255, Math.round(b * 2.5));
-        } else {
-          // Default adjustment for other colors
-          brightR = Math.min(255, Math.round(r * 2.2));
-          brightG = Math.min(255, Math.round(g * 2.2));
-          brightB = Math.min(255, Math.round(b * 2.5));
-        }
-        
-        // Create new hex color
-        const newColor = `#${brightR.toString(16).padStart(2, '0')}${
-          brightG.toString(16).padStart(2, '0')}${
-          brightB.toString(16).padStart(2, '0')}`;
-          
-        return `<font color="${newColor}"${rest}>`;
+  // Preserve other attributes but override style
+  let otherAttrs = match.replace(/src=["'][^"']*["']/i, '')
+                       .replace(/style=["'][^"']*["']/i, '')
+                       .replace(/class=["'][^"']*["']/i, '')
+                       .replace(/alt=["'][^"']*["']/i, '')
+                       .replace(/<img\s/i, '')
+                       .replace(/>$/, '');
+  
+  // Create new image tag with responsive styling
+  return `<img src="${src}"${classAttr}${alt} style="max-width:100%;height:auto;object-fit:contain;" loading="lazy" ${otherAttrs}>`;
+};
+
+// Replace all image tags using the function
+processedContent = processedContent.replace(/<img[^>]*>/gi, processImageTag);
+
+ // Update both YouTube regex replacements to include these parameters:
+processedContent = processedContent.replace(
+  /<iframe(.*?)src="https:\/\/www\.youtube\.com\/embed\/(.*?)"(.*?)><\/iframe>/g,
+  '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe$1src="https://www.youtube.com/embed/$2?enablejsapi=1&playsinline=1&rel=0"$3 style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
+);
+
+// And update the backup regex too:
+processedContent = processedContent.replace(
+  /<iframe(?:.*?)src="(?:(?:https?:)?\/\/)?(?:www\.)?youtube\.com\/embed\/([^"]+)"(?:.*?)><\/iframe>/gi,
+  '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe src="https://www.youtube.com/embed/$1?enablejsapi=1&playsinline=1&rel=0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
+);
+   // 2. Fix aspect ratio for images by adding specific styles
+processedContent = processedContent.replace(
+  /<img(.*?)style="([^"]*?)(width|height):[^"]*?(width|height):[^"]*?"(.*?)>/gi,
+  '<img$1style="max-width:100%;height:auto;object-fit:contain;"$5 loading="lazy">'
+);
+
+// Handle images with style but no width/height
+processedContent = processedContent.replace(
+  /<img(.*?)style="(?!.*?(width|height))[^"]*?"(.*?)>/gi,
+  '<img$1style="max-width:100%;height:auto;object-fit:contain;"$3 loading="lazy">'
+);
+
+// Handle images with no style
+processedContent = processedContent.replace(
+  /<img(?![^>]*?style=)(.*?)>/gi,
+  '<img style="max-width:100%;height:auto;object-fit:contain;"$1 loading="lazy">'
+);
+    // First process font sizes (keep this part)
+     processedContent = processedContent.replace(
+      /style="([^"]*)font-size:\s*(\d+)px([^"]*)"/g,
+      (match, before, size, after) => {
+        let scaledValue = parseInt(size, 10);
+        scaledValue = Math.round(scaledValue * 1.7);
+        return `style="${before}font-size: ${scaledValue}px${after}"`;
       }
     );
-  }
-  
-  return processedContent;
-};
+
+    // FONT TAG COLOR TRANSFORMATION - Only if in dark mode
+    if (isDark) {
+      processedContent = processedContent.replace(
+        /<font\s+color="(#[0-9a-f]{3,6})"([^>]*)>/gi,
+        (match, color, rest) => {
+          // Parse the hex color
+          const r = parseInt(color.slice(1, 3) || color.slice(1, 2), 16);
+          const g = parseInt(color.slice(3, 5) || color.slice(2, 3), 16);
+          const b = parseInt(color.slice(5, 7) || color.slice(3, 4), 16);
+
+          // Special case for black or very dark colors
+          if (
+            (r < 30 && g < 30 && b < 30) ||
+            color.toLowerCase() === "#000000" ||
+            color.toLowerCase() === "#000"
+          ) {
+            // Use light gray instead of trying to brighten black
+            return `<font color="#CCCCCC"${rest}>`;
+          }
+
+          // Rest of your existing code for other colors
+          let brightR, brightG, brightB;
+          const isReddish = r > 180 && g < 100;
+          const isYellowish = r > 180 && g > 180;
+
+          if (isReddish) {
+            // Less intense adjustment for red
+            brightR = Math.min(255, Math.round(r * 1.2));
+            brightG = Math.min(255, Math.round(g * 1.8));
+            brightB = Math.min(255, Math.round(b * 2.2));
+          } else if (isYellowish) {
+            // Modest adjustment for yellow to prevent washing out
+            brightR = Math.min(255, Math.round(r * 1.1));
+            brightG = Math.min(255, Math.round(g * 1.1));
+            brightB = Math.min(255, Math.round(b * 2.5));
+          } else {
+            // Default adjustment for other colors
+            brightR = Math.min(255, Math.round(r * 2.2));
+            brightG = Math.min(255, Math.round(g * 2.2));
+            brightB = Math.min(255, Math.round(b * 2.5));
+          }
+
+          // Create new hex color
+          const newColor = `#${brightR.toString(16).padStart(2, "0")}${brightG
+            .toString(16)
+            .padStart(2, "0")}${brightB.toString(16).padStart(2, "0")}`;
+
+          return `<font color="${newColor}"${rest}>`;
+        }
+      );
+    }
+
+    return processedContent;
+  };
 
   // Process HTML content for headings
   const renderHtml = () => {
     if (!processedContent) return { __html: "" };
-    
+
     let finalContent = processedContent;
     // Clean up leading headings
     finalContent = finalContent.replace(
@@ -196,7 +260,7 @@ const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
       ""
     );
     finalContent = finalContent.replace(/^\s+/, "");
-    
+
     // Add IDs to headings for TOC
     finalContent = finalContent.replace(
       /<h([2-3])(?:\s[^>]*)?>(.*?)<\/h\1>/g,
@@ -568,21 +632,20 @@ const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
                   margin-top: 0 !important;
                 }
                 .utterances-header, 
-    .utterances h3, 
-    .utterances h4,
-    /* Add more general selectors to catch other possible variants */
-    .utterances-container h3,
-    /* For embedded iframes */
-    iframe[src*="utteranc"] + h3,
-    iframe[src*="utteranc"].utterances-frame + h3 {
+                .utterances h3, 
+                .utterances h4,
+                 /* Add more general selectors to catch other possible variants */
+                 .utterances-container h3,
+                /* For embedded iframes */
+                iframe[src*="utteranc"] + h3,
+               iframe[src*="utteranc"].utterances-frame + h3 {
                   display: none !important;
                 }
               `}</style>
 
               {/* Separate style block for font size and color handling */}
-              <style jsx global>{`
-               
 
+              <style jsx global>{`
                 /* Base dark mode color handling */
                 .dark .prose [data-dynamic-color="true"] {
                   filter: brightness(2.5) contrast(0.85) !important;
@@ -610,6 +673,40 @@ const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
                 .dark .prose [data-dynamic-color="true"][color^="#03"] {
                   filter: brightness(4) contrast(0.9) !important;
                   color: #e0e0e0 !important;
+                }
+              `}</style>
+
+              {/* Add responsive container styles */}
+              <style jsx global>{`
+                /* Responsive video container */
+                .video-container {
+                  position: relative;
+                  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+                  height: 0;
+                  overflow: hidden;
+                  max-width: 100%;
+                  margin: 2rem 0;
+                }
+
+                .video-container iframe {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  border: 0;
+                }
+
+                /* Ensure all images maintain aspect ratio */
+                .prose img {
+                  max-width: 100%;
+                  height: auto;
+                  object-fit: contain;
+                }
+
+                /* Add margin to images for better spacing */
+                .prose img:not(.video-container img) {
+                  margin: 2rem auto;
                 }
               `}</style>
 
