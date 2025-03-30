@@ -79,18 +79,24 @@ useEffect(() => {
     setTableOfContents(headings);
   }
 
-  // Check if content contains YouTube videos
-  const hasYouTubeVideo = post.content && 
-    (post.content.includes('youtube.com/embed') || 
-     post.content.includes('youtu.be'));
-  
-  // Skip scroll tracking if YouTube videos are present
-  if (hasYouTubeVideo) {
-    console.log("YouTube video detected - disabling reading progress tracking");
-    setReadingProgress(0); // Reset progress
-    return; // Exit early - don't add scroll listener
-  }
+// Check if content contains YouTube videos or images
+const hasYouTubeVideo = post.content && 
+  (post.content.includes('youtube.com/embed') || 
+   post.content.includes('youtu.be'));
 
+// Check for image tags properly
+const hasImages = post.content && 
+  (post.content.includes('<img') || 
+   post.content.includes('image/'));
+
+// Skip scroll tracking if YouTube videos or images are present
+if (hasYouTubeVideo || hasImages) {
+  setReadingProgress(0); // Reset progress
+  return; // Exit early - don't add scroll listener
+}
+
+
+  
   // Only add scroll event listener if no YouTube videos present
   const updateReadingProgress = () => {
     const currentProgress = window.scrollY;
