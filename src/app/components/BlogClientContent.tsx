@@ -287,72 +287,102 @@ const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              {sortedPosts.map((post, index) => (
+            {sortedPosts.map((post, index) => (
   <motion.div
     key={post.id || post.slug}
     custom={index}
     initial="hidden"
     animate="visible"
     variants={cardVariants}
-    className="w-full" // Ensure full width on all screens
+    className="w-full"
   >
-    {/* Replace your Link and nested divs with this structure */}
     <Link 
       href={`/blog/${post.slug}`} 
-      className="block w-full h-full bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-800/90 
+      className="block w-full h-full bg-white dark:bg-slate-800 
         rounded-xl overflow-hidden 
-        shadow-[0_3px_10px_-1px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] 
-        dark:shadow-[0_3px_10px_-1px_rgba(0,0,0,0.3),0_2px_4px_-2px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.02)] 
-        hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(66,153,225,0.15)] 
-        dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_0_0_1px_rgba(66,153,225,0.08)]
-        border border-gray-300/60 dark:border-slate-600/60
-        hover:border-blue-200 dark:hover:border-blue-800/60
-        hover:bg-blue-50/50 dark:hover:bg-slate-700/80
-        transition-all duration-300 ease-out
-        active:bg-blue-100/70 dark:active:bg-slate-700/90
+        shadow-md dark:shadow-slate-700/20
+        border border-gray-200 dark:border-slate-700
+        active:bg-blue-50 dark:active:bg-slate-700
         touch-action-manipulation"
-      role="button"
-      aria-label={`Read article: ${post.title}`}> <div className="flex flex-row">
-      {/* Content section */}
-      <div className="p-4 flex-1 overflow-hidden flex flex-col">
+      prefetch={true}
+      onClick={(e) => {
+        // Force navigation on first tap
+        window.location.href = `/blog/${post.slug}`;
+      }}
+    >
+      <div className="flex flex-row">
+        {/* Content section */}
+        <div className="p-4 flex-1 overflow-hidden flex flex-col">
+          {/* ADD TITLE HERE - CRITICAL */}
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+            {post.title}
+          </h3>
 
-{/* Excerpt with proper 3-line clamp */}
-<p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-auto line-clamp-3">
-  {post.excerpt && post.excerpt.length > 220 
-    ? `${post.excerpt.substring(0, 200).trim()}...` 
-    : post.excerpt}
-</p>
+          {/* Excerpt */}
+          <p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-auto line-clamp-3">
+            {post.excerpt && post.excerpt.length > 220 
+              ? `${post.excerpt.substring(0, 200).trim()}...` 
+              : post.excerpt}
+          </p>
 
-                        {/* Date display */}
-                        <div className="flex items-center mt-2">
-                          <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
-                            <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                            {new Date(post.date).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'short', 
-                              day: 'numeric' 
-                            })}
-                          </span>
-                        </div>
-                      </div>
+          {/* Date display */}
+          <div className="flex items-center mt-2">
+          {/* Date display */}
+<div className="flex items-center mt-2">
+  <svg 
+    xmlns="http://www.w3.org/2000/svg" 
+    className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 mr-1" 
+    fill="none" 
+    viewBox="0 0 24 24" 
+    stroke="currentColor"
+  >
+    <path 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      strokeWidth={2} 
+      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
+    />
+  </svg>
+  <span className="text-xs text-gray-500 dark:text-gray-400">
+    {post.date 
+      ? new Date(post.date).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })
+      : 'No date available'}
+  </span>
+  
+  {/* If you have category information, display it */}
+  {post.categories && post.categories.length > 0 && (
+    <>
+      <span className="mx-1 text-gray-300 dark:text-gray-600">•</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400">
+        {Array.isArray(post.categories) 
+          ? post.categories[0] 
+          : post.categories}
+      </span>
+    </>
+  )}
+</div>
+          </div>
+        </div>
 
-                      {/* Responsive image: Square on mobile, rectangular on desktop */}
-                      <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3">
-                      <Image
-  src={post.featuredImage || defaultImage}
-  alt={post.title}
-  fill
-  className="object-cover rounded-md pointer-events-none" // ← Add this class
-  sizes="(max-width: 768px) 80px, 192px"
-  priority={index < 3}
-/>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
+        {/* Image */}
+        <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3 pointer-events-none">
+          <Image
+            src={post.featuredImage || defaultImage}
+            alt={post.title}
+            fill
+            className="object-cover rounded-md pointer-events-none"
+            sizes="(max-width: 768px) 80px, 192px"
+            priority={index < 3}
+          />
+        </div>
+      </div>
+    </Link>
+  </motion.div>
+))}
             </motion.div>
           )}
         </div>
