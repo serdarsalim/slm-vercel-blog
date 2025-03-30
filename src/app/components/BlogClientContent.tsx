@@ -262,7 +262,6 @@ const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
         </div>
       </section>
 
-      {/* Blog Post List Section */}
           {/* Blog Post List Section */}
       <section
         id="blog"
@@ -289,32 +288,33 @@ const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
               transition={{ duration: 0.3 }}
             >
               {sortedPosts.map((post, index) => (
-                <motion.div
-                  key={post.id || post.slug}
-                  custom={index}
-                  initial="hidden"
-                  animate="visible"
-                  variants={cardVariants}
-                  className="w-full" // Ensure full width on all screens
-                >
-                  <Link href={`/blog/${post.slug}`} className="block h-full">
-                    {/* Card with responsive layout */}
-                    <div className="flex flex-row bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-800/90 
-  rounded-xl overflow-hidden 
-  shadow-[0_3px_10px_-1px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] 
-  dark:shadow-[0_3px_10px_-1px_rgba(0,0,0,0.3),0_2px_4px_-2px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.02)] 
-  hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(66,153,225,0.15)] 
-  dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_0_0_1px_rgba(66,153,225,0.08)]
-  border border-gray-300/60 dark:border-slate-600/60
-  hover:border-blue-200 dark:hover:border-blue-800/60
-  hover:bg-blue-50/50 dark:hover:bg-slate-700/80
-  transform hover:-translate-y-0.5
-  transition-all duration-300 ease-out">                    {/* Content section */}
-                      <div className="p-4 flex-1 overflow-hidden flex flex-col">
-                        {/* Title: Normal on mobile, bold on desktop */}
-                        <h3 className="text-sm sm:text-lg font-bold line-clamp-3 sm:line-clamp-2 mb-1 text-slate-800 dark:text-gray-100">
-                          {post.title}
-                        </h3>
+  <motion.div
+    key={post.id || post.slug}
+    custom={index}
+    initial="hidden"
+    animate="visible"
+    variants={cardVariants}
+    className="w-full" // Ensure full width on all screens
+  >
+    {/* Replace your Link and nested divs with this structure */}
+    <Link 
+      href={`/blog/${post.slug}`} 
+      className="block w-full h-full bg-gradient-to-br from-white to-gray-50 dark:from-slate-800 dark:to-slate-800/90 
+        rounded-xl overflow-hidden 
+        shadow-[0_3px_10px_-1px_rgba(0,0,0,0.08),0_2px_4px_-2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] 
+        dark:shadow-[0_3px_10px_-1px_rgba(0,0,0,0.3),0_2px_4px_-2px_rgba(0,0,0,0.15),0_0_0_1px_rgba(255,255,255,0.02)] 
+        hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.15),0_0_0_1px_rgba(66,153,225,0.15)] 
+        dark:hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.5),0_0_0_1px_rgba(66,153,225,0.08)]
+        border border-gray-300/60 dark:border-slate-600/60
+        hover:border-blue-200 dark:hover:border-blue-800/60
+        hover:bg-blue-50/50 dark:hover:bg-slate-700/80
+        transition-all duration-300 ease-out
+        active:bg-blue-100/70 dark:active:bg-slate-700/90
+        touch-action-manipulation"
+      role="button"
+      aria-label={`Read article: ${post.title}`}> <div className="flex flex-row">
+      {/* Content section */}
+      <div className="p-4 flex-1 overflow-hidden flex flex-col">
 
 {/* Excerpt with proper 3-line clamp */}
 <p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-auto line-clamp-3">
@@ -340,14 +340,14 @@ const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
 
                       {/* Responsive image: Square on mobile, rectangular on desktop */}
                       <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3">
-                        <Image
-                          src={post.featuredImage || defaultImage}
-                          alt={post.title}
-                          fill
-                          className="object-cover rounded-md"
-                          sizes="(max-width: 768px) 80px, 192px"
-                          priority={index < 3}
-                        />
+                      <Image
+  src={post.featuredImage || defaultImage}
+  alt={post.title}
+  fill
+  className="object-cover rounded-md pointer-events-none" // ← Add this class
+  sizes="(max-width: 768px) 80px, 192px"
+  priority={index < 3}
+/>
                       </div>
                     </div>
                   </Link>

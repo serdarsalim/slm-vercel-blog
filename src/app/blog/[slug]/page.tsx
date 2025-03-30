@@ -667,7 +667,7 @@ processedContent = processedContent.replace(
                 }
               `}</style>
 
-              {/* Separate style block for font size and color handling */}
+              {/* Separate style block for font size and color handling hardware acc. for img and vid on mobile */}
 
               <style jsx global>{`
                 /* Base dark mode color handling */
@@ -698,6 +698,23 @@ processedContent = processedContent.replace(
                   filter: brightness(4) contrast(0.9) !important;
                   color: #e0e0e0 !important;
                 }
+
+
+.prose img {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* For video containers too */
+.video-container {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+
+
+
               `}</style>
 
               {/* Add responsive container styles */}
