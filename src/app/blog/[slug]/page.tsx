@@ -56,55 +56,54 @@ function BlogPostContent() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [processedContent, setProcessedContent] = useState("");
 
+  // Calculate reading progress on scroll and extract headings for TOC
+  useEffect(() => {
+    if (!post) return;
 
-  
-
-
-// Calculate reading progress on scroll and extract headings for TOC
-useEffect(() => {
-  if (!post) return;
-  
-  // Extract headings for the table of contents
-  if (post.content) {
-    // Extract headings code (keep as is)
-    const headings = [];
-    const regex = /<h([2-3])[^>]*>(.*?)<\/h\1>/g;
-    let match;
-    while ((match = regex.exec(post.content)) !== null) {
-      const level = match[1];
-      const text = match[2].replace(/<[^>]*>/g, "");
-      const id = text.toLowerCase().replace(/[^\w]+/g, "-");
-      headings.push({ id, text, level });
+    // Extract headings for the table of contents
+    if (post.content) {
+      // Extract headings code (keep as is)
+      const headings = [];
+      const regex = /<h([2-3])[^>]*>(.*?)<\/h\1>/g;
+      let match;
+      while ((match = regex.exec(post.content)) !== null) {
+        const level = match[1];
+        const text = match[2].replace(/<[^>]*>/g, "");
+        const id = text.toLowerCase().replace(/[^\w]+/g, "-");
+        headings.push({ id, text, level });
+      }
+      setTableOfContents(headings);
     }
-    setTableOfContents(headings);
-  }
 
-  // Check if content contains YouTube videos
-  const hasYouTubeVideo = post.content && 
-    (post.content.includes('youtube.com/embed') || 
-     post.content.includes('youtu.be'));
-  
-  // Skip scroll tracking if YouTube videos are present
-  if (hasYouTubeVideo) {
-    console.log("YouTube video detected - disabling reading progress tracking");
-    setReadingProgress(0); // Reset progress
-    return; // Exit early - don't add scroll listener
-  }
+    // Check if content contains YouTube videos
+    const hasYouTubeVideo =
+      post.content &&
+      (post.content.includes("youtube.com/embed") ||
+        post.content.includes("youtu.be"));
 
-  // Only add scroll event listener if no YouTube videos present
-  const updateReadingProgress = () => {
-    const currentProgress = window.scrollY;
-    const scrollHeight = document.body.scrollHeight - window.innerHeight;
-    if (scrollHeight) {
-      setReadingProgress(
-        Number((currentProgress / scrollHeight).toFixed(2)) * 100
+    // Skip scroll tracking if YouTube videos are present
+    if (hasYouTubeVideo) {
+      console.log(
+        "YouTube video detected - disabling reading progress tracking"
       );
+      setReadingProgress(0); // Reset progress
+      return; // Exit early - don't add scroll listener
     }
-  };
 
-  window.addEventListener("scroll", updateReadingProgress);
-  return () => window.removeEventListener("scroll", updateReadingProgress);
-}, [post]);
+    // Only add scroll event listener if no YouTube videos present
+    const updateReadingProgress = () => {
+      const currentProgress = window.scrollY;
+      const scrollHeight = document.body.scrollHeight - window.innerHeight;
+      if (scrollHeight) {
+        setReadingProgress(
+          Number((currentProgress / scrollHeight).toFixed(2)) * 100
+        );
+      }
+    };
+
+    window.addEventListener("scroll", updateReadingProgress);
+    return () => window.removeEventListener("scroll", updateReadingProgress);
+  }, [post]);
 
   // Add effect to detect dark mode changes
   useEffect(() => {
@@ -150,60 +149,79 @@ useEffect(() => {
     let processedContent = htmlContent;
 
     // Add this function inside processHtmlContent
-const processImageTag = (match) => {
-  // Extract src and other attributes
-  const srcMatch = match.match(/src=["']([^"']*)["']/i);
-  const src = srcMatch ? srcMatch[1] : '';
-  const classMatch = match.match(/class=["']([^"']*)["']/i);
-  const classAttr = classMatch ? ` class="${classMatch[1]}"` : '';
-  const altMatch = match.match(/alt=["']([^"']*)["']/i);
-  const alt = altMatch ? ` alt="${altMatch[1]}"` : '';
-  
-  // Preserve other attributes but override style
-  let otherAttrs = match.replace(/src=["'][^"']*["']/i, '')
-                       .replace(/style=["'][^"']*["']/i, '')
-                       .replace(/class=["'][^"']*["']/i, '')
-                       .replace(/alt=["'][^"']*["']/i, '')
-                       .replace(/<img\s/i, '')
-                       .replace(/>$/, '');
-  
-  // Create new image tag with responsive styling
-  return `<img src="${src}"${classAttr}${alt} style="max-width:100%;height:auto;object-fit:contain;" loading="lazy" ${otherAttrs}>`;
-};
+    const processImageTag = (match) => {
+      // Extract src and existing attributes
+      const srcMatch = match.match(/src=["']([^"']*)["']/i);
+      const src = srcMatch ? srcMatch[1] : '';
+      const widthMatch = match.match(/width=["'](\d+)["']/i);
+      const heightMatch = match.match(/height=["'](\d+)["']/i);
+      
+      // Extract class and alt attributes that are missing
+      const classMatch = match.match(/class=["']([^"']*)["']/i);
+      const altMatch = match.match(/alt=["']([^"']*)["']/i);
+      
+      // Use natural dimensions or defaults
+      const width = widthMatch ? widthMatch[1] : '800';
+      const height = heightMatch ? heightMatch[1] : '600';
+      
+      // Create class and alt strings with proper formatting
+      const classAttr = classMatch ? ` class="${classMatch[1]}"` : '';
+      const alt = altMatch ? ` alt="${altMatch[1]}"` : ' alt=""'; // Empty alt for accessibility
+    
+      // Preserve other attributes but override style
+      let otherAttrs = match
+        .replace(/src=["'][^"']*["']/i, "")
+        .replace(/style=["'][^"']*["']/i, "")
+        .replace(/class=["'][^"']*["']/i, "")
+        .replace(/alt=["'][^"']*["']/i, "")
+        .replace(/<img\s/i, "")
+        .replace(/>$/, "");
+    
+      // Create new image tag with responsive styling
+      return `<img 
+      src="${src}"${classAttr}${alt} 
+      width="${width}" 
+      height="${height}"
+      style="max-width:100%;height:auto;object-fit:contain;" 
+      loading="lazy" ${otherAttrs}>`;
+    };
 
-// Replace all image tags using the function
-processedContent = processedContent.replace(/<img[^>]*>/gi, processImageTag);
+    // Replace all image tags using the function
+    processedContent = processedContent.replace(
+      /<img[^>]*>/gi,
+      processImageTag
+    );
 
- // Update both YouTube regex replacements to include these parameters:
-processedContent = processedContent.replace(
-  /<iframe(.*?)src="https:\/\/www\.youtube\.com\/embed\/(.*?)"(.*?)><\/iframe>/g,
-  '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe$1src="https://www.youtube.com/embed/$2?enablejsapi=1&playsinline=1&rel=0"$3 style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
-);
+    // Update both YouTube regex replacements to include these parameters:
+    processedContent = processedContent.replace(
+      /<iframe(.*?)src="https:\/\/www\.youtube\.com\/embed\/(.*?)"(.*?)><\/iframe>/g,
+      '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe$1src="https://www.youtube.com/embed/$2?enablejsapi=1&playsinline=1&rel=0"$3 style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
+    );
 
-// And update the backup regex too:
-processedContent = processedContent.replace(
-  /<iframe(?:.*?)src="(?:(?:https?:)?\/\/)?(?:www\.)?youtube\.com\/embed\/([^"]+)"(?:.*?)><\/iframe>/gi,
-  '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe src="https://www.youtube.com/embed/$1?enablejsapi=1&playsinline=1&rel=0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
-);
-   // 2. Fix aspect ratio for images by adding specific styles
-processedContent = processedContent.replace(
-  /<img(.*?)style="([^"]*?)(width|height):[^"]*?(width|height):[^"]*?"(.*?)>/gi,
-  '<img$1style="max-width:100%;height:auto;object-fit:contain;"$5 loading="lazy">'
-);
+    // And update the backup regex too:
+    processedContent = processedContent.replace(
+      /<iframe(?:.*?)src="(?:(?:https?:)?\/\/)?(?:www\.)?youtube\.com\/embed\/([^"]+)"(?:.*?)><\/iframe>/gi,
+      '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe src="https://www.youtube.com/embed/$1?enablejsapi=1&playsinline=1&rel=0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
+    );
+    // 2. Fix aspect ratio for images by adding specific styles
+    processedContent = processedContent.replace(
+      /<img(.*?)style="([^"]*?)(width|height):[^"]*?(width|height):[^"]*?"(.*?)>/gi,
+      '<img$1style="max-width:100%;height:auto;object-fit:contain;"$5 loading="lazy">'
+    );
 
-// Handle images with style but no width/height
-processedContent = processedContent.replace(
-  /<img(.*?)style="(?!.*?(width|height))[^"]*?"(.*?)>/gi,
-  '<img$1style="max-width:100%;height:auto;object-fit:contain;"$3 loading="lazy">'
-);
+    // Handle images with style but no width/height
+    processedContent = processedContent.replace(
+      /<img(.*?)style="(?!.*?(width|height))[^"]*?"(.*?)>/gi,
+      '<img$1style="max-width:100%;height:auto;object-fit:contain;"$3 loading="lazy">'
+    );
 
-// Handle images with no style
-processedContent = processedContent.replace(
-  /<img(?![^>]*?style=)(.*?)>/gi,
-  '<img style="max-width:100%;height:auto;object-fit:contain;"$1 loading="lazy">'
-);
+    // Handle images with no style
+    processedContent = processedContent.replace(
+      /<img(?![^>]*?style=)(.*?)>/gi,
+      '<img style="max-width:100%;height:auto;object-fit:contain;"$1 loading="lazy">'
+    );
     // First process font sizes (keep this part)
-     processedContent = processedContent.replace(
+    processedContent = processedContent.replace(
       /style="([^"]*)font-size:\s*(\d+)px([^"]*)"/g,
       (match, before, size, after) => {
         let scaledValue = parseInt(size, 10);
@@ -725,6 +743,28 @@ processedContent = processedContent.replace(
                 /* Add margin to images for better spacing */
                 .prose img:not(.video-container img) {
                   margin: 2rem auto;
+                }
+              `}</style>
+
+              {/* Add this to your global styles */}
+              <style jsx global>{`
+                /* Prevent image flickering on mobile */
+                .prose img {
+                  max-width: 100%;
+                  height: auto;
+                  object-fit: contain;
+                  transform: translateZ(0); /* Hardware acceleration */
+                  backface-visibility: hidden; /* Prevents flickering */
+                  -webkit-font-smoothing: subpixel-antialiased; /* Better rendering */
+                  will-change: transform; /* Hint to browser */
+                  aspect-ratio: attr(width) / attr(height); /* Maintain ratio even before load */
+                }
+
+                /* Force hardware acceleration for containers */
+                .video-container,
+                .prose p:has(img) {
+                  transform: translateZ(0);
+                  backface-visibility: hidden;
                 }
               `}</style>
 
