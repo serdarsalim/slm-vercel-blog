@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Fuse from "fuse.js";
-import Link from "next/link";
-import Image from "next/image";
+import BlogPostCard from "./BlogPostCard" // Import the new component
 import type { BlogPost } from "@/app/types/blogpost";
 
 interface BlogClientContentProps {
@@ -23,34 +22,30 @@ export default function BlogClientContent({
   const [contentReady, setContentReady] = useState(false);
   
   // Create Fuse instance for search functionality
- const fuse = useMemo(
-  () => {
-    if (posts && posts.length > 0) {
-      return new Fuse(posts, {
-        keys: [
-          { name: 'title', weight: 1.8 },     // Higher weight for title
-          { name: 'excerpt', weight: 1.2 },   // Medium priority
-          { name: 'content', weight: 1.0 },   // Normal priority for content
-          { name: 'categories', weight: 1.5 } // High weight for categories
-        ],
-        threshold: 0.2,              // Strict threshold (requires 80% match)
-        ignoreLocation: true,        // Better for blog content
-        useExtendedSearch: false,    // Simpler algorithm
-        minMatchCharLength: 3,       // Keep minimum match length
-        distance: 200,               // Increased for content but not too large
-        includeScore: true,          // Include match score for debugging
-        
-        // Keep only these options
-        shouldSort: true,
-        findAllMatches: false
-        // tokenize and matchAllTokens removed
-      });
-    }
-    return null;
-  },
-  [posts]
-);
-
+  const fuse = useMemo(
+    () => {
+      if (posts && posts.length > 0) {
+        return new Fuse(posts, {
+          keys: [
+            { name: 'title', weight: 1.8 },     // Higher weight for title
+            { name: 'excerpt', weight: 1.2 },   // Medium priority
+            { name: 'content', weight: 1.0 },   // Normal priority for content
+            { name: 'categories', weight: 1.5 } // High weight for categories
+          ],
+          threshold: 0.2,              // Strict threshold (requires 80% match)
+          ignoreLocation: true,        // Better for blog content
+          useExtendedSearch: false,    // Simpler algorithm
+          minMatchCharLength: 3,       // Keep minimum match length
+          distance: 200,               // Increased for content but not too large
+          includeScore: true,          // Include match score for debugging
+          shouldSort: true,
+          findAllMatches: false
+        });
+      }
+      return null;
+    },
+    [posts]
+  );
 
   // Effect to delay rendering for proper UI loading sequence
   useEffect(() => {
@@ -79,41 +74,39 @@ export default function BlogClientContent({
     return null; // Return nothing until navbar has had time to load
   }
 
-// First apply filters and search to all posts
-const filteredPosts = searchTerm && fuse
-  ? fuse.search(searchTerm).map((result) => result.item)
-  : posts.filter((p) => {
-      // Show all posts if "all" is selected
-      if (selectedCategories.includes("all")) return true;
+  // First apply filters and search to all posts
+  const filteredPosts = searchTerm && fuse
+    ? fuse.search(searchTerm).map((result) => result.item)
+    : posts.filter((p) => {
+        // Show all posts if "all" is selected
+        if (selectedCategories.includes("all")) return true;
 
-      // Handle categories consistently as an array
-      const postCategories = Array.isArray(p.categories)
-        ? p.categories
-        : p.categories
-        ? [p.categories]
-        : [];
+        // Handle categories consistently as an array
+        const postCategories = Array.isArray(p.categories)
+          ? p.categories
+          : p.categories
+          ? [p.categories]
+          : [];
 
-      // Case-insensitive comparison with trimmed whitespace
-      return selectedCategories.some((selectedCat) =>
-        postCategories.some(
-          (postCat) =>
-            postCat &&
-            typeof postCat === "string" &&
-            postCat.toLowerCase().trim() === selectedCat.toLowerCase().trim()
-        )
-      );
-    });
+        // Case-insensitive comparison with trimmed whitespace
+        return selectedCategories.some((selectedCat) =>
+          postCategories.some(
+            (postCat) =>
+              postCat &&
+              typeof postCat === "string" &&
+              postCat.toLowerCase().trim() === selectedCat.toLowerCase().trim()
+          )
+        );
+      });
 
-// Separate featured and non-featured posts
-const featuredPosts = filteredPosts.filter(post => post.featured);
-const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
+  // Separate featured and non-featured posts
+  const featuredPosts = filteredPosts.filter(post => post.featured);
+  const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
 
-// Combine: featured posts first, then non-featured posts
-// Both groups maintain their original CSV order
-const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
-   
-
-
+  // Combine: featured posts first, then non-featured posts
+  // Both groups maintain their original CSV order
+  const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
+     
   // Calculate category counts for filter buttons
   const categoryCounts = posts.reduce((acc, post) => {
     const categories = Array.isArray(post.categories)
@@ -144,9 +137,6 @@ const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
       },
     }),
   };
-
-  // Default fallback image for posts without featured images
-  const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920";
 
   return (
     <>
@@ -182,56 +172,55 @@ const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
 
           {/* Category filters */}
           <div className="w-full flex flex-wrap justify-center gap-2 mb-6 select-none">
-          {[
-  { name: "all", count: posts.length },
-  ...Object.entries(categoryCounts)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count),
-].map(({ name, count }) => (
-  <motion.button
-    key={name}
-    whileHover={{ scale: 1.05 }}
-    whileTap={{ scale: 0.95 }}
-    onClick={() => handleCategoryClick(name)}
-    className={`
-      px-2 py-1 
-      rounded-lg 
-      transition-all 
-      duration-200 
-      font-normal
-      text-xs
-      flex items-center
-      z-10 relative
-      cursor-pointer
-      ${
-        selectedCategories.includes(name)
-          ? "bg-blue-200 text-slate-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-400 dark:border-blue-800"
-          : "bg-white dark:bg-slate-700 sm:hover:bg-blue-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
-      }
-    `}
-  >
-    <span>
-      {name === "all"
-        ? "All Posts"
-        : name.charAt(0).toUpperCase() + name.slice(1)}
-      <span
-        className={`
-          ml-1
-          inline-flex items-center justify-center 
-          w-4 h-4 
-          rounded-full text-[10px] font-medium
-          ${
-            selectedCategories.includes(name)
-              ? "bg-white text-blue-500 dark:bg-blue-800 dark:text-blue-200"
-              : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
-          }
-        `}
-      >
-        {count}
-      </span>
-    </span>
-  </motion.button>
-))}
+            {[
+              { name: "all", count: posts.length },
+              ...Object.entries(categoryCounts)
+                .map(([name, count]) => ({ name, count }))
+                .sort((a, b) => b.count - a.count),
+            ].map(({ name, count }) => (
+              <motion.button
+                key={name}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => handleCategoryClick(name)}
+                className={`
+                  px-2 py-1 
+                  rounded-lg 
+                  transition-all 
+                  duration-200 
+                  font-normal
+                  text-xs
+                  flex items-center
+                  z-10 relative
+                  cursor-pointer
+                  ${
+                    selectedCategories.includes(name)
+                      ? "bg-blue-200 text-slate-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-400 dark:border-blue-800"
+                      : "bg-white dark:bg-slate-700 sm:hover:bg-blue-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+                  }
+                `}
+              >
+                <span>
+                  {name === "all"
+                    ? "All Posts"
+                    : name.charAt(0).toUpperCase() + name.slice(1)}
+                  <span
+                    className={`
+                      ml-1
+                      inline-flex items-center justify-center 
+                      w-4 h-4 
+                      rounded-full text-[10px] font-medium
+                      ${
+                        selectedCategories.includes(name)
+                          ? "bg-white text-blue-500 dark:bg-blue-800 dark:text-blue-200"
+                          : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
+                      }
+                    `}
+                  >
+                    {count}
+                  </span>
+                </span>
+              </motion.button>
             ))}
           </div>
 
@@ -263,7 +252,7 @@ const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
         </div>
       </section>
 
-          {/* Blog Post List Section */}
+      {/* Blog Post List Section */}
       <section
         id="blog"
         className="py-10 bg-white dark:bg-slate-900 -mt-14 relative w-full"
@@ -288,102 +277,15 @@ const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-            {sortedPosts.map((post, index) => (
-  <motion.div
-    key={post.id || post.slug}
-    custom={index}
-    initial="hidden"
-    animate="visible"
-    variants={cardVariants}
-    className="w-full"
-  >
-    <Link 
-      href={`/blog/${post.slug}`} 
-      className="block w-full h-full bg-white dark:bg-slate-800 
-        rounded-xl overflow-hidden 
-        shadow-md dark:shadow-slate-700/20
-        border border-gray-200 dark:border-slate-700
-        active:bg-blue-50 dark:active:bg-slate-700
-        touch-action-manipulation"
-      prefetch={true}
-      onClick={(e) => {
-        // Force navigation on first tap
-        window.location.href = `/blog/${post.slug}`;
-      }}
-    >
-      <div className="flex flex-row">
-        {/* Content section */}
-        <div className="p-4 flex-1 overflow-hidden flex flex-col">
-          {/* ADD TITLE HERE - CRITICAL */}
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-            {post.title}
-          </h3>
-
-          {/* Excerpt */}
-          <p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-auto line-clamp-3">
-            {post.excerpt && post.excerpt.length > 220 
-              ? `${post.excerpt.substring(0, 200).trim()}...` 
-              : post.excerpt}
-          </p>
-
-          {/* Date display */}
-          <div className="flex items-center mt-2">
-          {/* Date display */}
-<div className="flex items-center mt-2">
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 mr-1" 
-    fill="none" 
-    viewBox="0 0 24 24" 
-    stroke="currentColor"
-  >
-    <path 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      strokeWidth={2} 
-      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" 
-    />
-  </svg>
-  <span className="text-xs text-gray-500 dark:text-gray-400">
-    {post.date 
-      ? new Date(post.date).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        })
-      : 'No date available'}
-  </span>
-  
-  {/* If you have category information, display it */}
-  {post.categories && post.categories.length > 0 && (
-    <>
-      <span className="mx-1 text-gray-300 dark:text-gray-600">•</span>
-      <span className="text-xs text-gray-500 dark:text-gray-400">
-        {Array.isArray(post.categories) 
-          ? post.categories[0] 
-          : post.categories}
-      </span>
-    </>
-  )}
-</div>
-          </div>
-        </div>
-
-        {/* Image */}
-        <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3 pointer-events-none">
-          <Image
-            src={post.featuredImage || defaultImage}
-            alt={post.title}
-            fill
-            className="object-cover rounded-md pointer-events-none"
-            sizes="(max-width: 768px) 80px, 192px"
-            priority={index < 3}
-          />
-        </div>
-      </div>
-    </Link>
-  </motion.div>
-))}
+              {/* Use our new BlogPostCard component */}
+              {sortedPosts.map((post, index) => (
+                <BlogPostCard 
+                  key={post.id || post.slug}
+                  post={post}
+                  index={index}
+                  cardVariants={cardVariants}
+                />
+              ))}
             </motion.div>
           )}
         </div>
