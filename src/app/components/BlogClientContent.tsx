@@ -182,55 +182,56 @@ const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
 
           {/* Category filters */}
           <div className="w-full flex flex-wrap justify-center gap-2 mb-6 select-none">
-            {[
-              { name: "all", count: posts.length },
-              ...Object.entries(categoryCounts)
-                .map(([name, count]) => ({ name, count }))
-                .sort((a, b) => b.count - a.count),
-            ].map(({ name, count }) => (
-              <motion.button
-                key={name}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleCategoryClick(name)}
-                className={`
-                  px-2 py-1 
-                  rounded-lg 
-                  transition-all 
-                  duration-200 
-                  font-normal
-                  text-xs
-                  flex items-center
-                  z-10 relative
-                  cursor-pointer
-                  ${
-                    selectedCategories.includes(name)
-                      ? "bg-blue-200 text-slate-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-400 dark:border-blue-800"
-                      : "bg-white dark:bg-slate-700 hover:bg-blue-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
-                  }
-                `}
-              >
-                <span>
-                  {name === "all"
-                    ? "All Posts"
-                    : name.charAt(0).toUpperCase() + name.slice(1)}
-                  <span
-                    className={`
-                      ml-1
-                      inline-flex items-center justify-center 
-                      w-4 h-4 
-                      rounded-full text-[10px] font-medium
-                      ${
-                        selectedCategories.includes(name)
-                          ? "bg-white text-blue-500 dark:bg-blue-800 dark:text-blue-200"
-                          : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
-                      }
-                    `}
-                  >
-                    {count}
-                  </span>
-                </span>
-              </motion.button>
+          {[
+  { name: "all", count: posts.length },
+  ...Object.entries(categoryCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count),
+].map(({ name, count }) => (
+  <motion.button
+    key={name}
+    whileHover={{ scale: 1.05 }}
+    whileTap={{ scale: 0.95 }}
+    onClick={() => handleCategoryClick(name)}
+    className={`
+      px-2 py-1 
+      rounded-lg 
+      transition-all 
+      duration-200 
+      font-normal
+      text-xs
+      flex items-center
+      z-10 relative
+      cursor-pointer
+      ${
+        selectedCategories.includes(name)
+          ? "bg-blue-200 text-slate-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-400 dark:border-blue-800"
+          : "bg-white dark:bg-slate-700 sm:hover:bg-blue-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+      }
+    `}
+  >
+    <span>
+      {name === "all"
+        ? "All Posts"
+        : name.charAt(0).toUpperCase() + name.slice(1)}
+      <span
+        className={`
+          ml-1
+          inline-flex items-center justify-center 
+          w-4 h-4 
+          rounded-full text-[10px] font-medium
+          ${
+            selectedCategories.includes(name)
+              ? "bg-white text-blue-500 dark:bg-blue-800 dark:text-blue-200"
+              : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
+          }
+        `}
+      >
+        {count}
+      </span>
+    </span>
+  </motion.button>
+))}
             ))}
           </div>
 
