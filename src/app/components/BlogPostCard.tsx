@@ -17,21 +17,36 @@ export default function BlogPostCard({
   post, 
   index, 
   cardVariants,
-  shouldAnimate = false  // We handle animation at the parent level now
+  shouldAnimate = false
 }: BlogPostCardProps) {
   // State to track if image is loaded
   const [imageLoaded, setImageLoaded] = useState(false);
-  // Track component mounted state to prevent memory leaks
+  // State to track if we're on a mobile device
+  const [isMobile, setIsMobile] = useState(false);
+  // Track component mounted state
   const [isMounted, setIsMounted] = useState(false);
 
-  // Set mounted state
+  // Set mounted state and detect mobile
   useEffect(() => {
     setIsMounted(true);
-    return () => setIsMounted(false);
+    
+    // Detect if we're on mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Check immediately and on resize
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      setIsMounted(false);
+    };
   }, []);
 
   // Default fallback image - use a small, fast-loading placeholder
-  const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920";
+  const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640";
 
   // Format date once
   const formattedDate = post.date 
@@ -54,11 +69,10 @@ export default function BlogPostCard({
       : post.excerpt;
   }, [post.excerpt]);
 
-  // Card content
   return (
     <Link
       href={`/blog/${post.slug}`}
-      prefetch={index < 3} // Only prefetch first few posts
+      prefetch={index < 3}
       className="w-full h-full block cursor-pointer touch-action-manipulation"
     >
       <div 
@@ -113,33 +127,33 @@ export default function BlogPostCard({
             </div>
           </div>
 
-          {/* Image with optimizations to prevent flicker */}
-          <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3 overflow-hidden transform-gpu bg-gray-100 dark:bg-gray-800 rounded-md">
+          {/* Image with modifications to ensure it works on mobile */}
+          <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800">
+            {/* Show placeholder immediately */}
+            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md" />
+            
+            {/* The image itself */}
             <Image
               src={post.featuredImage || defaultImage}
               alt={`${post.title} featured image`}
               fill
               className={`
-                object-cover 
-                transform-gpu will-change-transform
-                transition-opacity duration-300
+                object-cover
+                rounded-md
+                transition-opacity duration-200
                 ${imageLoaded ? 'opacity-100' : 'opacity-0'}
               `}
-              sizes="(max-width: 768px) 80px, 192px"
-              priority={index < 3}
-              loading={index < 10 ? "eager" : "lazy"}
+              sizes={isMobile ? "80px" : "192px"}
+              priority={index < 10} // Force priority for first 10
+              loading="eager" // Force eager loading
               onLoad={() => {
                 if (isMounted) setImageLoaded(true);
               }}
               onLoadingComplete={() => {
                 if (isMounted) setImageLoaded(true);
               }}
+              unoptimized={index < 10} // Bypass image optimization for first 10
             />
-            
-            {/* Show placeholder until image loads */}
-            {!imageLoaded && (
-              <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md"></div>
-            )}
           </div>
         </div>
       </div>

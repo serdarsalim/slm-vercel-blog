@@ -290,6 +290,66 @@ export default function BlogClientContent({
         .touch-element {
           touch-action: manipulation;
         }
+
+// Add this to your BlogClientContent.tsx inside the <style jsx global> tag
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Fix flickering images on mobile */
+img {
+  -webkit-transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Extra mobile image fixes */
+@media (max-width: 767px) {
+  img {
+    /* Force hardware acceleration on mobile */
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+  }
+  
+  /* Ensure image container doesn't cause rendering issues */
+  [class*="relative"] > img {
+    /* Force visibility */
+    opacity: 1 !important;
+    display: block !important;
+  }
+  
+  /* Force images to be visible on first 10 cards */
+  .blog-card:nth-child(-n+10) img {
+    opacity: 1 !important;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Optimize rendering */
+.blog-card {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  contain: content;
+}
+
+/* Remove 300ms touch delay */
+.touch-element {
+  touch-action: manipulation;
+}
+
       `}</style>
 
       {/* Hero Section */}
