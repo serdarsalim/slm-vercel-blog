@@ -32,11 +32,14 @@ export default function BlogClientContent({
   initialPosts,
   initialFeaturedPosts
 }: BlogClientContentProps) {
-  // For infinite scroll
-  const [visibleCount, setVisibleCount] = useState(10);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
+  // Modern approach - preload all but render incrementally
+  const [renderedCount, setRenderedCount] = useState(8);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const scrollObserverRef = useRef<HTMLDivElement>(null);
+  const lastScrollY = useRef(0);
+  const scrollDirection = useRef<'up' | 'down'>('down');
+  const ticking = useRef(false);
+  
   // Search state
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearchTerm = useDebounce(searchInput, 300);
@@ -44,12 +47,15 @@ export default function BlogClientContent({
   
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
+
+  // Track if the component is mounted
+  const isMounted = useRef(false);
   
   // Apply debounced search
   useEffect(() => {
     setSearchTerm(debouncedSearchTerm);
-    // Reset visible count when search changes
-    setVisibleCount(10);
+    // Reset render count when search changes
+    setRenderedCount(8);
   }, [debouncedSearchTerm]);
   
   // Create optimized Fuse instance for search
@@ -72,6 +78,14 @@ export default function BlogClientContent({
     [posts]
   );
 
+  // Mark component as mounted
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   // Handle category selection
   const handleCategoryClick = (cat: string) => {
     setSelectedCategories((prev) => {
@@ -81,112 +95,200 @@ export default function BlogClientContent({
         : [...prev.filter((c) => c !== "all"), cat];
       return newCategories.length === 0 ? ["all"] : newCategories;
     });
-    // Reset visible count when category changes
-    setVisibleCount(10);
+    // Reset render count when category changes
+    setRenderedCount(8);
   };
 
   // Apply filters and search
-  const filteredPosts = searchTerm && fuse
-    ? fuse.search(searchTerm).map((result) => result.item)
-    : posts.filter((p) => {
-        // Show all posts if "all" is selected
-        if (selectedCategories.includes("all")) return true;
-
-        // Handle categories consistently
-        const postCategories = Array.isArray(p.categories)
-          ? p.categories
-          : p.categories
-          ? [p.categories]
-          : [];
-
-        return selectedCategories.some((selectedCat) =>
-          postCategories.some(
-            (postCat) =>
-              postCat &&
-              typeof postCat === "string" &&
-              postCat.toLowerCase().trim() === selectedCat.toLowerCase().trim()
-          )
-        );
-      });
-
-  // Featured posts first, then regular posts
-  const featuredPosts = filteredPosts.filter(post => post.featured);
-  const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
-  const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
-  
-  // Get visible posts for the current scroll position
-  const visiblePosts = sortedPosts.slice(0, visibleCount);
-  const hasMorePosts = visibleCount < sortedPosts.length;
-  
-  // Infinite scroll using Intersection Observer
-  const observerCallback = useCallback(
-    (entries: IntersectionObserverEntry[]) => {
-      const [entry] = entries;
-      if (entry.isIntersecting && hasMorePosts && !isLoading) {
-        setIsLoading(true);
-        
-        // Add 5 more posts after a small delay
-        setTimeout(() => {
-          setVisibleCount(prev => Math.min(prev + 5, sortedPosts.length));
-          setIsLoading(false);
-        }, 300);
-      }
-    },
-    [hasMorePosts, isLoading, sortedPosts.length]
-  );
-
-  // Set up the observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(observerCallback, {
-      root: null,
-      rootMargin: '100px',
-      threshold: 0.1
-    });
-    
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
+  const filteredPosts = useMemo(() => {
+    if (searchTerm && fuse) {
+      return fuse.search(searchTerm).map((result) => result.item);
     }
     
-    return () => observer.disconnect();
-  }, [observerCallback]);
+    return posts.filter((p) => {
+      // Show all posts if "all" is selected
+      if (selectedCategories.includes("all")) return true;
+
+      // Handle categories consistently
+      const postCategories = Array.isArray(p.categories)
+        ? p.categories
+        : p.categories
+        ? [p.categories]
+        : [];
+
+      return selectedCategories.some((selectedCat) =>
+        postCategories.some(
+          (postCat) =>
+            postCat &&
+            typeof postCat === "string" &&
+            postCat.toLowerCase().trim() === selectedCat.toLowerCase().trim()
+        )
+      );
+    });
+  }, [posts, fuse, searchTerm, selectedCategories]);
+
+  // Featured posts first, then regular posts
+  const sortedPosts = useMemo(() => {
+    const featuredPosts = filteredPosts.filter(post => post.featured);
+    const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
+    return [...featuredPosts, ...nonFeaturedPosts];
+  }, [filteredPosts]);
+  
+  // Get only the rendered posts to be shown
+  const visiblePosts = useMemo(() => {
+    return sortedPosts.slice(0, renderedCount);
+  }, [sortedPosts, renderedCount]);
+  
+  // Check if there are more posts to load
+  const hasMorePosts = renderedCount < sortedPosts.length;
+
+  // Handle smooth incremental loading with proper scroll detection
+  // Note: This version doesn't use Intersection Observer for better control
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Update scroll direction
+    const updateScrollDirection = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY > lastScrollY.current) {
+        scrollDirection.current = 'down';
+      } else if (currentScrollY < lastScrollY.current) {
+        scrollDirection.current = 'up';
+      }
+      
+      lastScrollY.current = currentScrollY > 0 ? currentScrollY : 0;
+      ticking.current = false;
+    };
+
+    // Check if we should load more posts
+    const handleScroll = () => {
+      if (!ticking.current) {
+        window.requestAnimationFrame(() => {
+          updateScrollDirection();
+          
+          // Only try to load more when scrolling down
+          if (scrollDirection.current === 'down' && hasMorePosts && !isLoadingMore) {
+            const scrollPercentage = (window.scrollY + window.innerHeight) / document.body.scrollHeight;
+            
+            // When we're 75% down the page, load more
+            if (scrollPercentage > 0.75) {
+              loadMorePosts();
+            }
+          }
+          
+          ticking.current = false;
+        });
+        
+        ticking.current = true;
+      }
+    };
+
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMorePosts, isLoadingMore, sortedPosts.length]);
+
+  // Function to load more posts gradually
+  const loadMorePosts = useCallback(() => {
+    if (!hasMorePosts || isLoadingMore || !isMounted.current) return;
+    
+    setIsLoadingMore(true);
+    
+    // For very smooth loading, we'll add posts one by one with slight delays
+    const numPostsToAdd = Math.min(5, sortedPosts.length - renderedCount);
+    let postsAdded = 0;
+    
+    const addNextPost = () => {
+      if (!isMounted.current) return;
+      
+      setRenderedCount(prevCount => prevCount + 1);
+      postsAdded++;
+      
+      if (postsAdded < numPostsToAdd) {
+        // Add next post after a micro-delay (feels like streaming)
+        setTimeout(addNextPost, Math.random() * 100 + 50);
+      } else {
+        // All posts for this batch added
+        setIsLoadingMore(false);
+      }
+    };
+    
+    // Start adding posts
+    addNextPost();
+  }, [hasMorePosts, isLoadingMore, renderedCount, sortedPosts.length]);
   
   // Get category counts for filter buttons
-  const categoryCounts = posts.reduce((acc, post) => {
-    const categories = Array.isArray(post.categories)
-      ? post.categories
-      : post.categories
-      ? [post.categories]
-      : [];
+  const categoryCounts = useMemo(() => {
+    return posts.reduce((acc, post) => {
+      const categories = Array.isArray(post.categories)
+        ? post.categories
+        : post.categories
+        ? [post.categories]
+        : [];
+  
+      categories.forEach((cat) => {
+        if (cat) {
+          const lowerCat = cat.toLowerCase().trim();
+          acc[lowerCat] = (acc[lowerCat] || 0) + 1;
+        }
+      });
+      return acc;
+    }, {} as Record<string, number>);
+  }, [posts]);
 
-    categories.forEach((cat) => {
-      if (cat) {
-        const lowerCat = cat.toLowerCase().trim();
-        acc[lowerCat] = (acc[lowerCat] || 0) + 1;
-      }
-    });
-    return acc;
-  }, {} as Record<string, number>);
-
-  // Animation variants
+  // Animation variants - simplified for better performance
   const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i: number) => ({
-      opacity: 1,
+    hidden: { opacity: 0, y: 15 },
+    visible: { 
+      opacity: 1, 
       y: 0,
-      transition: {
-        delay: i * 0.05,
-        duration: 0.3,
-        ease: "easeOut", 
-      },
-    }),
+      transition: { duration: 0.25, ease: "easeOut" }
+    },
+    exit: { opacity: 0, transition: { duration: 0.15 } }
   };
 
   return (
     <>
-      {/* Add this style to fix tap highlight issues on mobile */}
+      {/* Critical styles for smooth scrolling and no flicker */}
       <style jsx global>{`
         * {
           -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Prevent flickering images during scrolling */
+        img {
+          -webkit-transform: translateZ(0);
+          -webkit-backface-visibility: hidden;
+          transform: translateZ(0);
+          backface-visibility: hidden;
+          will-change: transform;
+        }
+        
+        /* Smooth scrolling */
+        html {
+          scroll-behavior: smooth;
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+          html {
+            scroll-behavior: auto;
+          }
+        }
+        
+        /* Optimize rendering */
+        .blog-card {
+          transform: translateZ(0);
+          will-change: transform, opacity;
+          contain: content;
+        }
+        
+        /* Remove 300ms touch delay */
+        .touch-element {
+          touch-action: manipulation;
         }
       `}</style>
 
@@ -194,7 +296,9 @@ export default function BlogClientContent({
       <section className="py-10 bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
         <div className="max-w-3xl mx-auto px-4">
           <motion.div
-            initial={{ opacity: 1 }}
+            initial={{ opacity: 0.9 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
             className="relative text-center mb-6"
           >
             <h2 className="text-lg text-gray-600 dark:text-gray-400 font-semibold mb-4 select-none">
@@ -224,6 +328,7 @@ export default function BlogClientContent({
                   flex items-center
                   z-10 relative
                   cursor-pointer
+                  touch-element
                   ${
                     selectedCategories.includes(name)
                       ? "bg-blue-200 text-slate-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-400 dark:border-blue-800"
@@ -260,13 +365,13 @@ export default function BlogClientContent({
             <input
               type="text"
               placeholder="Search posts..."
-              className="w-full px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800"
+              className="w-full px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 touch-element"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
             {searchInput && (
               <button
-                className="absolute right-4 top-3 cursor-pointer"
+                className="absolute right-4 top-3 cursor-pointer touch-element"
                 onClick={() => {
                   setSearchInput("");
                   setSearchTerm("");
@@ -281,13 +386,17 @@ export default function BlogClientContent({
           
           {/* Search results indicator */}
           {searchTerm && (
-            <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4"
+            >
               {filteredPosts.length === 0
                 ? "No posts found matching your search"
                 : `Found ${filteredPosts.length} post${
                     filteredPosts.length === 1 ? "" : "s"
                   } matching "${searchTerm}"`}
-            </div>
+            </motion.div>
           )}
         </div>
       </section>
@@ -299,47 +408,67 @@ export default function BlogClientContent({
       >
         <div className="w-full px-4 mb-20 sm:max-w-3xl sm:mx-auto">
           {sortedPosts.length === 0 ? (
-            <div className="text-center py-12">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="text-center py-12"
+            >
               <p className="text-gray-400 dark:text-gray-500">
                 No posts found matching your criteria. Try a different search
                 term or category.
               </p>
-            </div>
+            </motion.div>
           ) : (
-            <div className="space-y-4">
-              {/* Show current posts */}
-              {visiblePosts.map((post, index) => (
-                <BlogPostCard 
-                  key={post.id || post.slug}
-                  post={post}
-                  index={index}
-                  cardVariants={cardVariants}
-                  shouldAnimate={index < 3} // Only animate first 3
-                />
-              ))}
+            <motion.div
+              initial={{ opacity: 0.8 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="space-y-3"
+            >
+              {/* Twitter-like animated entry for each post */}
+              <AnimatePresence initial={false}>
+                {visiblePosts.map((post, index) => (
+                  <motion.div
+                    key={post.id || post.slug}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={cardVariants}
+                    className="blog-card"
+                    layout
+                  >
+                    <BlogPostCard 
+                      post={post}
+                      index={index}
+                      cardVariants={cardVariants}
+                      shouldAnimate={false} // Handle animation here instead
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
               
-              {/* Loading more indicator */}
-              <div
-                ref={loadMoreRef}
-                className="py-4 flex justify-center items-center h-16"
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
-                    <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse delay-150"></div>
-                    <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse delay-300"></div>
-                  </div>
-                ) : hasMorePosts ? (
-                  <div className="text-sm text-gray-400 dark:text-gray-500">
-                    Scroll for more
-                  </div>
-                ) : sortedPosts.length > 0 ? (
-                  <div className="text-sm text-gray-400 dark:text-gray-500">
-                    You've reached the end
-                  </div>
-                ) : null}
-              </div>
-            </div>
+              {/* Invisible scroll trigger - no visible loading indicator */}
+              {hasMorePosts && (
+                <div 
+                  ref={scrollObserverRef} 
+                  className="h-1 opacity-0"
+                  aria-hidden="true"
+                />
+              )}
+              
+              {/* End message - only shown when no more posts */}
+              {!hasMorePosts && sortedPosts.length > 10 && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  className="text-center py-6 text-sm text-gray-400 dark:text-gray-500"
+                >
+                  You've seen all posts
+                </motion.div>
+              )}
+            </motion.div>
           )}
         </div>
       </section>

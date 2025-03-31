@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -17,12 +17,23 @@ export default function BlogPostCard({
   post, 
   index, 
   cardVariants,
-  shouldAnimate = true 
+  shouldAnimate = false  // We handle animation at the parent level now
 }: BlogPostCardProps) {
-  // Default fallback image
+  // State to track if image is loaded
+  const [imageLoaded, setImageLoaded] = useState(false);
+  // Track component mounted state to prevent memory leaks
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Set mounted state
+  useEffect(() => {
+    setIsMounted(true);
+    return () => setIsMounted(false);
+  }, []);
+
+  // Default fallback image - use a small, fast-loading placeholder
   const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920";
 
-  // Format date
+  // Format date once
   const formattedDate = post.date 
     ? new Date(post.date).toLocaleDateString('en-US', {
         year: 'numeric',
@@ -36,16 +47,18 @@ export default function BlogPostCard({
     ? post.categories[0] 
     : typeof post.categories === 'string' ? post.categories : null;
 
-  // Truncate excerpt
-  const truncatedExcerpt = post.excerpt && post.excerpt.length > 220 
-    ? `${post.excerpt.substring(0, 200).trim()}...` 
-    : post.excerpt;
+  // Truncate excerpt - memoize this to avoid re-computing on every render
+  const truncatedExcerpt = React.useMemo(() => {
+    return post.excerpt && post.excerpt.length > 220 
+      ? `${post.excerpt.substring(0, 200).trim()}...` 
+      : post.excerpt;
+  }, [post.excerpt]);
 
-  // Card content - extracted to reuse in both animated and non-animated versions
-  const CardContent = () => (
+  // Card content
+  return (
     <Link
       href={`/blog/${post.slug}`}
-      prefetch={index < 5} // Only prefetch first 5 posts
+      prefetch={index < 3} // Only prefetch first few posts
       className="w-full h-full block cursor-pointer touch-action-manipulation"
     >
       <div 
@@ -54,7 +67,8 @@ export default function BlogPostCard({
           shadow-md dark:shadow-slate-700/20
           border border-gray-200 dark:border-slate-700
           active:bg-blue-50 dark:active:bg-slate-700
-          transition-colors duration-150"
+          transition-colors duration-150
+          transform-gpu"
       >
         <div className="flex flex-row">
           {/* Content section */}
@@ -99,36 +113,36 @@ export default function BlogPostCard({
             </div>
           </div>
 
-          {/* Image */}
-          <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3">
+          {/* Image with optimizations to prevent flicker */}
+          <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3 overflow-hidden transform-gpu bg-gray-100 dark:bg-gray-800 rounded-md">
             <Image
               src={post.featuredImage || defaultImage}
               alt={`${post.title} featured image`}
               fill
-              className="object-cover rounded-md"
+              className={`
+                object-cover 
+                transform-gpu will-change-transform
+                transition-opacity duration-300
+                ${imageLoaded ? 'opacity-100' : 'opacity-0'}
+              `}
               sizes="(max-width: 768px) 80px, 192px"
               priority={index < 3}
+              loading={index < 10 ? "eager" : "lazy"}
+              onLoad={() => {
+                if (isMounted) setImageLoaded(true);
+              }}
+              onLoadingComplete={() => {
+                if (isMounted) setImageLoaded(true);
+              }}
             />
+            
+            {/* Show placeholder until image loads */}
+            {!imageLoaded && (
+              <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md"></div>
+            )}
           </div>
         </div>
       </div>
     </Link>
-  );
-
-  // Return either animated or static version based on shouldAnimate prop
-  return shouldAnimate ? (
-    <motion.div
-      custom={index}
-      initial="hidden"
-      animate="visible"
-      variants={cardVariants}
-      className="w-full"
-    >
-      <CardContent />
-    </motion.div>
-  ) : (
-    <div className="w-full">
-      <CardContent />
-    </div>
   );
 }
