@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Fuse from "fuse.js";
 import BlogPostCard from "./BlogPostCard";
@@ -11,7 +11,7 @@ interface BlogClientContentProps {
   initialFeaturedPosts: BlogPost[];
 }
 
-// Debounce hook for search input
+// Debounce hook for search
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
@@ -32,46 +32,39 @@ export default function BlogClientContent({
   initialPosts,
   initialFeaturedPosts
 }: BlogClientContentProps) {
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const postsPerPage = 10; // Show 10 posts per page
+  // For infinite scroll
+  const [visibleCount, setVisibleCount] = useState(10);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Search state - separate immediate input from applied search term for debouncing
+  // Search state
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearchTerm = useDebounce(searchInput, 300);
   const [searchTerm, setSearchTerm] = useState("");
   
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
-  const [isVisible, setIsVisible] = useState(false);
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
-  const [contentReady, setContentReady] = useState(false);
   
-  // Apply debounced search term
+  // Apply debounced search
   useEffect(() => {
     setSearchTerm(debouncedSearchTerm);
-    // Reset to first page when search changes
-    setCurrentPage(1);
+    // Reset visible count when search changes
+    setVisibleCount(10);
   }, [debouncedSearchTerm]);
   
-  // Create Fuse instance for search functionality - optimized!
+  // Create optimized Fuse instance for search
   const fuse = useMemo(
     () => {
       if (posts && posts.length > 0) {
         return new Fuse(posts, {
           keys: [
-            { name: 'title', weight: 1.8 },     // Higher weight for title
-            { name: 'excerpt', weight: 1.2 },   // Medium priority for excerpt
-            { name: 'categories', weight: 1.5 } // High weight for categories
-            // Removed 'content' which is expensive to search
+            { name: 'title', weight: 1.8 },
+            { name: 'excerpt', weight: 1.2 },
+            { name: 'categories', weight: 1.5 }
           ],
-          threshold: 0.2,              // Strict threshold (requires 80% match)
-          ignoreLocation: true,        // Better for blog content
-          useExtendedSearch: false,    // Simpler algorithm
-          minMatchCharLength: 3,       // Keep minimum match length
-          distance: 100,               // More conservative than default
-          includeScore: true,          // Include match score
-          shouldSort: true,            // Sort by score
-          findAllMatches: false        // Optimize performance
+          threshold: 0.2,
+          ignoreLocation: true,
+          minMatchCharLength: 3
         });
       }
       return null;
@@ -79,19 +72,7 @@ export default function BlogClientContent({
     [posts]
   );
 
-  // Effect to delay rendering for proper UI loading sequence
-  useEffect(() => {
-    setIsVisible(true);
-    
-    // Small delay to ensure navbar is loaded first
-    const timer = setTimeout(() => {
-      setContentReady(true);
-    }, 1);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Handle category selection logic
+  // Handle category selection
   const handleCategoryClick = (cat: string) => {
     setSelectedCategories((prev) => {
       if (cat === "all") return ["all"];
@@ -100,29 +81,24 @@ export default function BlogClientContent({
         : [...prev.filter((c) => c !== "all"), cat];
       return newCategories.length === 0 ? ["all"] : newCategories;
     });
-    // Reset to first page when category changes
-    setCurrentPage(1);
+    // Reset visible count when category changes
+    setVisibleCount(10);
   };
 
-  if (!contentReady) {
-    return null; // Return nothing until navbar has had time to load
-  }
-
-  // First apply filters and search to all posts
+  // Apply filters and search
   const filteredPosts = searchTerm && fuse
     ? fuse.search(searchTerm).map((result) => result.item)
     : posts.filter((p) => {
         // Show all posts if "all" is selected
         if (selectedCategories.includes("all")) return true;
 
-        // Handle categories consistently as an array
+        // Handle categories consistently
         const postCategories = Array.isArray(p.categories)
           ? p.categories
           : p.categories
           ? [p.categories]
           : [];
 
-        // Case-insensitive comparison with trimmed whitespace
         return selectedCategories.some((selectedCat) =>
           postCategories.some(
             (postCat) =>
@@ -133,20 +109,48 @@ export default function BlogClientContent({
         );
       });
 
-  // Separate featured and non-featured posts
+  // Featured posts first, then regular posts
   const featuredPosts = filteredPosts.filter(post => post.featured);
   const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
-
-  // Combine: featured posts first, then non-featured posts
   const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
-     
-  // Calculate pagination
-  const totalPages = Math.ceil(sortedPosts.length / postsPerPage);
-  const indexOfLastPost = currentPage * postsPerPage;
-  const indexOfFirstPost = indexOfLastPost - postsPerPage;
-  const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
   
-  // Calculate category counts for filter buttons
+  // Get visible posts for the current scroll position
+  const visiblePosts = sortedPosts.slice(0, visibleCount);
+  const hasMorePosts = visibleCount < sortedPosts.length;
+  
+  // Infinite scroll using Intersection Observer
+  const observerCallback = useCallback(
+    (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      if (entry.isIntersecting && hasMorePosts && !isLoading) {
+        setIsLoading(true);
+        
+        // Add 5 more posts after a small delay
+        setTimeout(() => {
+          setVisibleCount(prev => Math.min(prev + 5, sortedPosts.length));
+          setIsLoading(false);
+        }, 300);
+      }
+    },
+    [hasMorePosts, isLoading, sortedPosts.length]
+  );
+
+  // Set up the observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(observerCallback, {
+      root: null,
+      rootMargin: '100px',
+      threshold: 0.1
+    });
+    
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+    
+    return () => observer.disconnect();
+  }, [observerCallback]);
+  
+  // Get category counts for filter buttons
   const categoryCounts = posts.reduce((acc, post) => {
     const categories = Array.isArray(post.categories)
       ? post.categories
@@ -163,15 +167,15 @@ export default function BlogClientContent({
     return acc;
   }, {} as Record<string, number>);
 
-  // Animation variants for card appearance - simplified
+  // Animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
       transition: {
-        delay: i * 0.05, // Reduced delay
-        duration: 0.3,   // Faster animation
+        delay: i * 0.05,
+        duration: 0.3,
         ease: "easeOut", 
       },
     }),
@@ -179,6 +183,13 @@ export default function BlogClientContent({
 
   return (
     <>
+      {/* Add this style to fix tap highlight issues on mobile */}
+      <style jsx global>{`
+        * {
+          -webkit-tap-highlight-color: transparent;
+        }
+      `}</style>
+
       {/* Hero Section */}
       <section className="py-10 bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
         <div className="max-w-3xl mx-auto px-4">
@@ -186,24 +197,9 @@ export default function BlogClientContent({
             initial={{ opacity: 1 }}
             className="relative text-center mb-6"
           >
-            {/* Simplified animation */}
-            <motion.div
-              className="absolute -top-10 left-1/2 w-40 h-40 rounded-full bg-blue-100/60 dark:bg-blue-400/10 filter blur-3xl opacity-60 dark:opacity-30"
-              animate={{
-                y: [0, -10, 0],
-              }}
-              transition={{
-                repeat: Infinity,
-                duration: 6,
-                ease: "easeInOut",
-              }}
-            />
-
             <h2 className="text-lg text-gray-600 dark:text-gray-400 font-semibold mb-4 select-none">
               Digital notes on some interests. 🧶
             </h2>
-
-            <div className="absolute -z-10 inset-0 bg-gradient-radial from-blue-50/50 via-transparent to-transparent dark:from-blue-500/5 dark:via-transparent dark:to-transparent" />
           </motion.div>
 
           {/* Category filters */}
@@ -259,7 +255,7 @@ export default function BlogClientContent({
             ))}
           </div>
 
-          {/* Search bar with debounced input */}
+          {/* Search bar */}
           <div className="relative w-full mb-6">
             <input
               type="text"
@@ -268,27 +264,22 @@ export default function BlogClientContent({
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
-            <AnimatePresence>
-              {searchInput && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute right-4 top-3 cursor-pointer"
-                  onClick={() => {
-                    setSearchInput("");
-                    setSearchTerm("");
-                  }}
-                >
-                  <span className="text-gray-400 dark:text-gray-500 text-lg">
-                    ×
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {searchInput && (
+              <button
+                className="absolute right-4 top-3 cursor-pointer"
+                onClick={() => {
+                  setSearchInput("");
+                  setSearchTerm("");
+                }}
+              >
+                <span className="text-gray-400 dark:text-gray-500 text-lg">
+                  ×
+                </span>
+              </button>
+            )}
           </div>
           
-          {/* Search status indicator */}
+          {/* Search results indicator */}
           {searchTerm && (
             <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
               {filteredPosts.length === 0
@@ -301,115 +292,54 @@ export default function BlogClientContent({
         </div>
       </section>
 
-      {/* Blog Post List Section */}
+      {/* Blog Posts */}
       <section
         id="blog"
         className="py-10 bg-white dark:bg-slate-900 -mt-14 relative w-full"
       >
-        {/* Fixed container formatting */}
         <div className="w-full px-4 mb-20 sm:max-w-3xl sm:mx-auto">
-          {currentPosts.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12"
-            >
+          {sortedPosts.length === 0 ? (
+            <div className="text-center py-12">
               <p className="text-gray-400 dark:text-gray-500">
                 No posts found matching your criteria. Try a different search
                 term or category.
               </p>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
-              className="space-y-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              {/* Render current page posts - only animate first 3 */}
-              {currentPosts.map((post, index) => (
+            <div className="space-y-4">
+              {/* Show current posts */}
+              {visiblePosts.map((post, index) => (
                 <BlogPostCard 
                   key={post.id || post.slug}
                   post={post}
                   index={index}
                   cardVariants={cardVariants}
-                  shouldAnimate={index < 3} // Only animate first 3 posts
+                  shouldAnimate={index < 3} // Only animate first 3
                 />
               ))}
               
-              {/* Pagination controls */}
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-10 select-none">
-                  {/* Previous button */}
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className={`
-                      px-3 py-1 mx-1 rounded-md text-sm
-                      ${currentPage === 1
-                        ? "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 cursor-not-allowed"
-                        : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"}
-                    `}
-                  >
-                    &larr;
-                  </button>
-                  
-                  {/* Page numbers - show limited range around current page */}
-                  {Array.from({ length: totalPages }).map((_, i) => {
-                    // Show first page, last page, and 1 page before and after current
-                    const pageNum = i + 1;
-                    if (
-                      pageNum === 1 ||
-                      pageNum === totalPages ||
-                      (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
-                    ) {
-                      return (
-                        <button
-                          key={i}
-                          onClick={() => setCurrentPage(i + 1)}
-                          className={`
-                            px-3 py-1 mx-1 rounded-md text-sm
-                            ${currentPage === i + 1
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"}
-                          `}
-                        >
-                          {i + 1}
-                        </button>
-                      );
-                    }
-                    
-                    // Show ellipsis for gaps
-                    if (
-                      (pageNum === currentPage - 2 && pageNum > 2) ||
-                      (pageNum === currentPage + 2 && pageNum < totalPages - 1)
-                    ) {
-                      return (
-                        <span key={i} className="px-3 py-1 mx-1 text-gray-500">
-                          &hellip;
-                        </span>
-                      );
-                    }
-                    
-                    return null;
-                  })}
-                  
-                  {/* Next button */}
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className={`
-                      px-3 py-1 mx-1 rounded-md text-sm
-                      ${currentPage === totalPages
-                        ? "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 cursor-not-allowed"
-                        : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"}
-                    `}
-                  >
-                    &rarr;
-                  </button>
-                </div>
-              )}
-            </motion.div>
+              {/* Loading more indicator */}
+              <div
+                ref={loadMoreRef}
+                className="py-4 flex justify-center items-center h-16"
+              >
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                    <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse delay-150"></div>
+                    <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse delay-300"></div>
+                  </div>
+                ) : hasMorePosts ? (
+                  <div className="text-sm text-gray-400 dark:text-gray-500">
+                    Scroll for more
+                  </div>
+                ) : sortedPosts.length > 0 ? (
+                  <div className="text-sm text-gray-400 dark:text-gray-500">
+                    You've reached the end
+                  </div>
+                ) : null}
+              </div>
+            </div>
           )}
         </div>
       </section>

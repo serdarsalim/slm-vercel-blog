@@ -45,7 +45,7 @@ function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
           item.categories.split(',').map((cat: string) => cat.trim()) : 
           Array.isArray(item.categories) ? item.categories : []
         ) : [],
-      featuredImage: item.featuredImage || 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920',
+      featuredImage: item.featuredImage || 'https://unsplash.com/photos/phIFdC6lA4E/download?ixid=M3wxMjA3fDB8MXxzZWFyY2h8MTF8fG1vdW50YWluc3xlbnwwfHx8fDE3NDM0MDM1Mjl8MA&force=true&w=640',
       featured: item.featured === 'TRUE' || item.featured === 'true' || item.featured === true,
       comment: item.comment === 'TRUE' || item.comment === 'true' || item.comment === true || (item.comment === undefined),
       socmed: item.socmed === 'TRUE' || item.socmed === 'true' || item.socmed === true || (item.socmed === undefined)  
@@ -62,7 +62,7 @@ function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
       author: 'System',
       date: new Date().toISOString().split('T')[0],
       categories: ['error'],
-      featuredImage: 'https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920',
+      featuredImage: 'https://unsplash.com/photos/phIFdC6lA4E/download?ixid=M3wxMjA3fDB8MXxzZWFyY2h8MTF8fG1vdW50YWluc3xlbnwwfHx8fDE3NDM0MDM1Mjl8MA&force=true&w=640',
       featured: false,
       comment: false,
       socmed: false

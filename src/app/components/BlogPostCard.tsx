@@ -43,33 +43,19 @@ export default function BlogPostCard({
 
   // Card content - extracted to reuse in both animated and non-animated versions
   const CardContent = () => (
-    <div 
-      data-href={`/blog/${post.slug}`}
-      className="w-full h-full cursor-pointer" 
-      onClick={(e) => {
-        // Navigate immediately on tap
-        window.location.href = `/blog/${post.slug}`;
-        // Prevent other handlers from firing
-        e.preventDefault();
-        e.stopPropagation();
-      }}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        // Support keyboard navigation
-        if (e.key === 'Enter' || e.key === ' ') {
-          window.location.href = `/blog/${post.slug}`;
-          e.preventDefault();
-        }
-      }}
-      aria-label={`Read article: ${post.title}`}
+    <Link
+      href={`/blog/${post.slug}`}
+      prefetch={index < 5} // Only prefetch first 5 posts
+      className="w-full h-full block cursor-pointer touch-action-manipulation"
     >
-      <div className="bg-white dark:bg-slate-800 
-        rounded-xl overflow-hidden 
-        shadow-md dark:shadow-slate-700/20
-        border border-gray-200 dark:border-slate-700
-        active:bg-blue-50 dark:active:bg-slate-700
-        touch-action-manipulation">
+      <div 
+        className="bg-white dark:bg-slate-800 
+          rounded-xl overflow-hidden 
+          shadow-md dark:shadow-slate-700/20
+          border border-gray-200 dark:border-slate-700
+          active:bg-blue-50 dark:active:bg-slate-700
+          transition-colors duration-150"
+      >
         <div className="flex flex-row">
           {/* Content section */}
           <div className="p-4 flex-1 overflow-hidden flex flex-col">
@@ -126,7 +112,7 @@ export default function BlogPostCard({
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 
   // Return either animated or static version based on shouldAnimate prop

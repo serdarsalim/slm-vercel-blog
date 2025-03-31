@@ -1,9 +1,10 @@
-// src/app/page.tsx
+// src/app/page.tsx or src/app/blog/page.tsx
+import { Suspense } from "react";
 import { loadBlogPostsServer } from '@/app/utils/loadBlogServer';
 import BlogClientContent from "@/app/components/BlogClientContent";
 
-// This is now a Server Component (no "use client" directive)
-export default async function Home() {
+// Server Component (no "use client" directive)
+export default async function BlogPage() {
   // Fetch data server-side during rendering
   const posts = await loadBlogPostsServer();
   
