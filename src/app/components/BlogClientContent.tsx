@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Fuse from "fuse.js";
-import BlogPostCard from "./BlogPostCard" // Import the new component
+import BlogPostCard from "./BlogPostCard";
 import type { BlogPost } from "@/app/types/blogpost";
 
 interface BlogClientContentProps {
@@ -11,35 +11,67 @@ interface BlogClientContentProps {
   initialFeaturedPosts: BlogPost[];
 }
 
+// Debounce hook for search input
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export default function BlogClientContent({ 
   initialPosts,
   initialFeaturedPosts
 }: BlogClientContentProps) {
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const postsPerPage = 10; // Show 10 posts per page
+
+  // Search state - separate immediate input from applied search term for debouncing
+  const [searchInput, setSearchInput] = useState("");
+  const debouncedSearchTerm = useDebounce(searchInput, 300);
   const [searchTerm, setSearchTerm] = useState("");
+  
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [isVisible, setIsVisible] = useState(false);
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [contentReady, setContentReady] = useState(false);
   
-  // Create Fuse instance for search functionality
+  // Apply debounced search term
+  useEffect(() => {
+    setSearchTerm(debouncedSearchTerm);
+    // Reset to first page when search changes
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+  
+  // Create Fuse instance for search functionality - optimized!
   const fuse = useMemo(
     () => {
       if (posts && posts.length > 0) {
         return new Fuse(posts, {
           keys: [
             { name: 'title', weight: 1.8 },     // Higher weight for title
-            { name: 'excerpt', weight: 1.2 },   // Medium priority
-            { name: 'content', weight: 1.0 },   // Normal priority for content
+            { name: 'excerpt', weight: 1.2 },   // Medium priority for excerpt
             { name: 'categories', weight: 1.5 } // High weight for categories
+            // Removed 'content' which is expensive to search
           ],
           threshold: 0.2,              // Strict threshold (requires 80% match)
           ignoreLocation: true,        // Better for blog content
           useExtendedSearch: false,    // Simpler algorithm
           minMatchCharLength: 3,       // Keep minimum match length
-          distance: 200,               // Increased for content but not too large
-          includeScore: true,          // Include match score for debugging
-          shouldSort: true,
-          findAllMatches: false
+          distance: 100,               // More conservative than default
+          includeScore: true,          // Include match score
+          shouldSort: true,            // Sort by score
+          findAllMatches: false        // Optimize performance
         });
       }
       return null;
@@ -68,6 +100,8 @@ export default function BlogClientContent({
         : [...prev.filter((c) => c !== "all"), cat];
       return newCategories.length === 0 ? ["all"] : newCategories;
     });
+    // Reset to first page when category changes
+    setCurrentPage(1);
   };
 
   if (!contentReady) {
@@ -104,9 +138,14 @@ export default function BlogClientContent({
   const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
 
   // Combine: featured posts first, then non-featured posts
-  // Both groups maintain their original CSV order
   const sortedPosts = [...featuredPosts, ...nonFeaturedPosts];
      
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedPosts.length / postsPerPage);
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentPosts = sortedPosts.slice(indexOfFirstPost, indexOfLastPost);
+  
   // Calculate category counts for filter buttons
   const categoryCounts = posts.reduce((acc, post) => {
     const categories = Array.isArray(post.categories)
@@ -124,16 +163,16 @@ export default function BlogClientContent({
     return acc;
   }, {} as Record<string, number>);
 
-  // Animation variants for card appearance
+  // Animation variants for card appearance - simplified
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
       transition: {
-        delay: i * 0.1,
-        duration: 0.5,
-        ease: "easeOut",
+        delay: i * 0.05, // Reduced delay
+        duration: 0.3,   // Faster animation
+        ease: "easeOut", 
       },
     }),
   };
@@ -147,19 +186,16 @@ export default function BlogClientContent({
             initial={{ opacity: 1 }}
             className="relative text-center mb-6"
           >
-            {/* Floating shape animation */}
+            {/* Simplified animation */}
             <motion.div
               className="absolute -top-10 left-1/2 w-40 h-40 rounded-full bg-blue-100/60 dark:bg-blue-400/10 filter blur-3xl opacity-60 dark:opacity-30"
               animate={{
-                x: [0, 10, -10, 0],
-                y: [0, -10, 10, 0],
-                scale: [1, 1.05, 0.95, 1],
+                y: [0, -10, 0],
               }}
               transition={{
                 repeat: Infinity,
-                duration: 12,
+                duration: 6,
                 ease: "easeInOut",
-                delay: 0.5,
               }}
             />
 
@@ -180,13 +216,12 @@ export default function BlogClientContent({
             ].map(({ name, count }) => (
               <motion.button
                 key={name}
-                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleCategoryClick(name)}
                 className={`
                   px-2 py-1 
                   rounded-lg 
-                  transition-all 
+                  transition-colors
                   duration-200 
                   font-normal
                   text-xs
@@ -224,23 +259,26 @@ export default function BlogClientContent({
             ))}
           </div>
 
-          {/* Search bar */}
+          {/* Search bar with debounced input */}
           <div className="relative w-full mb-6">
             <input
               type="text"
               placeholder="Search posts..."
               className="w-full px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
             <AnimatePresence>
-              {searchTerm && (
+              {searchInput && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   className="absolute right-4 top-3 cursor-pointer"
-                  onClick={() => setSearchTerm("")}
+                  onClick={() => {
+                    setSearchInput("");
+                    setSearchTerm("");
+                  }}
                 >
                   <span className="text-gray-400 dark:text-gray-500 text-lg">
                     ×
@@ -249,6 +287,17 @@ export default function BlogClientContent({
               )}
             </AnimatePresence>
           </div>
+          
+          {/* Search status indicator */}
+          {searchTerm && (
+            <div className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+              {filteredPosts.length === 0
+                ? "No posts found matching your search"
+                : `Found ${filteredPosts.length} post${
+                    filteredPosts.length === 1 ? "" : "s"
+                  } matching "${searchTerm}"`}
+            </div>
+          )}
         </div>
       </section>
 
@@ -257,9 +306,9 @@ export default function BlogClientContent({
         id="blog"
         className="py-10 bg-white dark:bg-slate-900 -mt-14 relative w-full"
       >
-        {/* Fixed container formatting and made sure it's full width */}
+        {/* Fixed container formatting */}
         <div className="w-full px-4 mb-20 sm:max-w-3xl sm:mx-auto">
-          {sortedPosts.length === 0 ? (
+          {currentPosts.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -277,15 +326,89 @@ export default function BlogClientContent({
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Use our new BlogPostCard component */}
-              {sortedPosts.map((post, index) => (
+              {/* Render current page posts - only animate first 3 */}
+              {currentPosts.map((post, index) => (
                 <BlogPostCard 
                   key={post.id || post.slug}
                   post={post}
                   index={index}
                   cardVariants={cardVariants}
+                  shouldAnimate={index < 3} // Only animate first 3 posts
                 />
               ))}
+              
+              {/* Pagination controls */}
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-10 select-none">
+                  {/* Previous button */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className={`
+                      px-3 py-1 mx-1 rounded-md text-sm
+                      ${currentPage === 1
+                        ? "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 cursor-not-allowed"
+                        : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"}
+                    `}
+                  >
+                    &larr;
+                  </button>
+                  
+                  {/* Page numbers - show limited range around current page */}
+                  {Array.from({ length: totalPages }).map((_, i) => {
+                    // Show first page, last page, and 1 page before and after current
+                    const pageNum = i + 1;
+                    if (
+                      pageNum === 1 ||
+                      pageNum === totalPages ||
+                      (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className={`
+                            px-3 py-1 mx-1 rounded-md text-sm
+                            ${currentPage === i + 1
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"}
+                          `}
+                        >
+                          {i + 1}
+                        </button>
+                      );
+                    }
+                    
+                    // Show ellipsis for gaps
+                    if (
+                      (pageNum === currentPage - 2 && pageNum > 2) ||
+                      (pageNum === currentPage + 2 && pageNum < totalPages - 1)
+                    ) {
+                      return (
+                        <span key={i} className="px-3 py-1 mx-1 text-gray-500">
+                          &hellip;
+                        </span>
+                      );
+                    }
+                    
+                    return null;
+                  })}
+                  
+                  {/* Next button */}
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className={`
+                      px-3 py-1 mx-1 rounded-md text-sm
+                      ${currentPage === totalPages
+                        ? "bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 cursor-not-allowed"
+                        : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"}
+                    `}
+                  >
+                    &rarr;
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
         </div>
