@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import type { BlogPost } from "@/app/types/blogpost";
 
 interface BlogPostCardProps {
@@ -19,34 +18,33 @@ export default function BlogPostCard({
   cardVariants,
   shouldAnimate = false
 }: BlogPostCardProps) {
-  // State to track if image is loaded
-  const [imageLoaded, setImageLoaded] = useState(false);
-  // State to track if we're on a mobile device
-  const [isMobile, setIsMobile] = useState(false);
-  // Track component mounted state
   const [isMounted, setIsMounted] = useState(false);
 
-  // Set mounted state and detect mobile
+  // Set mounted state
   useEffect(() => {
     setIsMounted(true);
-    
-    // Detect if we're on mobile
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    // Check immediately and on resize
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-      setIsMounted(false);
-    };
+    return () => setIsMounted(false);
   }, []);
 
-  // Default fallback image - use a small, fast-loading placeholder
-  const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=640";
+  
+  // Get the correct thumbnail URL - 3 sizes for different devices
+  const getThumbnailUrl = (originalUrl: string) => {
+    if (!originalUrl) return '';
+    
+    // For Unsplash images
+    if (originalUrl.includes('unsplash.com')) {
+      // If URL already has width parameter, replace it
+      if (originalUrl.includes('&w=')) {
+        // Small thumbnail for mobile cards
+        return originalUrl.replace(/&w=\d+/, '&w=160');
+      } 
+      // If URL has no width param, add it
+      return `${originalUrl}&w=160`;
+    }
+    
+    // For other image sources, return as is (could be enhanced with more services)
+    return originalUrl;
+  };
 
   // Format date once
   const formattedDate = post.date 
@@ -62,12 +60,16 @@ export default function BlogPostCard({
     ? post.categories[0] 
     : typeof post.categories === 'string' ? post.categories : null;
 
-  // Truncate excerpt - memoize this to avoid re-computing on every render
+  // Truncate excerpt once
   const truncatedExcerpt = React.useMemo(() => {
     return post.excerpt && post.excerpt.length > 220 
       ? `${post.excerpt.substring(0, 200).trim()}...` 
       : post.excerpt;
   }, [post.excerpt]);
+
+  // Get image source with thumbnail optimization
+  const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=160";
+  const imageSource = post.featuredImage ? getThumbnailUrl(post.featuredImage) : defaultImage;
 
   return (
     <Link
@@ -127,32 +129,17 @@ export default function BlogPostCard({
             </div>
           </div>
 
-          {/* Image with modifications to ensure it works on mobile */}
-          <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800">
-            {/* Show placeholder immediately */}
-            <div className="absolute inset-0 bg-gray-200 dark:bg-gray-700 animate-pulse rounded-md" />
-            
-            {/* The image itself */}
+          {/* Image with small thumbnail and blur placeholder */}
+          <div className="relative w-20 h-20 sm:w-40 sm:h-32 flex-shrink-0 m-3 overflow-hidden rounded-md bg-gray-100 dark:bg-gray-800">
             <Image
-              src={post.featuredImage || defaultImage}
+              src={imageSource}
               alt={`${post.title} featured image`}
               fill
-              className={`
-                object-cover
-                rounded-md
-                transition-opacity duration-200
-                ${imageLoaded ? 'opacity-100' : 'opacity-0'}
-              `}
-              sizes={isMobile ? "80px" : "192px"}
-              priority={index < 10} // Force priority for first 10
-              loading="eager" // Force eager loading
-              onLoad={() => {
-                if (isMounted) setImageLoaded(true);
-              }}
-              onLoadingComplete={() => {
-                if (isMounted) setImageLoaded(true);
-              }}
-              unoptimized={index < 10} // Bypass image optimization for first 10
+              className="object-cover rounded-md"
+              sizes="(max-width: 640px) 80px, 160px"
+              priority={index < 8}
+
+              unoptimized={true} // Skip Next.js processing, we're already using optimized thumbnails
             />
           </div>
         </div>

@@ -47,9 +47,20 @@ export default function BlogClientContent({
   
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
+  const [isBrowser, setIsBrowser] = useState(false);
 
   // Track if the component is mounted
   const isMounted = useRef(false);
+  
+  // Set browser state for hydration safety
+  useEffect(() => {
+    setIsBrowser(true);
+    isMounted.current = true;
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   
   // Apply debounced search
   useEffect(() => {
@@ -77,14 +88,6 @@ export default function BlogClientContent({
     },
     [posts]
   );
-
-  // Mark component as mounted
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
 
   // Handle category selection
   const handleCategoryClick = (cat: string) => {
@@ -142,8 +145,7 @@ export default function BlogClientContent({
   // Check if there are more posts to load
   const hasMorePosts = renderedCount < sortedPosts.length;
 
-  // Handle smooth incremental loading with proper scroll detection
-  // Note: This version doesn't use Intersection Observer for better control
+  // Handle smooth incremental loading as user scrolls
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -265,7 +267,6 @@ export default function BlogClientContent({
           -webkit-backface-visibility: hidden;
           transform: translateZ(0);
           backface-visibility: hidden;
-          will-change: transform;
         }
         
         /* Smooth scrolling */
@@ -290,66 +291,13 @@ export default function BlogClientContent({
         .touch-element {
           touch-action: manipulation;
         }
-
-// Add this to your BlogClientContent.tsx inside the <style jsx global> tag
-
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Fix flickering images on mobile */
-img {
-  -webkit-transform: translateZ(0);
-  -webkit-backface-visibility: hidden;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  will-change: transform;
-}
-
-/* Extra mobile image fixes */
-@media (max-width: 767px) {
-  img {
-    /* Force hardware acceleration on mobile */
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
-  }
-  
-  /* Ensure image container doesn't cause rendering issues */
-  [class*="relative"] > img {
-    /* Force visibility */
-    opacity: 1 !important;
-    display: block !important;
-  }
-  
-  /* Force images to be visible on first 10 cards */
-  .blog-card:nth-child(-n+10) img {
-    opacity: 1 !important;
-  }
-}
-
-/* Smooth scrolling */
-html {
-  scroll-behavior: smooth;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-}
-
-/* Optimize rendering */
-.blog-card {
-  transform: translateZ(0);
-  will-change: transform, opacity;
-  contain: content;
-}
-
-/* Remove 300ms touch delay */
-.touch-element {
-  touch-action: manipulation;
-}
-
+        
+        /* Preload critical images */
+        @media (min-width: 640px) {
+          .blog-article-card-image {
+            content-visibility: auto;
+          }
+        }
       `}</style>
 
       {/* Hero Section */}
@@ -486,27 +434,29 @@ html {
               transition={{ duration: 0.4 }}
               className="space-y-3"
             >
-              {/* Twitter-like animated entry for each post */}
-              <AnimatePresence initial={false}>
-                {visiblePosts.map((post, index) => (
-                  <motion.div
-                    key={post.id || post.slug}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    variants={cardVariants}
-                    className="blog-card"
-                    layout
-                  >
-                    <BlogPostCard 
-                      post={post}
-                      index={index}
-                      cardVariants={cardVariants}
-                      shouldAnimate={false} // Handle animation here instead
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+              {/* Optimized rendering for better performance */}
+              {isBrowser && (
+                <>
+                  {visiblePosts.map((post, index) => (
+                    <motion.div
+                      key={post.id || post.slug}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      variants={cardVariants}
+                      className="blog-card"
+                      layout
+                    >
+                      <BlogPostCard 
+                        post={post}
+                        index={index}
+                        cardVariants={cardVariants}
+                        shouldAnimate={false}
+                      />
+                    </motion.div>
+                  ))}
+                </>
+              )}
               
               {/* Invisible scroll trigger - no visible loading indicator */}
               {hasMorePosts && (
