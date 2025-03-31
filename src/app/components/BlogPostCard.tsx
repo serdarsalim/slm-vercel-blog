@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { BlogPost } from "@/app/types/blogpost";
@@ -13,6 +13,7 @@ interface BlogPostCardProps {
 }
 
 export default function BlogPostCard({ post, index, cardVariants }: BlogPostCardProps) {
+  const router = useRouter();
   // Default fallback image
   const defaultImage = "https://unsplash.com/photos/HiqaKxosAUA/download?ixid=M3wxMjA3fDB8MXxhbGx8M3x8fHx8fHx8MTc0MjcxODI1MHw&force=true&w=1920";
 
@@ -35,43 +36,34 @@ export default function BlogPostCard({ post, index, cardVariants }: BlogPostCard
     ? `${post.excerpt.substring(0, 200).trim()}...` 
     : post.excerpt;
 
+  // Improved tap handler using Next.js router
+  const handleTap = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    router.push(`/blog/${post.slug}`);
+  };
+
   return (
-    <motion.div
+    <motion.article
       custom={index}
       initial="hidden"
       animate="visible"
       variants={cardVariants}
-      className="w-full"
+      className="w-full touch-none"
+      style={{ WebkitTapHighlightColor: 'transparent' }}
     >
-      {/* The wrapper div with data-href is the key to fixing the mobile tap issue */}
-      <div 
-        data-href={`/blog/${post.slug}`}
-        className="w-full h-full cursor-pointer" 
-        onClick={(e) => {
-          // Navigate immediately on tap
-          window.location.href = `/blog/${post.slug}`;
-          // Prevent other handlers from firing
-          e.preventDefault();
-          e.stopPropagation();
-        }}
-        role="link"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          // Support keyboard navigation
-          if (e.key === 'Enter' || e.key === ' ') {
-            window.location.href = `/blog/${post.slug}`;
-            e.preventDefault();
-          }
-        }}
+      {/* Single touchable area - simplified DOM hierarchy */}
+      <button 
+        onClick={handleTap}
+        className="w-full text-left focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 rounded-xl"
+        style={{ touchAction: 'manipulation' }}
         aria-label={`Read article: ${post.title}`}
       >
-        {/* Card contents */}
         <div className="bg-white dark:bg-slate-800 
           rounded-xl overflow-hidden 
           shadow-md dark:shadow-slate-700/20
           border border-gray-200 dark:border-slate-700
-          active:bg-blue-50 dark:active:bg-slate-700
-          touch-action-manipulation">
+          hover:bg-gray-50 dark:hover:bg-slate-700/50
+          active:bg-blue-50 dark:active:bg-slate-700">
           <div className="flex flex-row">
             {/* Content section */}
             <div className="p-4 flex-1 overflow-hidden flex flex-col">
@@ -79,12 +71,12 @@ export default function BlogPostCard({ post, index, cardVariants }: BlogPostCard
                 {post.title}
               </h3>
 
-              <p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-auto line-clamp-3">
+              <p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-auto line-clamp-3 pointer-events-none">
                 {truncatedExcerpt}
               </p>
 
               {/* Date display */}
-              <div className="flex items-center mt-2">
+              <div className="flex items-center mt-2 pointer-events-none">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
                   className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 mr-1" 
@@ -116,7 +108,7 @@ export default function BlogPostCard({ post, index, cardVariants }: BlogPostCard
             </div>
 
             {/* Image */}
-            <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3">
+            <div className="relative w-20 h-20 sm:w-48 sm:h-32 flex-shrink-0 m-3 pointer-events-none">
               <Image
                 src={post.featuredImage || defaultImage}
                 alt={`${post.title} featured image`}
@@ -124,11 +116,12 @@ export default function BlogPostCard({ post, index, cardVariants }: BlogPostCard
                 className="object-cover rounded-md"
                 sizes="(max-width: 768px) 80px, 192px"
                 priority={index < 3}
+                draggable={false}
               />
             </div>
           </div>
         </div>
-      </div>
-    </motion.div>
+      </button>
+    </motion.article>
   );
 }
