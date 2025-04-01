@@ -39,6 +39,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
+    // NEW: Check for test mode BEFORE requiring CSV content
+    if (body.test === true || body.test === 'true') {
+      console.log('API key test successful');
+      return NextResponse.json({ 
+        success: true, 
+        message: 'API key is valid' 
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
+
     // Ensure CSV content is provided
     if (!body.csvContent) {
       console.log('No CSV content provided');
