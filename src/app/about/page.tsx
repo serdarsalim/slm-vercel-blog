@@ -49,12 +49,12 @@ function AboutContent() {
               className="text-3xl md:text-4xl font-extrabold tracking-tight text-green-500 dark:text-red-400 mb-4 md:mb-6"
               tabIndex={0}
             >
-              Who's Serdar Salim? 
+              What's WriteAway
             </motion.h1>
 
             <div className="prose prose-lg text-gray-700 dark:text-gray-300 max-w-none">
               <p>
-I'm in my own world and this is my way.              </p>
+It's this next level blog that utilizes Google Sheets and Next.js to publish blog posts. Created by Serdar Domurcuk.       </p>
             </div>
           </div>
         </motion.div>
@@ -89,11 +89,11 @@ I'm in my own world and this is my way.              </p>
               transition={{ duration: 0.6, delay: 0.6 }}
             >
               <p className="text-gray-700 dark:text-gray-300">
-                Sheets Master - Google Sheets Templates
+                sheetsmaster.co - Free Google Sheets Templates
               </p>
 
               <p className="text-gray-700 dark:text-gray-300">
-               Free Budget Tracker
+               Simplifybudget.com - Get your Free Budget Tracker
               </p>
             </motion.div>
           </div>
@@ -129,12 +129,10 @@ I'm in my own world and this is my way.              </p>
             transition={{ duration: 0.8, delay: 0.7 }}
           >
             <p className="text-lg mb-4">
-              Have a spreadsheet problem you need solved? Want to suggest a new
-              template?
+              Have a suggestion or question?
             </p>
             <p className="text-lg mb-6">
-              I'd love to hear from you and potentially build exactly what you
-              need.
+              Let's discuss!
             </p>
 
             <motion.a
@@ -144,9 +142,9 @@ I'm in my own world and this is my way.              </p>
                 scale: 1.03,
                 backgroundColor: "rgba(234, 179, 8, 0.15)",
               }}
-              aria-label="Send email to Sheets Master"
+              aria-label="Get in touch!"
             >
-              contact@sheetsmaster.co
+              contact@writeaway.blog (not active yet)
             </motion.a>
           </motion.div>
 

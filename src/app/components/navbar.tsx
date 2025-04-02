@@ -62,7 +62,7 @@ export default function Navbar() {
           </div>
           
           <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-blue-300">
-            Serdar Salim
+           WriteAway
           </span>
         </Link>
 

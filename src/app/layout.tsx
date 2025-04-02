@@ -6,6 +6,8 @@ import Footer from "./components/footer";
 import { BlogProvider } from "./blogContext";
 import GoogleTagManager from "./components/GoogleTagManager";
 import Analytics from "./components/analytics";
+import { SpeedInsights } from '@vercel/speed-insights/next';
+
 
 // Keep your existing Inter font
 const inter = Inter({
@@ -47,6 +49,7 @@ export default function RootLayout({
         <BlogProvider>
           <Navbar />
           {children}
+          <SpeedInsights />
           <Footer />
         </BlogProvider>
       </body>

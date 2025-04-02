@@ -64,7 +64,7 @@ export default function Footer() {
       
       
       
-      <p>© {new Date().getFullYear()} Serdar Salim. All Rights Reserved.</p>
+      <p>© {new Date().getFullYear()} WriteAway. All Rights Reserved.</p>
     </footer>
   );
 }
