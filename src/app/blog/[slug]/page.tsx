@@ -12,7 +12,7 @@ export default function BlogPostPage() {
       <Suspense
         fallback={
           <div className="min-h-screen flex items-center justify-center">
-            <div className="animate-spin w-10 h-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+            <div className="animate-spin w-10 h-10 border-4 border-orange-500 rounded-full border-t-transparent"></div>
           </div>
         }
       >
@@ -162,7 +162,10 @@ if (hasYouTubeVideo || hasImages) {
   // Modified to accept isDarkMode as a parameter
   const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
     let processedContent = htmlContent;
-
+    htmlContent = htmlContent.replace(
+      /(?<!<p[^>]*>)(<br\s*\/?>\s*){2,}(?![^<]*<\/p>)/g,
+      '<div class="double-break"></div>'
+    );
     // Add this function inside processHtmlContent
 const processImageTag = (match) => {
   // Extract src and other attributes
@@ -308,7 +311,7 @@ processedContent = processedContent.replace(
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-10 h-10 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+        <div className="animate-spin w-10 h-10 border-4 border-orange-500 rounded-full border-t-transparent"></div>
       </div>
     );
   }
@@ -323,7 +326,7 @@ processedContent = processedContent.replace(
         </p>
         <Link
           href="/"
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
         >
           Return to Home
         </Link>
@@ -412,7 +415,7 @@ processedContent = processedContent.replace(
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 + idx * 0.1 }}
-                  className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 rounded-full"
+                  className="px-3 py-1 text-xs font-medium bg-orange-50 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 rounded-full"
                 >
                   {category}
                 </motion.span>
@@ -431,7 +434,7 @@ processedContent = processedContent.replace(
                   key={i}
                   href={`#${heading.id}`}
                   className={`
-                    block hover:text-blue-600 dark:hover:text-blue-400 transition-colors py-1
+                    block hover:text-orange-600 dark:hover:text-orange-400 transition-colors py-1
                     ${heading.level === "3" ? "pl-4 text-sm" : "font-medium"}
                     text-gray-700 dark:text-gray-300
                   `}
@@ -447,33 +450,36 @@ processedContent = processedContent.replace(
 
         {/* Main blog post content in a centered column */}
         <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className={`
-              prose prose-base md:prose-lg dark:prose-invert 
-            ${fontStyle === 'sans-serif' ? 'font-sans' : 'font-serif'}
-              [&>ul>li::marker]:text-blue-600 dark:[&>ul>li::marker]:text-blue-400
-              [&>ol>li::marker]:text-blue-600 dark:[&>ol>li::marker]:text-blue-400
-              prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:my-6
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.8, delay: 0.3 }}
+    className={`
+      prose prose-base md:prose-lg dark:prose-invert 
+      ${fontStyle === 'sans-serif' ? 'font-sans' : 'font-serif'}
+      px-0 md:px-10 lg:px-9
+            
+      
+             [&>ul>li::marker]:text-slate-800 dark:[&>ul>li::marker]:text-gray-200
+              [&>ol>li::marker]:text-slate-800 dark:[&>ol>li::marker]:text-gray-200
+             prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:my-3
               prose-headings:font-sans prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24
               prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6
               prose-h3:text-xl md:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4
               prose-headings:text-gray-900 dark:prose-headings:text-white
-              prose-a:text-blue-700 dark:prose-a:text-blue-400 prose-a:font-medium prose-a:no-underline hover:prose-a:underline
+              prose-a:text-orange-700 dark:prose-a:text-orange-400 prose-a:font-medium prose-a:no-underline hover:prose-a:underline
               prose-a:transition-colors prose-a:duration-200
               prose-img:rounded-none prose-img:shadow-md prose-img:mx-auto prose-img:my-8             
                prose-hr:my-12 prose-hr:border-gray-200 dark:prose-hr:border-gray-800
               prose-ol:pl-6 prose-ul:pl-6 prose-li:my-3 prose-li:text-gray-800 dark:prose-li:text-gray-200
               prose-ol:text-gray-800 dark:prose-ol:text-gray-200 prose-ul:text-gray-800 dark:prose-ul:text-gray-200
-              prose-code:font-normal prose-code:text-blue-700 dark:prose-code:text-blue-400
-              prose-code:bg-blue-50 dark:prose-code:bg-blue-900/20 prose-code:px-1.5 prose-code:py-0.5
+              prose-code:font-normal prose-code:text-orange-700 dark:prose-code:text-orange-400
+              prose-code:bg-orange-50 dark:prose-code:bg-orange-900/20 prose-code:px-1.5 prose-code:py-0.5
               prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
               prose-pre:bg-gray-900 dark:prose-pre:bg-gray-950 prose-pre:p-4 prose-pre:rounded-lg
               prose-pre:shadow-md prose-pre:overflow-x-auto prose-pre:text-sm prose-pre:my-8
-              prose-blockquote:border-l-4 prose-blockquote:border-blue-500
-              prose-blockquote:bg-blue-50/30 dark:prose-blockquote:bg-blue-900/10
+              prose-blockquote:border-l-4 prose-blockquote:border-orange-500
+              prose-blockquote:bg-orange-50/30 dark:prose-blockquote:bg-orange-900/10
               prose-blockquote:px-6 prose-blockquote:py-3 prose-blockquote:my-8
               prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300
               prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-white
@@ -511,7 +517,7 @@ processedContent = processedContent.replace(
                   </svg>
                   Back to Blog
                 </span>
-                <span className="text-lg font-medium text-blue-600 dark:text-blue-400 group-hover:underline">
+                <span className="text-lg font-medium text-orange-600 dark:text-orange-400 group-hover:underline">
                   View all articles
                 </span>
               </Link>
@@ -674,6 +680,19 @@ processedContent = processedContent.replace(
                iframe[src*="utteranc"].utterances-frame + h3 {
                   display: none !important;
                 }
+
+                  /* Keep standard paragraph spacing */
+  .prose p {
+    margin-top: 1em;
+    margin-bottom: 1em;
+  }
+  
+  /* Give extra spacing to our converted double breaks */
+  .prose .double-break {
+    margin-top: 1.5em;
+    margin-bottom: 1.5em;
+  }
+
               `}</style>
 
               {/* Separate style block for font size and color handling hardware acc. for img and vid on mobile */}
@@ -774,7 +793,7 @@ processedContent = processedContent.replace(
       <motion.button
         initial={{ opacity: 0 }}
         animate={{ opacity: readingProgress > 20 ? 1 : 0 }}
-        className="fixed bottom-20 right-6 p-3 rounded-full bg-blue-600 text-white shadow-lg z-30"
+        className="fixed bottom-20 right-6 p-3 rounded-full bg-orange-600 text-white shadow-lg z-30"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         aria-label="Back to top"
       >

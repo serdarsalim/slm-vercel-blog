@@ -301,7 +301,7 @@ export default function BlogClientContent({
       `}</style>
 
       {/* Hero Section */}
-      <section className="py-10 bg-gradient-to-b from-blue-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
+      <section className="py-10 bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
         <div className="max-w-3xl mx-auto px-4">
           <motion.div
             initial={{ opacity: 0.9 }}
@@ -339,8 +339,8 @@ export default function BlogClientContent({
                   touch-element
                   ${
                     selectedCategories.includes(name)
-                      ? "bg-blue-200 text-slate-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-400 dark:border-blue-800"
-                      : "bg-white dark:bg-slate-700 sm:hover:bg-blue-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+                      ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
+                      : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
                   }
                 `}
               >
@@ -356,7 +356,7 @@ export default function BlogClientContent({
                       rounded-full text-[10px] font-medium
                       ${
                         selectedCategories.includes(name)
-                          ? "bg-white text-blue-500 dark:bg-blue-800 dark:text-blue-200"
+                          ? "bg-white text-orange-500 dark:bg-orange-800 dark:text-orange-200"
                           : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
                       }
                     `}
@@ -373,7 +373,7 @@ export default function BlogClientContent({
             <input
               type="text"
               placeholder="Search posts..."
-              className="w-full px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-800 touch-element"
+              className="w-full px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 touch-element"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
