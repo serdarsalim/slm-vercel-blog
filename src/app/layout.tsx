@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Roboto_Mono } from "next/font/google";
+import { Inter, Roboto_Mono, Merriweather } from "next/font/google";
 import "./globals.css";
 import Navbar from "./components/navbar";
 import Footer from "./components/footer";
@@ -7,7 +7,7 @@ import { BlogProvider } from "./blogContext";
 import GoogleTagManager from "./components/GoogleTagManager";
 import Analytics from "./components/analytics";
 
-
+// Keep your existing Inter font
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
@@ -15,6 +15,14 @@ const inter = Inter({
 
 const robotoMono = Roboto_Mono({
   variable: "--font-mono",
+  subsets: ["latin"],
+});
+
+// Add Merriweather for serif
+const merriweather = Merriweather({
+  variable: "--font-serif",
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
   subsets: ["latin"],
 });
 
@@ -32,7 +40,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${robotoMono.variable} antialiased`}>
+      <body className={`${inter.variable} ${merriweather.variable} ${robotoMono.variable} antialiased`}>
         <GoogleTagManager gtmId={GTM_ID} />
         <Analytics />
         

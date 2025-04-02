@@ -356,14 +356,14 @@ processedContent = processedContent.replace(
       <div className="container mx-auto px-4 py-10">
         {/* Header Section */}
         <div className="max-w-3xl mx-auto mb-10">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="text-3xl md:text-4xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6 leading-tight"
-          >
-            {post.title}
-          </motion.h1>
+        <motion.h1
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.7 }}
+  className={`text-3xl md:text-4xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6 leading-tight ${fontStyle === 'sans-serif' ? 'font-sans' : 'font-serif'}`}
+>
+  {post.title}
+</motion.h1>
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
