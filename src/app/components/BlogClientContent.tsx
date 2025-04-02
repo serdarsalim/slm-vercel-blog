@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Fuse from "fuse.js";
 import BlogPostCard from "./BlogPostCard";
@@ -28,66 +34,63 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export default function BlogClientContent({ 
+export default function BlogClientContent({
   initialPosts,
-  initialFeaturedPosts
+  initialFeaturedPosts,
 }: BlogClientContentProps) {
   // Modern approach - preload all but render incrementally
   const [renderedCount, setRenderedCount] = useState(8);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const scrollObserverRef = useRef<HTMLDivElement>(null);
   const lastScrollY = useRef(0);
-  const scrollDirection = useRef<'up' | 'down'>('down');
+  const scrollDirection = useRef<"up" | "down">("down");
   const ticking = useRef(false);
-  
+
   // Search state
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearchTerm = useDebounce(searchInput, 300);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [isBrowser, setIsBrowser] = useState(false);
 
   // Track if the component is mounted
   const isMounted = useRef(false);
-  
+
   // Set browser state for hydration safety
   useEffect(() => {
     setIsBrowser(true);
     isMounted.current = true;
-    
+
     return () => {
       isMounted.current = false;
     };
   }, []);
-  
+
   // Apply debounced search
   useEffect(() => {
     setSearchTerm(debouncedSearchTerm);
     // Reset render count when search changes
     setRenderedCount(8);
   }, [debouncedSearchTerm]);
-  
+
   // Create optimized Fuse instance for search
-  const fuse = useMemo(
-    () => {
-      if (posts && posts.length > 0) {
-        return new Fuse(posts, {
-          keys: [
-            { name: 'title', weight: 1.8 },
-            { name: 'excerpt', weight: 1.2 },
-            { name: 'categories', weight: 1.5 }
-          ],
-          threshold: 0.2,
-          ignoreLocation: true,
-          minMatchCharLength: 3
-        });
-      }
-      return null;
-    },
-    [posts]
-  );
+  const fuse = useMemo(() => {
+    if (posts && posts.length > 0) {
+      return new Fuse(posts, {
+        keys: [
+          { name: "title", weight: 1.8 },
+          { name: "excerpt", weight: 1.2 },
+          { name: "categories", weight: 1.5 },
+        ],
+        threshold: 0.2,
+        ignoreLocation: true,
+        minMatchCharLength: 3,
+      });
+    }
+    return null;
+  }, [posts]);
 
   // Handle category selection
   const handleCategoryClick = (cat: string) => {
@@ -107,7 +110,7 @@ export default function BlogClientContent({
     if (searchTerm && fuse) {
       return fuse.search(searchTerm).map((result) => result.item);
     }
-    
+
     return posts.filter((p) => {
       // Show all posts if "all" is selected
       if (selectedCategories.includes("all")) return true;
@@ -132,33 +135,33 @@ export default function BlogClientContent({
 
   // Featured posts first, then regular posts
   const sortedPosts = useMemo(() => {
-    const featuredPosts = filteredPosts.filter(post => post.featured);
-    const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
+    const featuredPosts = filteredPosts.filter((post) => post.featured);
+    const nonFeaturedPosts = filteredPosts.filter((post) => !post.featured);
     return [...featuredPosts, ...nonFeaturedPosts];
   }, [filteredPosts]);
-  
+
   // Get only the rendered posts to be shown
   const visiblePosts = useMemo(() => {
     return sortedPosts.slice(0, renderedCount);
   }, [sortedPosts, renderedCount]);
-  
+
   // Check if there are more posts to load
   const hasMorePosts = renderedCount < sortedPosts.length;
 
   // Handle smooth incremental loading as user scrolls
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     // Update scroll direction
     const updateScrollDirection = () => {
       const currentScrollY = window.scrollY;
-      
+
       if (currentScrollY > lastScrollY.current) {
-        scrollDirection.current = 'down';
+        scrollDirection.current = "down";
       } else if (currentScrollY < lastScrollY.current) {
-        scrollDirection.current = 'up';
+        scrollDirection.current = "up";
       }
-      
+
       lastScrollY.current = currentScrollY > 0 ? currentScrollY : 0;
       ticking.current = false;
     };
@@ -168,48 +171,54 @@ export default function BlogClientContent({
       if (!ticking.current) {
         window.requestAnimationFrame(() => {
           updateScrollDirection();
-          
+
           // Only try to load more when scrolling down
-          if (scrollDirection.current === 'down' && hasMorePosts && !isLoadingMore) {
-            const scrollPercentage = (window.scrollY + window.innerHeight) / document.body.scrollHeight;
-            
+          if (
+            scrollDirection.current === "down" &&
+            hasMorePosts &&
+            !isLoadingMore
+          ) {
+            const scrollPercentage =
+              (window.scrollY + window.innerHeight) /
+              document.body.scrollHeight;
+
             // When we're 75% down the page, load more
             if (scrollPercentage > 0.75) {
               loadMorePosts();
             }
           }
-          
+
           ticking.current = false;
         });
-        
+
         ticking.current = true;
       }
     };
 
     // Add scroll listener
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, [hasMorePosts, isLoadingMore, sortedPosts.length]);
 
   // Function to load more posts gradually
   const loadMorePosts = useCallback(() => {
     if (!hasMorePosts || isLoadingMore || !isMounted.current) return;
-    
+
     setIsLoadingMore(true);
-    
+
     // For very smooth loading, we'll add posts one by one with slight delays
     const numPostsToAdd = Math.min(5, sortedPosts.length - renderedCount);
     let postsAdded = 0;
-    
+
     const addNextPost = () => {
       if (!isMounted.current) return;
-      
-      setRenderedCount(prevCount => prevCount + 1);
+
+      setRenderedCount((prevCount) => prevCount + 1);
       postsAdded++;
-      
+
       if (postsAdded < numPostsToAdd) {
         // Add next post after a micro-delay (feels like streaming)
         setTimeout(addNextPost, Math.random() * 100 + 50);
@@ -218,11 +227,11 @@ export default function BlogClientContent({
         setIsLoadingMore(false);
       }
     };
-    
+
     // Start adding posts
     addNextPost();
   }, [hasMorePosts, isLoadingMore, renderedCount, sortedPosts.length]);
-  
+
   // Get category counts for filter buttons
   const categoryCounts = useMemo(() => {
     return posts.reduce((acc, post) => {
@@ -231,7 +240,7 @@ export default function BlogClientContent({
         : post.categories
         ? [post.categories]
         : [];
-  
+
       categories.forEach((cat) => {
         if (cat) {
           const lowerCat = cat.toLowerCase().trim();
@@ -244,13 +253,21 @@ export default function BlogClientContent({
 
   // Animation variants - simplified for better performance
   const cardVariants = {
-    hidden: { opacity: 0, y: 15 },
-    visible: { 
-      opacity: 1, 
+    hidden: { opacity: 0, y: 20 },
+    visible: (i) => ({
+      opacity: 1,
       y: 0,
-      transition: { duration: 0.25, ease: "easeOut" }
+      transition: {
+        duration: 0.4,
+        ease: [0.25, 0.1, 0.25, 1], // Improved easing curve
+        delay: i * 0.05, // Staggered entrance
+      },
+    }),
+    exit: { opacity: 0, transition: { duration: 0.2 } },
+    hover: {
+  
+      transition: { duration: 0.2, ease: "easeOut" },
     },
-    exit: { opacity: 0, transition: { duration: 0.15 } }
   };
 
   return (
@@ -260,7 +277,7 @@ export default function BlogClientContent({
         * {
           -webkit-tap-highlight-color: transparent;
         }
-        
+
         /* Prevent flickering images during scrolling */
         img {
           -webkit-transform: translateZ(0);
@@ -268,30 +285,30 @@ export default function BlogClientContent({
           transform: translateZ(0);
           backface-visibility: hidden;
         }
-        
+
         /* Smooth scrolling */
         html {
           scroll-behavior: smooth;
         }
-        
+
         @media (prefers-reduced-motion: reduce) {
           html {
             scroll-behavior: auto;
           }
         }
-        
+
         /* Optimize rendering */
         .blog-card {
           transform: translateZ(0);
           will-change: transform, opacity;
           contain: content;
         }
-        
+
         /* Remove 300ms touch delay */
         .touch-element {
           touch-action: manipulation;
         }
-        
+
         /* Preload critical images */
         @media (min-width: 640px) {
           .blog-article-card-image {
@@ -391,10 +408,10 @@ export default function BlogClientContent({
               </button>
             )}
           </div>
-          
+
           {/* Search results indicator */}
           {searchTerm && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4"
@@ -440,14 +457,14 @@ export default function BlogClientContent({
                   {visiblePosts.map((post, index) => (
                     <motion.div
                       key={post.id || post.slug}
+                      custom={index} // Add custom prop for staggered animation
                       initial="hidden"
                       animate="visible"
                       exit="exit"
+                      whileHover="hover" // Add hover animation
                       variants={cardVariants}
-                      className="blog-card"
-                      layout
-                    >
-                      <BlogPostCard 
+                      className="blog-card border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:border-orange-200 dark:hover:border-orange-900/40 hover:shadow-[1px_1px_0_0_rgba(251,146,60,0.3)] dark:hover:shadow-[1px_1px_0_0_rgba(249,115,22,0.2)]"                    >
+                      <BlogPostCard
                         post={post}
                         index={index}
                         cardVariants={cardVariants}
@@ -457,19 +474,19 @@ export default function BlogClientContent({
                   ))}
                 </>
               )}
-              
+
               {/* Invisible scroll trigger - no visible loading indicator */}
               {hasMorePosts && (
-                <div 
-                  ref={scrollObserverRef} 
+                <div
+                  ref={scrollObserverRef}
                   className="h-1 opacity-0"
                   aria-hidden="true"
                 />
               )}
-              
+
               {/* End message - only shown when no more posts */}
               {!hasMorePosts && sortedPosts.length > 10 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.6, delay: 0.4 }}
