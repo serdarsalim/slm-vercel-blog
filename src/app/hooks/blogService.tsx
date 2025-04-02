@@ -85,6 +85,56 @@ export function useBlogPosts(initialPosts: BlogPost[] = []) {
   return { posts, loading };
 }
 
+
+// In src/app/hooks/blogService.ts (or wherever your blog service is)
+export async function getSettings() {
+  try {
+    const response = await fetch('https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv', {
+      cache: 'no-store' // Ensure we get fresh settings
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch settings');
+    }
+    
+    const csvText = await response.text();
+    const lines = csvText.split('\n');
+    
+    // Settings are on the second line (index 1), third column (index 2)
+    if (lines.length >= 2) {
+      const columns = lines[1].split(',');
+      if (columns.length >= 3) {
+        const fontStyle = columns[2].trim();
+        return { fontStyle };
+      }
+    }
+    
+    // Default if settings not found
+    return { fontStyle: 'serif' };
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    return { fontStyle: 'serif' }; // Default fallback
+  }
+}
+
+// Add a hook to use the settings
+export function useSettings() {
+  const [settings, setSettings] = useState({ fontStyle: 'serif' });
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadSettings() {
+      const fetchedSettings = await getSettings();
+      setSettings(fetchedSettings);
+      setLoading(false);
+    }
+    
+    loadSettings();
+  }, []);
+  
+  return { settings, loading };
+}
+
 // Hook for a single blog post by slug when used in a client component
 export function usePostBySlug(slug: string, initialPost: BlogPost | null = null) {
   const [post, setPost] = useState<BlogPost | null>(initialPost);

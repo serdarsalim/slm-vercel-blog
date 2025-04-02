@@ -3,10 +3,9 @@
 import { Suspense, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { usePostBySlug } from "@/app/hooks/blogService";
+import { usePostBySlug, getSettings } from "@/app/hooks/blogService"; 
 import Link from "next/link";
 import Utterances from "@/app/components/Utterances";
-
 export default function BlogPostPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white relative">
@@ -37,6 +36,7 @@ const openSharePopup = (url: string, title: string = "Share") => {
 };
 
 function BlogPostContent() {
+  const [fontStyle, setFontStyle] = useState('serif');
   const params = useParams();
   const router = useRouter();
   const slug =
@@ -57,7 +57,15 @@ function BlogPostContent() {
   const [processedContent, setProcessedContent] = useState("");
 
 
-  
+    // Add this effect to fetch settings
+    useEffect(() => {
+      async function fetchSettings() {
+        const { fontStyle } = await getSettings();
+        setFontStyle(fontStyle);
+      }
+      
+      fetchSettings();
+    }, []);
 
 
 // Calculate reading progress on scroll and extract headings for TOC... 
@@ -444,7 +452,8 @@ processedContent = processedContent.replace(
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
             className={`
-              prose prose-base md:prose-lg dark:prose-invert font-serif
+              prose prose-base md:prose-lg dark:prose-invert 
+            ${fontStyle === 'sans-serif' ? 'font-sans' : 'font-serif'}
               [&>ul>li::marker]:text-blue-600 dark:[&>ul>li::marker]:text-blue-400
               [&>ol>li::marker]:text-blue-600 dark:[&>ol>li::marker]:text-blue-400
               prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:my-6
