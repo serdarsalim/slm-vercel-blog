@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // NEW: Check for test mode BEFORE requiring CSV content
+    // Test mode check - keep this unchanged
     if (body.test === true || body.test === 'true') {
       console.log('API key test successful');
       return NextResponse.json({ 
@@ -52,26 +52,32 @@ export async function POST(request: NextRequest) {
       });
     }
 
-
     // Ensure CSV content is provided
     if (!body.csvContent) {
       console.log('No CSV content provided');
       return NextResponse.json({ error: 'No CSV content provided' }, { status: 400 });
     }
 
-    // Upload the CSV to Vercel Blob storage with consistent path and filename
-    console.log('Uploading CSV to Vercel Blob...');
-    const filename = 'blogPosts.csv'; // Fixed, consistent filename
+    // NEW: Determine filename based on sheetType
+    let filename = 'blogPosts.csv'; // Default to blog posts
     
-    // Upload the CSV to Blob storage
+    if (body.sheetType === 'settings') {
+      filename = 'settings.csv';
+      console.log('Processing settings data...');
+    } else {
+      console.log('Processing blog posts data...');
+    }
+
+    // Upload the CSV to Vercel Blob storage with consistent path and filename
+    console.log(`Uploading ${filename} to Vercel Blob...`);
+    
+    // Rest of the code remains the same
     const blob = await (async () => {
       try {
         const result = await put(filename, body.csvContent, {
           access: 'public',
           contentType: 'text/csv',
-          addRandomSuffix: false // Ensure no random suffix is added
-          // Note: 'overwrite' is not needed - using the same filename with addRandomSuffix:false
-          // will naturally overwrite the existing file
+          addRandomSuffix: false
         });
         
         console.log('CSV uploaded successfully, blob URL:', result.url);

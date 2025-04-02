@@ -1,11 +1,22 @@
+// In src/app/utils/apiUtils.ts
+// Add a new function to upload different sheet types
+
 /**
- * Tests if the revalidation API key is valid
- * @param secretToken The API key to test
+ * Uploads CSV data from a specific sheet to the blog
+ * @param secretToken The API key to use
  * @param apiUrl The full URL to your API endpoint
+ * @param csvContent The CSV content to upload
+ * @param sheetType The type of sheet ('posts' or 'settings')
  */
-export async function testApiKey(secretToken: string, apiUrl: string): Promise<{
+export async function uploadSheetData(
+  secretToken: string, 
+  apiUrl: string, 
+  csvContent: string, 
+  sheetType: 'posts' | 'settings' = 'posts'
+): Promise<{
   success: boolean;
   message: string;
+  url?: string;
   error?: string;
 }> {
   try {
@@ -16,29 +27,30 @@ export async function testApiKey(secretToken: string, apiUrl: string): Promise<{
       },
       body: JSON.stringify({
         secret: secretToken,
-        test: true
+        csvContent: csvContent,
+        sheetType: sheetType
       })
     });
 
-    // Parse the response
     const data = await response.json();
     
     if (response.ok && data.success) {
       return {
         success: true,
-        message: data.message || 'API key is valid'
+        message: data.message || 'Data uploaded successfully',
+        url: data.url
       };
     } else {
       return {
         success: false,
-        message: 'API key validation failed',
+        message: 'Failed to upload data',
         error: data.error || `Error code: ${response.status}`
       };
     }
   } catch (error) {
     return {
       success: false,
-      message: 'Error testing API key',
+      message: 'Error uploading data',
       error: error.message || 'Unknown error'
     };
   }
