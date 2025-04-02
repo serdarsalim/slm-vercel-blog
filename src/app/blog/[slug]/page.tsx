@@ -60,7 +60,7 @@ function BlogPostContent() {
   
 
 
-// Calculate reading progress on scroll and extract headings for TOC
+// Calculate reading progress on scroll and extract headings for TOC... 
 useEffect(() => {
   if (!post) return;
   
