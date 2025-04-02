@@ -3,7 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { usePostBySlug, getSettings } from "@/app/hooks/blogService"; 
+import { usePostBySlug, getSettings } from "@/app/hooks/blogService";
 import Link from "next/link";
 import Utterances from "@/app/components/Utterances";
 export default function BlogPostPage() {
@@ -36,7 +36,7 @@ const openSharePopup = (url: string, title: string = "Share") => {
 };
 
 function BlogPostContent() {
-  const [fontStyle, setFontStyle] = useState('serif');
+  const [fontStyle, setFontStyle] = useState("serif");
   const params = useParams();
   const router = useRouter();
   const slug =
@@ -56,69 +56,66 @@ function BlogPostContent() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [processedContent, setProcessedContent] = useState("");
 
+  // Add this effect to fetch settings
+  useEffect(() => {
+    async function fetchSettings() {
+      const { fontStyle } = await getSettings();
+      setFontStyle(fontStyle);
+    }
 
-    // Add this effect to fetch settings
-    useEffect(() => {
-      async function fetchSettings() {
-        const { fontStyle } = await getSettings();
-        setFontStyle(fontStyle);
+    fetchSettings();
+  }, []);
+
+  // Calculate reading progress on scroll and extract headings for TOC...
+  useEffect(() => {
+    if (!post) return;
+
+    // Extract headings for the table of contents
+    if (post.content) {
+      // Extract headings code (keep as is)
+      const headings = [];
+      const regex = /<h([2-3])[^>]*>(.*?)<\/h\1>/g;
+      let match;
+      while ((match = regex.exec(post.content)) !== null) {
+        const level = match[1];
+        const text = match[2].replace(/<[^>]*>/g, "");
+        const id = text.toLowerCase().replace(/[^\w]+/g, "-");
+        headings.push({ id, text, level });
       }
-      
-      fetchSettings();
-    }, []);
-
-
-// Calculate reading progress on scroll and extract headings for TOC... 
-useEffect(() => {
-  if (!post) return;
-  
-  // Extract headings for the table of contents
-  if (post.content) {
-    // Extract headings code (keep as is)
-    const headings = [];
-    const regex = /<h([2-3])[^>]*>(.*?)<\/h\1>/g;
-    let match;
-    while ((match = regex.exec(post.content)) !== null) {
-      const level = match[1];
-      const text = match[2].replace(/<[^>]*>/g, "");
-      const id = text.toLowerCase().replace(/[^\w]+/g, "-");
-      headings.push({ id, text, level });
+      setTableOfContents(headings);
     }
-    setTableOfContents(headings);
-  }
 
-// Check if content contains YouTube videos or images
-const hasYouTubeVideo = post.content && 
-  (post.content.includes('youtube.com/embed') || 
-   post.content.includes('youtu.be'));
+    // Check if content contains YouTube videos or images
+    const hasYouTubeVideo =
+      post.content &&
+      (post.content.includes("youtube.com/embed") ||
+        post.content.includes("youtu.be"));
 
-// Check for image tags properly
-const hasImages = post.content && 
-  (post.content.includes('<img') || 
-   post.content.includes('image/'));
+    // Check for image tags properly
+    const hasImages =
+      post.content &&
+      (post.content.includes("<img") || post.content.includes("image/"));
 
-// Skip scroll tracking if YouTube videos or images are present
-if (hasYouTubeVideo || hasImages) {
-  setReadingProgress(0); // Reset progress
-  return; // Exit early - don't add scroll listener
-}
-
-
-  
-  // Only add scroll event listener if no YouTube videos present
-  const updateReadingProgress = () => {
-    const currentProgress = window.scrollY;
-    const scrollHeight = document.body.scrollHeight - window.innerHeight;
-    if (scrollHeight) {
-      setReadingProgress(
-        Number((currentProgress / scrollHeight).toFixed(2)) * 100
-      );
+    // Skip scroll tracking if YouTube videos or images are present
+    if (hasYouTubeVideo || hasImages) {
+      setReadingProgress(0); // Reset progress
+      return; // Exit early - don't add scroll listener
     }
-  };
 
-  window.addEventListener("scroll", updateReadingProgress);
-  return () => window.removeEventListener("scroll", updateReadingProgress);
-}, [post]);
+    // Only add scroll event listener if no YouTube videos present
+    const updateReadingProgress = () => {
+      const currentProgress = window.scrollY;
+      const scrollHeight = document.body.scrollHeight - window.innerHeight;
+      if (scrollHeight) {
+        setReadingProgress(
+          Number((currentProgress / scrollHeight).toFixed(2)) * 100
+        );
+      }
+    };
+
+    window.addEventListener("scroll", updateReadingProgress);
+    return () => window.removeEventListener("scroll", updateReadingProgress);
+  }, [post]);
 
   // Add effect to detect dark mode changes
   useEffect(() => {
@@ -167,60 +164,64 @@ if (hasYouTubeVideo || hasImages) {
       '<div class="double-break"></div>'
     );
     // Add this function inside processHtmlContent
-const processImageTag = (match) => {
-  // Extract src and other attributes
-  const srcMatch = match.match(/src=["']([^"']*)["']/i);
-  const src = srcMatch ? srcMatch[1] : '';
-  const classMatch = match.match(/class=["']([^"']*)["']/i);
-  const classAttr = classMatch ? ` class="${classMatch[1]}"` : '';
-  const altMatch = match.match(/alt=["']([^"']*)["']/i);
-  const alt = altMatch ? ` alt="${altMatch[1]}"` : '';
-  
-  // Preserve other attributes but override style
-  let otherAttrs = match.replace(/src=["'][^"']*["']/i, '')
-                       .replace(/style=["'][^"']*["']/i, '')
-                       .replace(/class=["'][^"']*["']/i, '')
-                       .replace(/alt=["'][^"']*["']/i, '')
-                       .replace(/<img\s/i, '')
-                       .replace(/>$/, '');
-  
-  // Create new image tag with responsive styling
-  return `<img src="${src}"${classAttr}${alt} style="max-width:100%;height:auto;object-fit:contain;" loading="lazy" ${otherAttrs}>`;
-};
+    const processImageTag = (match) => {
+      // Extract src and other attributes
+      const srcMatch = match.match(/src=["']([^"']*)["']/i);
+      const src = srcMatch ? srcMatch[1] : "";
+      const classMatch = match.match(/class=["']([^"']*)["']/i);
+      const classAttr = classMatch ? ` class="${classMatch[1]}"` : "";
+      const altMatch = match.match(/alt=["']([^"']*)["']/i);
+      const alt = altMatch ? ` alt="${altMatch[1]}"` : "";
 
-// Replace all image tags using the function
-processedContent = processedContent.replace(/<img[^>]*>/gi, processImageTag);
+      // Preserve other attributes but override style
+      let otherAttrs = match
+        .replace(/src=["'][^"']*["']/i, "")
+        .replace(/style=["'][^"']*["']/i, "")
+        .replace(/class=["'][^"']*["']/i, "")
+        .replace(/alt=["'][^"']*["']/i, "")
+        .replace(/<img\s/i, "")
+        .replace(/>$/, "");
 
- // Update both YouTube regex replacements to include these parameters:
-processedContent = processedContent.replace(
-  /<iframe(.*?)src="https:\/\/www\.youtube\.com\/embed\/(.*?)"(.*?)><\/iframe>/g,
-  '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe$1src="https://www.youtube.com/embed/$2?enablejsapi=1&playsinline=1&rel=0"$3 style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
-);
+      // Create new image tag with responsive styling
+      return `<img src="${src}"${classAttr}${alt} style="max-width:100%;height:auto;object-fit:contain;" loading="lazy" ${otherAttrs}>`;
+    };
 
-// And update the backup regex too:
-processedContent = processedContent.replace(
-  /<iframe(?:.*?)src="(?:(?:https?:)?\/\/)?(?:www\.)?youtube\.com\/embed\/([^"]+)"(?:.*?)><\/iframe>/gi,
-  '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe src="https://www.youtube.com/embed/$1?enablejsapi=1&playsinline=1&rel=0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
-);
-   // 2. Fix aspect ratio for images by adding specific styles
-processedContent = processedContent.replace(
-  /<img(.*?)style="([^"]*?)(width|height):[^"]*?(width|height):[^"]*?"(.*?)>/gi,
-  '<img$1style="max-width:100%;height:auto;object-fit:contain;"$5 loading="lazy">'
-);
+    // Replace all image tags using the function
+    processedContent = processedContent.replace(
+      /<img[^>]*>/gi,
+      processImageTag
+    );
 
-// Handle images with style but no width/height
-processedContent = processedContent.replace(
-  /<img(.*?)style="(?!.*?(width|height))[^"]*?"(.*?)>/gi,
-  '<img$1style="max-width:100%;height:auto;object-fit:contain;"$3 loading="lazy">'
-);
+    // Update both YouTube regex replacements to include these parameters:
+    processedContent = processedContent.replace(
+      /<iframe(.*?)src="https:\/\/www\.youtube\.com\/embed\/(.*?)"(.*?)><\/iframe>/g,
+      '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe$1src="https://www.youtube.com/embed/$2?enablejsapi=1&playsinline=1&rel=0"$3 style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
+    );
 
-// Handle images with no style
-processedContent = processedContent.replace(
-  /<img(?![^>]*?style=)(.*?)>/gi,
-  '<img style="max-width:100%;height:auto;object-fit:contain;"$1 loading="lazy">'
-);
+    // And update the backup regex too:
+    processedContent = processedContent.replace(
+      /<iframe(?:.*?)src="(?:(?:https?:)?\/\/)?(?:www\.)?youtube\.com\/embed\/([^"]+)"(?:.*?)><\/iframe>/gi,
+      '<div class="video-container" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%"><iframe src="https://www.youtube.com/embed/$1?enablejsapi=1&playsinline=1&rel=0" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>'
+    );
+    // 2. Fix aspect ratio for images by adding specific styles
+    processedContent = processedContent.replace(
+      /<img(.*?)style="([^"]*?)(width|height):[^"]*?(width|height):[^"]*?"(.*?)>/gi,
+      '<img$1style="max-width:100%;height:auto;object-fit:contain;"$5 loading="lazy">'
+    );
+
+    // Handle images with style but no width/height
+    processedContent = processedContent.replace(
+      /<img(.*?)style="(?!.*?(width|height))[^"]*?"(.*?)>/gi,
+      '<img$1style="max-width:100%;height:auto;object-fit:contain;"$3 loading="lazy">'
+    );
+
+    // Handle images with no style
+    processedContent = processedContent.replace(
+      /<img(?![^>]*?style=)(.*?)>/gi,
+      '<img style="max-width:100%;height:auto;object-fit:contain;"$1 loading="lazy">'
+    );
     // First process font sizes (keep this part)
-     processedContent = processedContent.replace(
+    processedContent = processedContent.replace(
       /style="([^"]*)font-size:\s*(\d+)px([^"]*)"/g,
       (match, before, size, after) => {
         let scaledValue = parseInt(size, 10);
@@ -359,14 +360,16 @@ processedContent = processedContent.replace(
       <div className="container mx-auto px-4 py-10">
         {/* Header Section */}
         <div className="max-w-3xl mx-auto mb-10">
-        <motion.h1
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ duration: 0.7 }}
-  className={`text-3xl md:text-4xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6 leading-tight ${fontStyle === 'sans-serif' ? 'font-sans' : 'font-serif'}`}
->
-  {post.title}
-</motion.h1>
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+            className={`text-3xl md:text-4xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6 leading-tight ${
+              fontStyle === "sans-serif" ? "font-sans" : "font-serif"
+            }`}
+          >
+            {post.title}
+          </motion.h1>
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -450,13 +453,13 @@ processedContent = processedContent.replace(
 
         {/* Main blog post content in a centered column */}
         <div className="max-w-3xl mx-auto">
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.8, delay: 0.3 }}
-    className={`
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className={`
       prose prose-base md:prose-lg dark:prose-invert 
-      ${fontStyle === 'sans-serif' ? 'font-sans' : 'font-serif'}
+      ${fontStyle === "sans-serif" ? "font-sans" : "font-serif"}
       px-0 md:px-10 lg:px-9
             
       
@@ -651,6 +654,101 @@ processedContent = processedContent.replace(
             >
               {/* Modified styling to hide only the border */}
               <style jsx global>{`
+                /* Make bullet lists display correctly */
+                .prose ol li[data-list="bullet"] {
+                  list-style-type: disc !important;
+                }
+
+                .prose ol li[data-list="bullet"]::marker {
+                  font-size: 0.75em;
+                  content: "•" !important;
+                  color: var(--tw-prose-bullets);
+                }
+
+                /* Ensure ordered lists display correctly */
+                .prose ol li[data-list="ordered"] {
+                  list-style-type: decimal !important;
+                }
+
+                /* Handle nesting properly */
+                .prose ol li[data-list="bullet"] ol li[data-list="bullet"] {
+                  list-style-type: circle !important;
+                }
+
+                /* Make bullet markers more visible with dark slate in light mode and light gray in dark mode */
+                .prose ol li[data-list="bullet"]::marker {
+                  font-size: 1.2em !important;
+                  content: "•" !important;
+                  color: #1e293b !important; /* Dark slate for light mode */
+                }
+
+                /* Dark mode bullet visibility */
+                .dark .prose ol li[data-list="bullet"]::marker {
+                  color: #e5e7eb !important; /* Light gray for dark mode */
+                  opacity: 1;
+                }
+
+                /* Also update the default bullets for traditional ul elements */
+                .prose ul li::marker {
+                  font-size: 1.2em !important;
+                  color: #1e293b !important;
+                }
+
+                .dark .prose ul li::marker {
+                  color: #e5e7eb !important;
+                  opacity: 1;
+                }
+
+                /* Make nested bullets different but same color scheme */
+                .prose
+                  ol
+                  li[data-list="bullet"]
+                  ol
+                  li[data-list="bullet"]::marker {
+                  content: "◦" !important;
+                  font-size: 1.4em !important;
+                }
+
+
+/* Add this to your existing <style jsx global> block */
+.prose ul, 
+.prose ol {
+  padding-left: 1.5em !important; /* Override Tailwind's default */
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+/* Also handle the special case for Quill-generated lists */
+.prose ol[data-list="bullet"],
+.prose ol[data-list="ordered"] {
+  padding-left: 1.5em !important;
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+/* Make sure nested lists maintain spacing too */
+.prose li > ul,
+.prose li > ol {
+   margin-top: 0.25em !important;
+  margin-bottom: 0.25em !important;
+}
+
+
+/* And also target the special Quill format */
+.prose ol li[data-list="bullet"],
+.prose ol li[data-list="ordered"] {
+  margin-top: 0em !important;
+  margin-bottom: 0em !important;
+}
+
+
+                .prose
+                  ol
+                  li[data-list="bullet"]
+                  ol
+                  li[data-list="bullet"]::marker {
+                  content: "◦" !important;
+                }
                 /* Target the exact element you found in the console */
                 h3.text-xl.font-bold.mb-6.flex.items-center {
                   display: none !important;
@@ -681,18 +779,17 @@ processedContent = processedContent.replace(
                   display: none !important;
                 }
 
-                  /* Keep standard paragraph spacing */
-  .prose p {
-    margin-top: 1em;
-    margin-bottom: 1em;
-  }
-  
-  /* Give extra spacing to our converted double breaks */
-  .prose .double-break {
-    margin-top: 1.5em;
-    margin-bottom: 1.5em;
-  }
+                /* Keep standard paragraph spacing */
+                .prose p {
+                  margin-top: 1em;
+                  margin-bottom: 1em;
+                }
 
+                /* Give extra spacing to our converted double breaks */
+                .prose .double-break {
+                  margin-top: 1.5em;
+                  margin-bottom: 1.5em;
+                }
               `}</style>
 
               {/* Separate style block for font size and color handling hardware acc. for img and vid on mobile */}
@@ -727,22 +824,17 @@ processedContent = processedContent.replace(
                   color: #e0e0e0 !important;
                 }
 
+                .prose img {
+                  transform: translateZ(0);
+                  backface-visibility: hidden;
+                  will-change: transform;
+                }
 
-.prose img {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  will-change: transform;
-}
-
-/* For video containers too */
-.video-container {
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-
-
-
+                /* For video containers too */
+                .video-container {
+                  transform: translateZ(0);
+                  backface-visibility: hidden;
+                }
               `}</style>
 
               {/* Add responsive container styles */}
