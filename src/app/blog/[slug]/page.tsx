@@ -1,11 +1,14 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { fetchBlogDataWithTags } from '@/app/utils/loadBlogServer';
+
+import { Suspense, useState, useRef, lazy, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
 import { usePostBySlug, getSettings } from "@/app/hooks/blogService";
 import Link from "next/link";
 import Utterances from "@/app/components/Utterances";
+import VirtualizedCsvViewer from "@/app/components/VirtualizedCsvViewer";
 export default function BlogPostPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white relative">
@@ -21,6 +24,8 @@ export default function BlogPostPage() {
     </div>
   );
 }
+
+
 
 // Add this helper function (e.g., near the top of your component)
 const openSharePopup = (url: string, title: string = "Share") => {
@@ -158,11 +163,40 @@ function BlogPostContent() {
 
   // Modified to accept isDarkMode as a parameter
   const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
+    // First, check if this is a CSV file by looking for typical patterns
+    if (htmlContent.includes('<div class="ql-code-block-container"') && 
+    (htmlContent.match(/,/g) || []).length > 20 && 
+    // Count the number of code blocks - if there are many, it's probably a CSV
+    (htmlContent.match(/<div class="ql-code-block"/g) || []).length > 15 &&
+    // Check if content has typical CSV patterns (many commas per line)
+    htmlContent.includes(',') && 
+    !htmlContent.includes('<h1') && 
+    !htmlContent.includes('<h2') && 
+    !htmlContent.includes('<h3')) {
+  
+  // Fast path for CSVs - minimal processing, just basic styling
+  return `<div class="csv-content" style="overflow-x:auto;max-width:100%;">
+            ${htmlContent}
+          </div>`;
+}
+
+
+
+
     let processedContent = htmlContent;
+
+
+
+
+
+
     htmlContent = htmlContent.replace(
       /(?<!<p[^>]*>)(<br\s*\/?>\s*){2,}(?![^<]*<\/p>)/g,
       '<div class="double-break"></div>'
     );
+
+
+
     // Add this function inside processHtmlContent
     const processImageTag = (match) => {
       // Extract src and other attributes
@@ -191,6 +225,31 @@ function BlogPostContent() {
       /<img[^>]*>/gi,
       processImageTag
     );
+// Replace this line in your processHtmlContent function:
+processedContent = processedContent.replace(
+  /<div class="ql-code-block"[^>]*>([\s\S]*?)<\/div>/gi,
+  '<div style="font-family:monospace;font-size:0.875rem;line-height:1.5;color:#e5e7eb;white-space:pre-wrap;display:block;padding:0;margin:0;">$1</div>'
+);
+
+    // Process code blocks directly in the HTML
+processedContent = processedContent.replace(
+  /<div class="ql-code-block-container"[^>]*>([\s\S]*?)<\/div>/gi,
+  '<div style="background-color:#1e293b;border-radius:0.5rem;margin:1.5rem 0;padding:1rem;overflow-x:auto;display:block;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1),0 2px 4px -1px rgba(0,0,0,0.06);">$1</div>'
+);
+
+// Then process individual code block lines
+processedContent = processedContent.replace(
+  /<div class="ql-code-block"[^>]*>([\s\S]*?)<\/div>/gi,
+  '<div style="font-family:monospace;font-size:0.875rem;line-height:1.5;color:#e5e7eb;white-space:pre;display:block;padding:0;margin:0;">$1</div>'
+);
+
+// For dark mode, adjust styles dynamically
+if (isDark) {
+  processedContent = processedContent.replace(
+    /<div style="background-color:#1e293b;/gi,
+    '<div style="background-color:#0f172a;'
+  );
+}
 
     // Update both YouTube regex replacements to include these parameters:
     processedContent = processedContent.replace(
@@ -288,6 +347,14 @@ function BlogPostContent() {
   // Process HTML content for headings
   const renderHtml = () => {
     if (!processedContent) return { __html: "" };
+    
+    // Detect if content is likely a CSV
+    const isCsvContent = processedContent.includes('<div class="csv-content"');
+    
+    if (isCsvContent) {
+      // Return the CSV wrapper but don't process further
+      return { __html: processedContent };
+    }
 
     let finalContent = processedContent;
     // Clean up leading headings
@@ -450,56 +517,65 @@ function BlogPostContent() {
 
 */}
 
-        {/* Main blog post content in a centered column */}
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className={`
-      prose prose-base md:prose-lg dark:prose-invert 
-      ${fontStyle === "sans-serif" ? "font-sans" : "font-serif"}
-      px-0 md:px-10 lg:px-9
-            
-      
-             [&>ul>li::marker]:text-slate-800 dark:[&>ul>li::marker]:text-gray-200
-              [&>ol>li::marker]:text-slate-800 dark:[&>ol>li::marker]:text-gray-200
-             prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:my-3
-              prose-headings:font-sans prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24
-              prose-h2:text-xl md:prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6
-              prose-h3:text-lg md:prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4
-              prose-headings:text-gray-900 dark:prose-headings:text-white
-              prose-a:text-orange-700 dark:prose-a:text-orange-400 prose-a:font-medium prose-a:no-underline hover:prose-a:underline
-              prose-a:transition-colors prose-a:duration-200
-              prose-img:rounded-none prose-img:shadow-md prose-img:mx-auto prose-img:my-8             
-               prose-hr:my-12 prose-hr:border-gray-200 dark:prose-hr:border-gray-800
-              prose-ol:pl-6 prose-ul:pl-6 prose-li:my-3 prose-li:text-gray-800 dark:prose-li:text-gray-200
-              prose-ol:text-gray-800 dark:prose-ol:text-gray-200 prose-ul:text-gray-800 dark:prose-ul:text-gray-200
-              prose-code:font-normal prose-code:text-orange-700 dark:prose-code:text-orange-400
-              prose-code:bg-orange-50 dark:prose-code:bg-orange-900/20 prose-code:px-1.5 prose-code:py-0.5
-              prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
-              prose-pre:bg-gray-900 dark:prose-pre:bg-gray-950 prose-pre:p-4 prose-pre:rounded-lg
-              prose-pre:shadow-md prose-pre:overflow-x-auto prose-pre:text-sm prose-pre:my-8
-              prose-blockquote:border-l-4 prose-blockquote:border-orange-500
-              prose-blockquote:bg-orange-50/30 dark:prose-blockquote:bg-orange-900/10
-              prose-blockquote:px-6 prose-blockquote:py-3 prose-blockquote:my-8
-              prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300
-              prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-white
-              prose-table:rounded-lg prose-table:overflow-hidden prose-table:shadow-sm
-              prose-th:bg-gray-100 dark:prose-th:bg-gray-800 prose-th:p-3
-              prose-td:p-3 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700 max-w-none
-              prose-h4:text-base md:prose-h4:text-lg
-               [&_h1_span[style*="font-size"]]:font-bold
-               [&_h2_span[style*="font-size"]]:font-bold
-               [&_h3_span[style*="font-size"]]:font-bold
-               [&_span[style*="font-size"]]:!leading-normal
+       {/* Main blog post content in a centered column */}
+<div className="max-w-3xl mx-auto">
+  {processedContent.includes('<div class="csv-content"') ? (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-16">
+        <div className="animate-spin w-10 h-10 border-4 border-orange-500 rounded-full border-t-transparent"></div>
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Loading CSV data...</span>
+      </div>
+    }>
+      <VirtualizedCsvViewer htmlContent={processedContent} />
+    </Suspense>
+  ) : (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 0.3 }}
+      className={`
+        prose prose-base md:prose-lg dark:prose-invert 
+        ${fontStyle === "sans-serif" ? "font-sans" : "font-serif"}
+        px-0 md:px-10 lg:px-9
+              
+        [&>ul>li::marker]:text-slate-800 dark:[&>ul>li::marker]:text-gray-200
+        [&>ol>li::marker]:text-slate-800 dark:[&>ol>li::marker]:text-gray-200
+        prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:my-3
+        prose-headings:font-sans prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24
+        prose-h2:text-xl md:prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6
+        prose-h3:text-lg md:prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4
+        prose-headings:text-gray-900 dark:prose-headings:text-white
+        prose-a:text-orange-700 dark:prose-a:text-orange-400 prose-a:font-medium prose-a:no-underline hover:prose-a:underline
+        prose-a:transition-colors prose-a:duration-200
+        prose-img:rounded-none prose-img:shadow-md prose-img:mx-auto prose-img:my-8             
+        prose-hr:my-12 prose-hr:border-gray-200 dark:prose-hr:border-gray-800
+        prose-ol:pl-6 prose-ul:pl-6 prose-li:my-3 prose-li:text-gray-800 dark:prose-li:text-gray-200
+        prose-ol:text-gray-800 dark:prose-ol:text-gray-200 prose-ul:text-gray-800 dark:prose-ul:text-gray-200
+        prose-code:font-normal prose-code:text-orange-700 dark:prose-code:text-orange-400
+        prose-code:bg-orange-50 dark:prose-code:bg-orange-900/20 prose-code:px-1.5 prose-code:py-0.5
+        prose-code:rounded prose-code:text-sm prose-code:before:content-none prose-code:after:content-none
+        prose-pre:bg-gray-900 dark:prose-pre:bg-gray-950 prose-pre:p-4 prose-pre:rounded-lg
+        prose-pre:shadow-md prose-pre:overflow-x-auto prose-pre:text-sm prose-pre:my-8
+        prose-blockquote:border-l-4 prose-blockquote:border-orange-500
+        prose-blockquote:bg-orange-50/30 dark:prose-blockquote:bg-orange-900/10
+        prose-blockquote:px-6 prose-blockquote:py-3 prose-blockquote:my-8
+        prose-blockquote:rounded-r-lg prose-blockquote:italic prose-blockquote:text-gray-700 dark:prose-blockquote:text-gray-300
+        prose-strong:font-semibold prose-strong:text-gray-900 dark:prose-strong:text-white
+        prose-table:rounded-lg prose-table:overflow-hidden prose-table:shadow-sm
+        prose-th:bg-gray-100 dark:prose-th:bg-gray-800 prose-th:p-3
+        prose-td:p-3 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700 max-w-none
+        prose-h4:text-base md:prose-h4:text-lg
+        [&_h1_span[style*="font-size"]]:font-bold
+        [&_h2_span[style*="font-size"]]:font-bold
+        [&_h3_span[style*="font-size"]]:font-bold
+        [&_span[style*="font-size"]]:!leading-normal
+      `}
+      dangerouslySetInnerHTML={renderHtml()}
+    />
+  )}
 
 
-            /* End of new styles */
-    
-            `}
-            dangerouslySetInnerHTML={renderHtml()}
-          />
+          
 
           {/* Navigation and share section - combined row */}
           <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-800">
@@ -522,7 +598,7 @@ function BlogPostContent() {
                   </svg>
                   Back to Blog
                 </span>
-                <span className="text-lg font-medium text-orange-600 dark:text-orange-400 group-hover:underline">
+                <span className="text-lg font-medium group-hover:underline">
                   View all articles
                 </span>
               </Link>
@@ -657,30 +733,7 @@ function BlogPostContent() {
               {/* Modified styling to hide only the border */}
               <style jsx global>{`
 
-              /* Add this to your style jsx global block - for code blocks */
-.prose .ql-code-block-container {
-  background-color: #1e293b !important; /* dark bg for code blocks */
-  border-radius: 0.5rem !important;
-  margin: 1.5rem 0 !important;
-  overflow-x: auto !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-}
 
-.prose .ql-code-block {
-  font-family: var(--font-mono) !important;
-  font-size: 0.875rem !important;
-  line-height: 1.5 !important;
-  color: #e5e7eb !important; /* Light text for dark background */
-  padding: 1rem !important;
-  white-space: pre !important;
-  word-break: normal !important;
-  overflow-wrap: normal !important;
-}
-
-.dark .prose .ql-code-block-container {
-  background-color: #0f172a !important; /* Darker bg for dark mode */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1) !important;
-}
 
               /* Add to your style jsx global block */
 
@@ -740,36 +793,36 @@ function BlogPostContent() {
                 }
 
 
-/* Add this to your existing <style jsx global> block */
-.prose ul, 
-.prose ol {
-  padding-left: 1.5em !important; /* Override Tailwind's default */
-  margin-top: 0.5em !important;
-  margin-bottom: 0.5em !important;
-}
+                /* Add this to your existing <style jsx global> block */
+                .prose ul, 
+                .prose ol {
+                  padding-left: 1.5em !important; /* Override Tailwind's default */
+                  margin-top: 0.5em !important;
+                  margin-bottom: 0.5em !important;
+                }
 
-/* Also handle the special case for Quill-generated lists */
-.prose ol[data-list="bullet"],
-.prose ol[data-list="ordered"] {
-  padding-left: 1.5em !important;
-  margin-top: 0.5em !important;
-  margin-bottom: 0.5em !important;
-}
+                /* Also handle the special case for Quill-generated lists */
+                .prose ol[data-list="bullet"],
+                .prose ol[data-list="ordered"] {
+                  padding-left: 1.5em !important;
+                  margin-top: 0.5em !important;
+                  margin-bottom: 0.5em !important;
+                }
 
-/* Make sure nested lists maintain spacing too */
-.prose li > ul,
-.prose li > ol {
-   margin-top: 0.25em !important;
-  margin-bottom: 0.25em !important;
-}
+                /* Make sure nested lists maintain spacing too */
+                .prose li > ul,
+                .prose li > ol {
+                  margin-top: 0.25em !important;
+                  margin-bottom: 0.25em !important;
+                }
 
 
-/* And also target the special Quill format */
-.prose ol li[data-list="bullet"],
-.prose ol li[data-list="ordered"] {
-  margin-top: 0em !important;
-  margin-bottom: 0em !important;
-}
+                /* And also target the special Quill format */
+                .prose ol li[data-list="bullet"],
+                .prose ol li[data-list="ordered"] {
+                  margin-top: 0em !important;
+                  margin-bottom: 0em !important;
+                }
 
 
                 .prose
@@ -821,6 +874,10 @@ function BlogPostContent() {
                   margin-bottom: 1.5em;
                 }
               `}</style>
+
+
+
+              
 
               {/* Separate style block for font size and color handling hardware acc. for img and vid on mobile */}
 

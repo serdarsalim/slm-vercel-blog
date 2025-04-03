@@ -19,7 +19,7 @@ interface ExtendedBlogPost extends BlogPost {
 
 // In production, we primarily use the API route which fetches from Vercel Blob storage
 // The local file and Google Sheets are used as fallbacks
-const DIRECT_BLOB_URL = 'https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/blogPosts.csv';
+const DIRECT_BLOB_URL = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/blogPosts.csv?t=${Date.now()}`;
 const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzuUNByiRaAKH5LpQXusWmoCTku7SG7FEjEtPSHVkQDC5x5g1KLlpJJhf2GxUBIC9EgClwqS1PG-j8/pub?gid=1366419500&single=true&output=csv';
 const FALLBACK_URL = '/data/blogPosts.csv';
 const TIMEOUT_MS = 3000; // 3 second timeout
@@ -74,10 +74,22 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}): Promise
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
   
+  const isBlobUrl = url.includes('blob.vercel-storage.com');
+  
   try {
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
+      cache: isBlobUrl ? 'no-store' : (options.cache || 'default'),
+      headers: {
+        ...(options.headers || {}),
+        // Add cache-busting headers for Blob URL
+        ...(isBlobUrl ? {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-store, must-revalidate',
+          'Expires': '0'
+        } : {})
+      }
     });
     return response;
   } catch (error) {
@@ -117,9 +129,14 @@ async function fetchAndProcessPosts(url: string, isFallback = false): Promise<Bl
     } else {
       // Client-side or server-side with absolute URL
       const fetchOptions: RequestInit = {
-        // Allow caching for the fallback file to improve performance
-        cache: url.includes('fallbackPosts') ? 'force-cache' : 'no-store',
-        headers: url.includes('fallbackPosts') ? {} : {
+        // Never cache blob URLs
+        cache: url.includes('blob.vercel-storage.com') ? 'no-store' : 
+               url.includes('fallbackPosts') ? 'force-cache' : 'default',
+        headers: url.includes('blob.vercel-storage.com') ? {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-store, must-revalidate',
+          'Expires': '0'
+        } : url.includes('fallbackPosts') ? {} : {
           'Pragma': 'no-cache',
           'Cache-Control': 'no-cache'
         }
@@ -225,4 +242,100 @@ export async function getPostBySlugServer(slug: string): Promise<BlogPost | null
     console.error(`Failed to get post ${slug}:`, error);
     return null;
   }
+}
+
+// Add a fetchBlogDataWithTags function that uses cache tags
+
+// Remove the import in BlogClientContent.tsx first!
+
+// Modify the function to make it safe for client-side use
+export async function fetchBlogDataWithTags() {
+  // Check if we're on client or server side
+  if (typeof window !== 'undefined') {
+    // We're on the client side - use the API route instead
+    try {
+      const timestamp = Date.now();
+      const response = await fetch(`/api/posts?t=${timestamp}`, {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-store, must-revalidate',
+          'Expires': '0'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch blog data: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error("Error fetching blog data on client:", error);
+      return [];
+    }
+  } else {
+    // We're on the server side - use the next tags
+    const timestamp = Date.now();
+    const url = `${DIRECT_BLOB_URL}?t=${timestamp}`;
+    
+    try {
+      const response = await fetch(url, {
+        next: { 
+          tags: ['posts'],
+          revalidate: 0 // Force revalidation on each request
+        },
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-store, must-revalidate',
+          'Expires': '0'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch blog data: ${response.status}`);
+      }
+      
+      const csvText = await response.text();
+      return processCsvData(csvText);
+    } catch (error) {
+      console.log('CSV TIMESTAMP CHECK:', new Date().toISOString());
+      console.error("Error fetching blog data with tags:", error);
+      // Fall back to the existing method
+      return loadBlogPostsServer();
+    }
+  }
+}
+
+// Helper function to process CSV data
+export function processCsvData(csvText: string): Promise<BlogPost[]> {
+  return new Promise((resolve, reject) => {
+    Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.errors.length > 0 && results.errors[0].code !== "TooFewFields") {
+          console.warn("CSV parsing had errors:", results.errors);
+        }
+        
+        if (!Array.isArray(results.data) || results.data.length === 0) {
+          reject(new Error('No valid data in CSV'));
+          return;
+        }
+        
+        // Parse all posts but only return those with load: true
+        const allPosts = results.data.map(parseBlogData).filter(Boolean);
+        
+        // Early filter for posts that should be loaded
+        const posts = allPosts.filter(post => post.load);
+        
+        console.log(`Loaded ${posts.length} posts successfully`);
+        resolve(posts); // Return only posts with load: true
+      },
+      error: (error) => {
+        console.error("Error parsing CSV:", error);
+        reject(error);
+      }
+    });
+  });
 }

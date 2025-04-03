@@ -12,6 +12,8 @@ import Fuse from "fuse.js";
 import BlogPostCard from "./BlogPostCard";
 import type { BlogPost } from "@/app/types/blogpost";
 
+
+
 interface BlogClientContentProps {
   initialPosts: BlogPost[];
   initialFeaturedPosts: BlogPost[];
@@ -58,8 +60,73 @@ export default function BlogClientContent({
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [isBrowser, setIsBrowser] = useState(false);
 
-  
+  // Function to refresh post data
+// Update the refreshPosts function with stronger cache prevention
 
+const refreshPosts = useCallback(async () => {
+  try {
+    setShowLoader(true);
+    // Add an even more aggressive cache-busting approach for localhost
+    const timestamp = Date.now();
+    const nonce = Math.random().toString(36).substring(2, 15);
+    const response = await fetch(`/api/posts?t=${timestamp}&nonce=${nonce}`, {
+      method: 'GET', // Explicitly set method
+      cache: 'no-store',
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-store, must-revalidate',
+        'Expires': '0',
+        'X-Cache-Bust': nonce // Custom header to prevent caching
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to refresh posts');
+    }
+    
+    const freshPosts = await response.json();
+    
+    // Debug - log the posts to verify we're getting fresh data
+    console.log('Refreshed posts:', freshPosts.length, 'First post:', freshPosts[0]?.title);
+    
+    // Force a re-render by creating a new array
+    setPosts([...freshPosts]);
+    setShowLoader(false);
+  } catch (error) {
+    console.error('Error refreshing posts:', error);
+    setShowLoader(false);
+  }
+}, []);
+
+// Make the refresh interval shorter for development
+useEffect(() => {
+  // Initial check on component mount
+  refreshPosts();
+  
+  // Different interval for dev vs production
+  const interval = process.env.NODE_ENV === 'development' ? 5000 : 15000;
+  
+  // Then set interval to check periodically
+  const refreshTimer = setInterval(() => {
+    console.log('Checking for updates...');
+    refreshPosts();
+  }, interval); // 5 seconds in dev, 15 seconds in production
+  
+  return () => clearInterval(refreshTimer);
+}, [refreshPosts]);
+
+// Add a useEffect to periodically check for updates (around line 90 after your other useEffects)
+useEffect(() => {
+  // Initial check on component mount
+  refreshPosts();
+  
+  // Then set interval to check periodically
+  const refreshTimer = setInterval(() => {
+    refreshPosts();
+  }, 15000); // Check every 15 seconds
+  
+  return () => clearInterval(refreshTimer);
+}, [refreshPosts]);
 
   // Track if the component is mounted
   const isMounted = useRef(false);

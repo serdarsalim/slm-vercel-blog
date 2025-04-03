@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag } from 'next/cache';
+
 
 // GET handler – for testing and basic info
 export async function GET(request: NextRequest) {
@@ -98,6 +99,14 @@ export async function POST(request: NextRequest) {
         throw new Error(`Failed to upload to Vercel Blob: ${error.message}`);
       }
     })();
+
+    // Revalidate cache tags
+console.log('Revalidating cache tags');
+revalidateTag('posts');
+if (body.sheetType === 'settings') {
+  revalidateTag('settings');
+}
+
 
     // Revalidate the specific path, if provided
     if (body.path) {
