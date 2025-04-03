@@ -339,3 +339,104 @@ export function processCsvData(csvText: string): Promise<BlogPost[]> {
     });
   });
 }
+
+// Add this function at the end of the file
+
+// Define the Settings interface
+export interface Settings {
+  fontStyle: string;
+  // Add other settings as needed
+}
+
+// Function to load settings with cache busting
+export async function loadSettingsFromServer(): Promise<Settings> {
+  try {
+    // Use the same approach as blog posts - fetch from Blob with cache busting
+    const timestamp = Date.now();
+    const settingsUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.json?t=${timestamp}&r=${Math.random()}`;
+    
+    const response = await fetch(settingsUrl, {
+      next: typeof window === 'undefined' ? { 
+        tags: ['settings'],
+        revalidate: 0 
+      } : undefined,
+      cache: 'no-store',
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-store, must-revalidate',
+        'Expires': '0'
+      }
+    });
+    
+    if (!response.ok) {
+      console.warn('Failed to fetch settings, using defaults');
+      return { fontStyle: 'serif' };
+    }
+    
+    const settings = await response.json();
+    return settings;
+  } catch (error) {
+    console.error('Error loading settings:', error);
+    // Return default settings as fallback
+    return { fontStyle: 'serif' };
+  }
+}
+
+
+// Find the getSettings function and modify it:
+
+export async function getSettings() {
+  try {
+    // Add timestamp parameter for cache busting
+    const timestamp = Date.now();
+    const response = await fetch(`/api/settings?t=${timestamp}`, {
+      cache: 'no-store',
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-store, must-revalidate',
+        'Expires': '0'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to fetch settings');
+      return { fontStyle: 'serif' }; // Default fallback
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    return { fontStyle: 'serif' }; // Default fallback
+  }
+}
+
+// Add this to the end of loadBlogServer.ts
+
+// Function to update settings from client components
+export async function updateSettings(newSettings: Settings): Promise<boolean> {
+  try {
+    console.log('Updating settings:', newSettings);
+    const timestamp = Date.now();
+    
+    const response = await fetch(`/api/settings/save?t=${timestamp}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'Pragma': 'no-cache'
+      },
+      body: JSON.stringify(newSettings)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update settings: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('Settings updated successfully:', result);
+    return true;
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    return false;
+  }
+}
