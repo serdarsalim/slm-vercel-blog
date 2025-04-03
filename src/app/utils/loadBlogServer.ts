@@ -349,11 +349,11 @@ export interface Settings {
 }
 
 // Function to load settings with cache busting
+// Fix the loadSettingsFromServer function
 export async function loadSettingsFromServer(): Promise<Settings> {
   try {
-    // Use the same approach as blog posts - fetch from Blob with cache busting
     const timestamp = Date.now();
-    const settingsUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.json?t=${timestamp}&r=${Math.random()}`;
+    const settingsUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv?t=${timestamp}&r=${Math.random()}`;
     
     const response = await fetch(settingsUrl, {
       next: typeof window === 'undefined' ? { 
@@ -373,11 +373,23 @@ export async function loadSettingsFromServer(): Promise<Settings> {
       return { fontStyle: 'serif' };
     }
     
-    const settings = await response.json();
-    return settings;
+   
+    const csvText = await response.text();
+    const lines = csvText.split('\n');
+    
+    // Settings are on the second line (index 1), third column (index 2)
+    if (lines.length >= 2) {
+      const columns = lines[1].split(',');
+      if (columns.length >= 3) {
+        const fontStyle = columns[2].trim();
+        return { fontStyle };
+      }
+    }
+    
+    // Default if not found
+    return { fontStyle: 'serif' };
   } catch (error) {
     console.error('Error loading settings:', error);
-    // Return default settings as fallback
     return { fontStyle: 'serif' };
   }
 }
@@ -403,7 +415,20 @@ export async function getSettings() {
       return { fontStyle: 'serif' }; // Default fallback
     }
     
-    return await response.json();
+    
+    const csvText = await response.text();
+    const lines = csvText.split('\n');
+    
+    // Settings are on the second line (index 1), third column (index 2)
+    if (lines.length >= 2) {
+      const columns = lines[1].split(',');
+      if (columns.length >= 3) {
+        const fontStyle = columns[2].trim();
+        return { fontStyle };
+      }
+    }
+    
+    return { fontStyle: 'serif' }; // Default fallback
   } catch (error) {
     console.error('Error fetching settings:', error);
     return { fontStyle: 'serif' }; // Default fallback
@@ -418,23 +443,36 @@ export async function updateSettings(newSettings: Settings): Promise<boolean> {
     console.log('Updating settings:', newSettings);
     const timestamp = Date.now();
     
+    // Create CSV content string
+    const csvContent = 'Settings,type,value\n' + 
+                      'Editor Layout,font style,' + newSettings.fontStyle;
+    
     const response = await fetch(`/api/settings/save?t=${timestamp}`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'text/csv',
         'Cache-Control': 'no-store',
         'Pragma': 'no-cache'
       },
-      body: JSON.stringify(newSettings)
+      body: csvContent
     });
     
     if (!response.ok) {
       throw new Error(`Failed to update settings: ${response.status}`);
     }
     
-    const result = await response.json();
-    console.log('Settings updated successfully:', result);
-    return true;
+    // Parse the response as CSV since that's what we're getting back
+    const responseText = await response.text();
+    const lines = responseText.split('\n');
+    if (lines.length >= 2) {
+      const columns = lines[1].split(',');
+      if (columns.length >= 3) {
+        console.log('Settings updated successfully:', columns[2].trim());
+        return true;
+      }
+    }
+    
+    return false;
   } catch (error) {
     console.error('Error updating settings:', error);
     return false;
