@@ -30,7 +30,7 @@ function SchemaContent() {
   const blogSchema = {
     "@context": "https://schema.org",
     "@type": "Blog",
-    "name": "SLM Blog",
+    "name": "WriteAway Blog",
     "description": "Digital notes on my interests.",
     "url": "https://slm-blog.netlify.app",
     "mainEntity": {

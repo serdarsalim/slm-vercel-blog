@@ -34,6 +34,8 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+
+
 export default function BlogClientContent({
   initialPosts,
   initialFeaturedPosts,
@@ -45,6 +47,7 @@ export default function BlogClientContent({
   const lastScrollY = useRef(0);
   const scrollDirection = useRef<"up" | "down">("down");
   const ticking = useRef(false);
+  const [showLoader, setShowLoader] = useState(false);
 
   // Search state
   const [searchInput, setSearchInput] = useState("");
@@ -54,6 +57,9 @@ export default function BlogClientContent({
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [isBrowser, setIsBrowser] = useState(false);
+
+  
+
 
   // Track if the component is mounted
   const isMounted = useRef(false);
@@ -206,30 +212,21 @@ export default function BlogClientContent({
   // Function to load more posts gradually
   const loadMorePosts = useCallback(() => {
     if (!hasMorePosts || isLoadingMore || !isMounted.current) return;
-
+    
+    // Show the loader
+    setShowLoader(true);
     setIsLoadingMore(true);
-
-    // For very smooth loading, we'll add posts one by one with slight delays
-    const numPostsToAdd = Math.min(5, sortedPosts.length - renderedCount);
-    let postsAdded = 0;
-
-    const addNextPost = () => {
-      if (!isMounted.current) return;
-
-      setRenderedCount((prevCount) => prevCount + 1);
-      postsAdded++;
-
-      if (postsAdded < numPostsToAdd) {
-        // Add next post after a micro-delay (feels like streaming)
-        setTimeout(addNextPost, Math.random() * 100 + 50);
-      } else {
-        // All posts for this batch added
+    
+    // Add posts in a single batch after a short delay
+    setTimeout(() => {
+      if (isMounted.current) {
+        // Add a batch of posts all at once (up to 10 more)
+        const newCount = Math.min(renderedCount + 10, sortedPosts.length);
+        setRenderedCount(newCount);
         setIsLoadingMore(false);
+        setShowLoader(false);
       }
-    };
-
-    // Start adding posts
-    addNextPost();
+    }, 600); // Slightly longer delay to show the loader
   }, [hasMorePosts, isLoadingMore, renderedCount, sortedPosts.length]);
 
   // Get category counts for filter buttons
@@ -483,6 +480,18 @@ export default function BlogClientContent({
                   aria-hidden="true"
                 />
               )}
+
+{/* Loading indicator */}
+{showLoader && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="flex justify-center py-8"
+  >
+    <div className="w-10 h-10 border-4 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin"></div>
+  </motion.div>
+)}
+              
 
               {/* End message - only shown when no more posts */}
               {!hasMorePosts && sortedPosts.length > 10 && (

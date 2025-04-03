@@ -29,7 +29,7 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "SLM Blog",
+  title: "WriteAway",
   description: "A modern blog built with Next.js and Tailwind CSS",
 };
 

@@ -358,18 +358,17 @@ function BlogPostContent() {
       />
 
       <div className="container mx-auto px-4 py-10">
-        {/* Header Section */}
-        <div className="max-w-3xl mx-auto mb-10">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className={`text-3xl md:text-4xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-6 leading-tight ${
-              fontStyle === "sans-serif" ? "font-sans" : "font-serif"
-            }`}
-          >
-            {post.title}
-          </motion.h1>
+       {/* Header Section */}
+<div className="max-w-3xl mx-auto mb-10 px-0 md:px-10 lg:px-9">
+  <motion.h1
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.7 }}
+    className="text-3xl md:text-4xl lg:text-4xl font-bold font-sans text-gray-900 dark:text-white mb-6 leading-tight"
+    style={{ fontSize: "2em" }} 
+  >
+    {post.title}
+  </motion.h1>
 
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -467,8 +466,8 @@ function BlogPostContent() {
               [&>ol>li::marker]:text-slate-800 dark:[&>ol>li::marker]:text-gray-200
              prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:my-3
               prose-headings:font-sans prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24
-              prose-h2:text-2xl md:prose-h2:text-3xl prose-h2:mt-12 prose-h2:mb-6
-              prose-h3:text-xl md:prose-h3:text-2xl prose-h3:mt-8 prose-h3:mb-4
+              prose-h2:text-xl md:prose-h2:text-2xl prose-h2:mt-12 prose-h2:mb-6
+              prose-h3:text-lg md:prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-4
               prose-headings:text-gray-900 dark:prose-headings:text-white
               prose-a:text-orange-700 dark:prose-a:text-orange-400 prose-a:font-medium prose-a:no-underline hover:prose-a:underline
               prose-a:transition-colors prose-a:duration-200
@@ -489,11 +488,14 @@ function BlogPostContent() {
               prose-table:rounded-lg prose-table:overflow-hidden prose-table:shadow-sm
               prose-th:bg-gray-100 dark:prose-th:bg-gray-800 prose-th:p-3
               prose-td:p-3 prose-td:border-t prose-td:border-gray-200 dark:prose-td:border-gray-700 max-w-none
-
+              prose-h4:text-base md:prose-h4:text-lg
                [&_h1_span[style*="font-size"]]:font-bold
                [&_h2_span[style*="font-size"]]:font-bold
                [&_h3_span[style*="font-size"]]:font-bold
                [&_span[style*="font-size"]]:!leading-normal
+
+
+            /* End of new styles */
     
             `}
             dangerouslySetInnerHTML={renderHtml()}
@@ -654,6 +656,34 @@ function BlogPostContent() {
             >
               {/* Modified styling to hide only the border */}
               <style jsx global>{`
+
+              /* Add this to your style jsx global block - for code blocks */
+.prose .ql-code-block-container {
+  background-color: #1e293b !important; /* dark bg for code blocks */
+  border-radius: 0.5rem !important;
+  margin: 1.5rem 0 !important;
+  overflow-x: auto !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.prose .ql-code-block {
+  font-family: var(--font-mono) !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  color: #e5e7eb !important; /* Light text for dark background */
+  padding: 1rem !important;
+  white-space: pre !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.dark .prose .ql-code-block-container {
+  background-color: #0f172a !important; /* Darker bg for dark mode */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+              /* Add to your style jsx global block */
+
                 /* Make bullet lists display correctly */
                 .prose ol li[data-list="bullet"] {
                   list-style-type: disc !important;
