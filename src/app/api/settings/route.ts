@@ -4,11 +4,12 @@ import { loadSettingsFromServer } from '@/app/utils/loadBlogServer';
 export const dynamic = 'force-dynamic';
 
 // In /api/settings/route.ts
+// In /api/settings/route.ts
 export async function GET() {
   try {
     const settings = await loadSettingsFromServer();
     
-    // Instead of sending JSON, send the CSV text directly
+    // Return consistent CSV format
     return new Response(
       'Settings,type,value\nEditor Layout,font style,' + settings.fontStyle, 
       {
@@ -21,10 +22,16 @@ export async function GET() {
       }
     );
   } catch (error) {
+    console.error('Error fetching settings:', error);
     // Fallback for errors
     return new Response(
       'Settings,type,value\nEditor Layout,font style,serif', 
-      { status: 200 }
+      { 
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv'
+        }
+      }
     );
   }
 }

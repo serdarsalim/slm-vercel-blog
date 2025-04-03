@@ -440,14 +440,15 @@ export async function getSettings() {
 // Function to update settings from client components
 export async function updateSettings(newSettings: Settings): Promise<boolean> {
   try {
-    console.log('Updating settings:', newSettings);
+    console.log('Updating settings at:', new Date().toISOString());
+    console.log('New settings:', newSettings);
     const timestamp = Date.now();
     
-    // Create CSV content string
-    const csvContent = 'Settings,type,value\n' + 
-                      'Editor Layout,font style,' + newSettings.fontStyle;
+    // Create CSV content string (same as before)
+    const csvContent = 'Settings,type,value\nEditor Layout,font style,' + newSettings.fontStyle;
+    console.log('Sending CSV content:', csvContent);
     
-    const response = await fetch(`/api/settings/save?t=${timestamp}`, {
+    const response = await fetch(`/api/settings/save?t=${timestamp}&r=${Math.random()}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/csv',
@@ -458,23 +459,68 @@ export async function updateSettings(newSettings: Settings): Promise<boolean> {
     });
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Server returned error:', response.status, errorText);
       throw new Error(`Failed to update settings: ${response.status}`);
     }
     
     // Parse the response as CSV since that's what we're getting back
     const responseText = await response.text();
+    console.log('Got CSV response:', responseText);
+    
     const lines = responseText.split('\n');
     if (lines.length >= 2) {
-      const columns = lines[1].split(',');
-      if (columns.length >= 3) {
-        console.log('Settings updated successfully:', columns[2].trim());
+      const statusLine = lines[1].split(',');
+      if (statusLine[0] === 'Success') {
+        console.log('Settings updated successfully:', statusLine[1]);
         return true;
       }
     }
     
+    console.warn('Unexpected response format:', responseText);
     return false;
   } catch (error) {
     console.error('Error updating settings:', error);
     return false;
+  }
+}
+
+// Debug helper function to check settings file
+export async function debugCheckSettings(): Promise<void> {
+  try {
+    const timestamp = Date.now();
+    const settingsUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv?t=${timestamp}&r=${Math.random()}`;
+    
+    console.log('Checking settings file at:', new Date().toISOString());
+    console.log('URL:', settingsUrl);
+    
+    const response = await fetch(settingsUrl, {
+      cache: 'no-store',
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-store, must-revalidate',
+        'Expires': '0'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error('Failed to fetch settings file:', response.status);
+      return;
+    }
+    
+    const csvText = await response.text();
+    console.log('Current settings file content:');
+    console.log(csvText);
+    
+    // Try to parse it
+    const lines = csvText.split('\n');
+    if (lines.length >= 2) {
+      const columns = lines[1].split(',');
+      if (columns.length >= 3) {
+        console.log('Current font style:', columns[2].trim());
+      }
+    }
+  } catch (error) {
+    console.error('Error checking settings:', error);
   }
 }

@@ -1,4 +1,4 @@
-// Create this at: /src/app/api/settings/save/route.ts
+// src/app/api/settings/save/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { put } from '@vercel/blob';
 import { revalidateTag } from 'next/cache';
@@ -6,19 +6,28 @@ import { revalidateTag } from 'next/cache';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// In the API route for saving settings
 export async function POST(request: NextRequest) {
     try {
-      const body = await request.json();
-      console.log('Saving settings:', body);
+      // Read as text instead of JSON
+      const csvContent = await request.text();
+      console.log('Received CSV content:', csvContent);
       
-      // Create CSV string from settings object
-      const csvContent = 'Settings,type,value\nEditor Layout,font style,' + body.fontStyle;
+      // Validate it's in CSV format
+      if (!csvContent.includes('Settings,type,value')) {
+        return NextResponse.json({ 
+          success: false, 
+          error: 'Invalid CSV format' 
+        }, { status: 400 });
+      }
       
-      // Upload to Blob storage as CSV
+      // Add timestamp to log
+      console.log('Processing settings update at:', new Date().toISOString());
+      
+      // Upload directly to Blob storage with explicit content type
       const blob = await put('settings.csv', csvContent, {
         access: 'public',
-        addRandomSuffix: false, // Overwrite the file
+        addRandomSuffix: false,
+        contentType: 'text/csv'
       });
       
       // Revalidate the settings cache tag
@@ -26,12 +35,30 @@ export async function POST(request: NextRequest) {
       
       console.log('Settings saved successfully to:', blob.url);
       
-      return NextResponse.json({ success: true, url: blob.url });
+      // Return success in CSV format that client expects
+      const successCsv = 'Status,url\nSuccess,' + blob.url;
+      
+      return new Response(successCsv, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv',
+          'Cache-Control': 'no-store, max-age=0, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
+      
+      // Return error in CSV format
+      const errorCsv = 'Status,error\nError,' + 
+        (error instanceof Error ? error.message : 'Unknown error');
+      
+      return new Response(errorCsv, {
+        status: 500,
+        headers: {
+          'Content-Type': 'text/csv'
+        }
+      });
     }
-  }
+}
