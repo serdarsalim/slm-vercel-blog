@@ -89,13 +89,19 @@ export function useBlogPosts(initialPosts: BlogPost[] = []) {
 // In src/app/hooks/blogService.ts (or wherever your blog service is)
 export async function getSettings() {
   try {
-    const response = await fetch('https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv', {
-      cache: 'no-store' // Ensure we get fresh settings
+    const timestamp = Date.now();
+    const response = await fetch(`/api/settings?t=${timestamp}`, {
+      cache: 'no-store',
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-store'
+      }
     });
     
     if (!response.ok) {
       throw new Error('Failed to fetch settings');
     }
+    
     
     const csvText = await response.text();
     const lines = csvText.split('\n');

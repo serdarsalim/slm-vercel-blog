@@ -244,9 +244,7 @@ export async function getPostBySlugServer(slug: string): Promise<BlogPost | null
   }
 }
 
-// Add a fetchBlogDataWithTags function that uses cache tags
 
-// Remove the import in BlogClientContent.tsx first!
 
 // Modify the function to make it safe for client-side use
 export async function fetchBlogDataWithTags() {
@@ -340,101 +338,5 @@ export function processCsvData(csvText: string): Promise<BlogPost[]> {
   });
 }
 
-// Add this function at the end of the file
-
-// Define the Settings interface
-export interface Settings {
-  fontStyle: string;
-  // Add other settings as needed
-}
-
-// Function to load settings with cache busting - NO FALLBACKS
-export async function loadSettingsFromServer(): Promise<Settings> {
-  const timestamp = Date.now();
-  const settingsUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv?t=${timestamp}&r=${Math.random()}`;
-  
-  const response = await fetch(settingsUrl, {
-    next: typeof window === 'undefined' ? { 
-      tags: ['settings'],
-      revalidate: 0 
-    } : undefined,
-    cache: 'no-store',
-    headers: {
-      'Pragma': 'no-cache',
-      'Cache-Control': 'no-store, must-revalidate',
-      'Expires': '0'
-    }
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch settings: ${response.status}`);
-  }
-  
-  const csvText = await response.text();
-  const lines = csvText.split('\n');
-  
-  // Settings are on the second line (index 1), third column (index 2)
-  if (lines.length >= 2) {
-    const columns = lines[1].split(',');
-    if (columns.length >= 3) {
-      return { fontStyle: columns[2].trim() };
-    }
-  }
-  
-  throw new Error('Invalid settings CSV format');
-}
 
 
-// Find the getSettings function and modify it:
-
-export async function getSettings() {
-  const timestamp = Date.now();
-  const response = await fetch(`/api/settings?t=${timestamp}`, {
-    cache: 'no-store',
-    headers: {
-      'Pragma': 'no-cache',
-      'Cache-Control': 'no-store, must-revalidate',
-      'Expires': '0'
-    }
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch settings: ${response.status}`);
-  }
-  
-  const csvText = await response.text();
-  const lines = csvText.split('\n');
-  
-  if (lines.length >= 2) {
-    const columns = lines[1].split(',');
-    if (columns.length >= 3) {
-      return { fontStyle: columns[2].trim() };
-    }
-  }
-  
-  throw new Error('Invalid settings CSV format');
-}
-
-// Function to update settings from client components
-export async function updateSettings(newSettings: Settings): Promise<boolean> {
-  const csvContent = 'Settings,type,value\nEditor Layout,font style,' + newSettings.fontStyle;
-  
-  const response = await fetch('/api/revalidate', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-store'
-    },
-    body: JSON.stringify({
-      csvContent,
-      sheetType: 'settings',
-      secret: 'your_default_secret'
-    })
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Failed to update settings: ${response.status}`);
-  }
-  
-  return true;
-}
