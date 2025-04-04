@@ -6,8 +6,6 @@ export const dynamic = 'force-dynamic'; // Already have this, but keep it
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache'; // Add this import
 
-// In your preferences/route.ts file:
-
 export async function GET() {
   try {
     // Generate strong cache busters
@@ -34,29 +32,6 @@ export async function GET() {
     if (!response.ok) {
       throw new Error(`Failed to fetch preferences: ${response.status}`);
     }
-    
-    // Get the raw CSV text
-    const csvText = await response.text();
-    
-    // Log the first part of the content to verify
-    console.log(`Fetched CSV content (first 50 chars): ${csvText.substring(0, 50)}`);
-    
-    // Return with strong no-cache headers
-    return new Response(csvText, {
-      headers: {
-        'Content-Type': 'text/csv',
-        'Cache-Control': 'no-store, max-age=0, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'X-Generated-At': new Date().toISOString(),
-        'X-Cache-Buster': random
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching preferences CSV:', error);
-    throw error;
-  }
-}
     
     // Get the raw CSV text
     const csvText = await response.text();
