@@ -115,18 +115,20 @@ useEffect(() => {
   return () => clearInterval(refreshTimer);
 }, [refreshPosts]);
 
-// Add a useEffect to periodically check for updates (around line 90 after your other useEffects)
+
+// Add this useEffect between your existing effects
 useEffect(() => {
-  // Initial check on component mount
-  refreshPosts();
+  const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      console.log('Tab visible again, refreshing posts...');
+      refreshPosts();
+    }
+  };
   
-  // Then set interval to check periodically
-  const refreshTimer = setInterval(() => {
-    refreshPosts();
-  }, 15000); // Check every 15 seconds
-  
-  return () => clearInterval(refreshTimer);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
 }, [refreshPosts]);
+
 
   // Track if the component is mounted
   const isMounted = useRef(false);

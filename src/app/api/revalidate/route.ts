@@ -125,21 +125,42 @@ try {
     })();
 
     // Revalidate cache tags
-console.log('Revalidating cache tags');
-revalidateTag('posts');
-if (body.sheetType === 'preferences') {
-  revalidateTag('preferences');
-}
+    console.log('Running enhanced cache revalidation...');
 
-
+    // Basic tag revalidation first
+    revalidateTag('posts');
+    if (body.sheetType === 'preferences') {
+      revalidateTag('preferences');
+    }
+    
+    // For blog posts, use comprehensive revalidation strategy
+    if (body.sheetType !== 'preferences') {
+      // Wait a moment for blog content to stabilize
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Revalidate multiple ways for key pages
+      console.log('Revalidating blog index pages');
+      revalidatePath('/', 'page');
+      revalidatePath('/blog', 'page');
+      revalidatePath('/', 'layout');
+      revalidatePath('/blog', 'layout');
+      
+      // If we have slug info, revalidate that specific post too
+      if (body.slug) {
+        console.log(`Revalidating specific post: ${body.slug}`);
+        revalidatePath(`/blog/${body.slug}`, 'page');
+        revalidatePath(`/blog/${body.slug}`, 'layout');
+      }
+      
+      // Generic path for all blog posts
+      revalidatePath('/blog/[slug]', 'page');
+    }
+    
     // Revalidate the specific path, if provided
     if (body.path) {
-      console.log(`Revalidating path: ${body.path}`);
+      console.log(`Revalidating custom path: ${body.path}`);
       revalidatePath(body.path);
     }
-    // Always revalidate the homepage
-    console.log('Revalidating homepage');
-    revalidatePath('/');
 
     // Return a success response with the clean URL
     const cleanUrl = new URL(blob.url);

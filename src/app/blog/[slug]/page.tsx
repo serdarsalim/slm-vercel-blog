@@ -430,8 +430,9 @@ if (isDark) {
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.7 }}
-    className="text-3xl md:text-4xl lg:text-4xl font-bold font-sans text-gray-900 dark:text-white mb-6 leading-tight"
-    style={{ fontSize: "2em" }} 
+      className="text-gray-900 dark:text-white mb-6 leading-tight font-bold font-sans text-[1.5em] md:text-[2em] lg:text-[2em]"
+      // Add responsive fontSize using media queries
+      
   >
     {post.title}
   </motion.h1>
