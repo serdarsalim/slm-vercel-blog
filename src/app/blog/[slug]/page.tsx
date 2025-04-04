@@ -4,7 +4,7 @@ import { fetchBlogDataWithTags } from '@/app/utils/loadBlogServer';
 import { Suspense, useState, useRef, lazy, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
-import { usePostBySlug, getSettings } from "@/app/hooks/blogService";
+import { usePostBySlug, getPreferences } from "@/app/hooks/blogService";
 import Link from "next/link";
 import Utterances from "@/app/components/Utterances";
 import VirtualizedCsvViewer from "@/app/components/VirtualizedCsvViewer";
@@ -63,7 +63,7 @@ function BlogPostContent() {
   // Add this effect to fetch settings
   useEffect(() => {
     async function fetchSettings() {
-      const { fontStyle } = await getSettings();
+      const { fontStyle } = await getPreferences();
       setFontStyle(fontStyle);
     }
 

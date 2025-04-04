@@ -62,9 +62,9 @@ export async function POST(request: NextRequest) {
     // NEW: Determine filename based on sheetType
     let filename = 'blogPosts.csv'; // Default to blog posts
     
-    if (body.sheetType === 'settings') {
-      filename = 'settings.csv';
-      console.log('Processing settings data...');
+    if (body.sheetType === 'preferences') {
+      filename = 'preferences.csv';
+      console.log('Processing preferences data...');
     } else {
       console.log('Processing blog posts data...');
     }
@@ -103,8 +103,8 @@ export async function POST(request: NextRequest) {
     // Revalidate cache tags
 console.log('Revalidating cache tags');
 revalidateTag('posts');
-if (body.sheetType === 'settings') {
-  revalidateTag('settings');
+if (body.sheetType === 'preferences') {
+  revalidateTag('preferences');
 }
 
 

@@ -10,7 +10,7 @@ export async function GET() {
     
     // Fetch the original CSV directly
     const response = await fetch(
-      `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv?t=${timestamp}&r=${randomValue}`,
+      `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/preferences.csv?t=${timestamp}&r=${randomValue}`,
       {
         cache: 'no-store',
         headers: {
@@ -21,7 +21,7 @@ export async function GET() {
     );
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch settings: ${response.status}`);
+      throw new Error(`Failed to fetch preferences: ${response.status}`);
     }
     
     // Get the raw CSV text
@@ -37,7 +37,7 @@ export async function GET() {
       }
     });
   } catch (error) {
-    console.error('Error fetching settings CSV:', error);
+    console.error('Error fetching preferences CSV:', error);
     throw error; // Let the error propagate up
   }
 }

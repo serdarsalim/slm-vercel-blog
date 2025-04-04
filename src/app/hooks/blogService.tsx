@@ -86,60 +86,6 @@ export function useBlogPosts(initialPosts: BlogPost[] = []) {
 }
 
 
-// In src/app/hooks/blogService.ts (or wherever your blog service is)
-export async function getSettings() {
-  try {
-    const timestamp = Date.now();
-    const response = await fetch(`/api/settings?t=${timestamp}`, {
-      cache: 'no-store',
-      headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-store'
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch settings');
-    }
-    
-    
-    const csvText = await response.text();
-    const lines = csvText.split('\n');
-    
-    // Settings are on the second line (index 1), third column (index 2)
-    if (lines.length >= 2) {
-      const columns = lines[1].split(',');
-      if (columns.length >= 3) {
-        const fontStyle = columns[2].trim();
-        return { fontStyle };
-      }
-    }
-    
-    // Default if settings not found
-    return { fontStyle: 'serif' };
-  } catch (error) {
-    console.error('Error fetching settings:', error);
-    return { fontStyle: 'serif' }; // Default fallback
-  }
-}
-
-// Add a hook to use the settings
-export function useSettings() {
-  const [settings, setSettings] = useState({ fontStyle: 'serif' });
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    async function loadSettings() {
-      const fetchedSettings = await getSettings();
-      setSettings(fetchedSettings);
-      setLoading(false);
-    }
-    
-    loadSettings();
-  }, []);
-  
-  return { settings, loading };
-}
 
 // Hook for a single blog post by slug when used in a client component
 export function usePostBySlug(slug: string, initialPost: BlogPost | null = null) {
@@ -242,4 +188,60 @@ export function usePostBySlug(slug: string, initialPost: BlogPost | null = null)
   }, [slug, initialPost, loading]);
 
   return { post, loading, error };
+}
+
+
+// In src/app/hooks/blogService.ts (or wherever your blog service is)
+export async function getPreferences() {
+  try {
+    const timestamp = Date.now();
+    const response = await fetch(`/api/preferences?t=${timestamp}`, {
+      cache: 'no-store',
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-store'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch preferences');
+    }
+    
+    
+    const csvText = await response.text();
+    const lines = csvText.split('\n');
+    
+    // preferences are on the second line (index 1), third column (index 2)
+    if (lines.length >= 2) {
+      const columns = lines[1].split(',');
+      if (columns.length >= 3) {
+        const fontStyle = columns[2].trim();
+        return { fontStyle };
+      }
+    }
+    
+    // Default if preferences not found
+    return { fontStyle: 'serif' };
+  } catch (error) {
+    console.error('Error fetching preferences:', error);
+    return { fontStyle: 'serif' }; // Default fallback
+  }
+}
+
+// Add a hook to use the preferences
+export function usePreferences() {
+  const [preferences, setPreferences] = useState({ fontStyle: 'serif' });
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadpreferences() {
+      const fetchedpreferences = await getPreferences();
+      setPreferences(fetchedpreferences);
+      setLoading(false);
+    }
+    
+    loadpreferences();
+  }, []);
+  
+  return { preferences, loading };
 }
