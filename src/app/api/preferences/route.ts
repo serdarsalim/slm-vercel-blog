@@ -6,32 +6,57 @@ export const dynamic = 'force-dynamic'; // Already have this, but keep it
 import { NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache'; // Add this import
 
+// In your preferences/route.ts file:
+
 export async function GET() {
   try {
-    // Add timestamp to prevent caching
+    // Generate strong cache busters
     const timestamp = Date.now();
-    const randomValue = Math.random();
+    const random = Math.random().toString(36).substring(2);
     
-    // Force revalidation of 'preferences' tag on every request
-    revalidateTag('preferences');
+    // Add BOTH to the URL
+    const fullUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/preferences.csv?nocache=${timestamp}-${random}`;
     
-    // Fetch the original CSV directly
-    const response = await fetch(
-      `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/preferences.csv?t=${timestamp}&r=${randomValue}`,
-      {
-        cache: 'no-store',
-        next: { revalidate: 0, tags: ['preferences'] }, // Add Next.js fetch options
-        headers: {
-          'Pragma': 'no-cache',
-          'Cache-Control': 'no-store, must-revalidate, max-age=0',
-          'Expires': '0'
-        }
+    console.log(`Fetching preferences from: ${fullUrl}`);
+    
+    // Use these headers to force freshness
+    const response = await fetch(fullUrl, {
+      cache: 'no-store',
+      next: { revalidate: 0 },
+      headers: {
+        'Pragma': 'no-cache',
+        'Cache-Control': 'no-store, must-revalidate, max-age=0',
+        'Expires': '0',
+        'X-Request-Time': timestamp.toString()
       }
-    );
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch preferences: ${response.status}`);
     }
+    
+    // Get the raw CSV text
+    const csvText = await response.text();
+    
+    // Log the first part of the content to verify
+    console.log(`Fetched CSV content (first 50 chars): ${csvText.substring(0, 50)}`);
+    
+    // Return with strong no-cache headers
+    return new Response(csvText, {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Cache-Control': 'no-store, max-age=0, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Generated-At': new Date().toISOString(),
+        'X-Cache-Buster': random
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching preferences CSV:', error);
+    throw error;
+  }
+}
     
     // Get the raw CSV text
     const csvText = await response.text();
