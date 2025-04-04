@@ -1,6 +1,6 @@
 // In src/app/context/SettingsContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getSettings } from '../hooks/blogService';
+import { getPreferences } from '../hooks/blogService';
 
 type Settings = {
   fontStyle: string;
@@ -20,7 +20,7 @@ export function SettingsProvider({ children }) {
   
   useEffect(() => {
     async function loadSettings() {
-      const fetchedSettings = await getSettings();
+      const fetchedSettings = await getPreferences();
       setSettings(fetchedSettings);
       setLoading(false);
     }
