@@ -85,12 +85,26 @@ try {
     // Rest of the code remains the same
     const blob = await (async () => {
       try {
-        const result = await put(filename, body.csvContent, {
-          access: 'public',
-          contentType: 'text/csv',
-          addRandomSuffix: false
-        });
-        
+        // Add a tiny delay after deletion (only 100ms) to ensure deletion completes
+
+          if (body.sheetType === 'preferences') {
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // For preferences specifically, add a unique suffix to the content
+            const timestamp = new Date().toISOString();
+            const uniqueMarker = `\n<!-- Generated: ${timestamp} -->\n`;
+            
+            // Append the marker to the CSV content (it will be ignored when parsing CSV)
+            body.csvContent = body.csvContent + uniqueMarker;
+          }
+
+          // Standard upload with basic parameters
+          const result = await put(filename, body.csvContent, {
+            access: 'public',
+            contentType: 'text/csv',
+            addRandomSuffix: false
+          });
+                  
         console.log('CSV uploaded successfully, blob URL:', result.url);
         
         // Store the URL without any cache-busting parameters
