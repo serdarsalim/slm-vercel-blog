@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { put, del } from '@vercel/blob';
+import { put } from '@vercel/blob';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No CSV content provided' }, { status: 400 });
     }
 
-    // Determine filename based on sheetType
+    // NEW: Determine filename based on sheetType
     let filename = 'blogPosts.csv'; // Default to blog posts
     
     if (body.sheetType === 'preferences') {
@@ -68,19 +68,9 @@ export async function POST(request: NextRequest) {
     } else {
       console.log('Processing blog posts data...');
     }
-    
-    // Delete the file first to ensure we're not having caching issues
-    try {
-      console.log(`Attempting to delete existing ${filename} before upload...`);
-      await del(filename);
-      console.log(`Successfully deleted existing ${filename}`);
-    } catch (error) {
-      console.warn(`Warning: Failed to delete existing ${filename}, will attempt upload anyway:`, error);
-    }
 
     // Upload the CSV to Vercel Blob storage with consistent path and filename
     console.log(`Uploading ${filename} to Vercel Blob...`);
-    console.log(`Content to upload (first 100 chars): ${body.csvContent.substring(0, 100)}`);
     
     // Rest of the code remains the same
     const blob = await (async () => {
@@ -92,34 +82,6 @@ export async function POST(request: NextRequest) {
         });
         
         console.log('CSV uploaded successfully, blob URL:', result.url);
-        
-        // Verify the upload by immediately fetching it back
-        try {
-          const verifyUrl = `${result.url}?t=${Date.now()}&r=${Math.random()}`;
-          console.log(`Verifying upload by fetching: ${verifyUrl}`);
-          const verifyResponse = await fetch(verifyUrl, {
-            cache: 'no-store',
-            headers: {
-              'Pragma': 'no-cache',
-              'Cache-Control': 'no-store'
-            }
-          });
-          
-          if (verifyResponse.ok) {
-            const content = await verifyResponse.text();
-            console.log(`Verification content (first 100 chars): ${content.substring(0, 100)}`);
-            
-            if (content.trim() === body.csvContent.trim()) {
-              console.log('✅ Verification successful - content matches!');
-            } else {
-              console.log('❌ Verification failed - content does not match!');
-            }
-          } else {
-            console.log('Failed to fetch file for verification');
-          }
-        } catch (verifyError) {
-          console.error('Error verifying upload:', verifyError);
-        }
         
         // Store the URL without any cache-busting parameters
         const cleanUrl = new URL(result.url);
@@ -139,11 +101,12 @@ export async function POST(request: NextRequest) {
     })();
 
     // Revalidate cache tags
-    console.log('Revalidating cache tags');
-    revalidateTag('posts');
-    if (body.sheetType === 'preferences') {
-      revalidateTag('preferences');
-    }
+console.log('Revalidating cache tags');
+revalidateTag('posts');
+if (body.sheetType === 'preferences') {
+  revalidateTag('preferences');
+}
+
 
     // Revalidate the specific path, if provided
     if (body.path) {
