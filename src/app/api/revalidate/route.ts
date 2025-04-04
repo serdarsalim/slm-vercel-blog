@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { put, del } from '@vercel/blob';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
 
@@ -72,6 +72,16 @@ export async function POST(request: NextRequest) {
     // Upload the CSV to Vercel Blob storage with consistent path and filename
     console.log(`Uploading ${filename} to Vercel Blob...`);
     
+// Add this code right before uploading the file
+try {
+  console.log(`Attempting to delete existing ${filename} before upload...`);
+  await del(filename);
+  console.log(`Successfully deleted existing ${filename}`);
+} catch (deleteError) {
+  console.warn(`Warning when deleting ${filename}:`, deleteError);
+  // Continue with upload even if delete fails
+}
+
     // Rest of the code remains the same
     const blob = await (async () => {
       try {
