@@ -348,179 +348,93 @@ export interface Settings {
   // Add other settings as needed
 }
 
-// Function to load settings with cache busting
-// Fix the loadSettingsFromServer function
+// Function to load settings with cache busting - NO FALLBACKS
 export async function loadSettingsFromServer(): Promise<Settings> {
-  try {
-    const timestamp = Date.now();
-    const settingsUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv?t=${timestamp}&r=${Math.random()}`;
-    
-    const response = await fetch(settingsUrl, {
-      next: typeof window === 'undefined' ? { 
-        tags: ['settings'],
-        revalidate: 0 
-      } : undefined,
-      cache: 'no-store',
-      headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-store, must-revalidate',
-        'Expires': '0'
-      }
-    });
-    
-    if (!response.ok) {
-      console.warn('Failed to fetch settings, using defaults');
-      return { fontStyle: 'serif' };
+  const timestamp = Date.now();
+  const settingsUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv?t=${timestamp}&r=${Math.random()}`;
+  
+  const response = await fetch(settingsUrl, {
+    next: typeof window === 'undefined' ? { 
+      tags: ['settings'],
+      revalidate: 0 
+    } : undefined,
+    cache: 'no-store',
+    headers: {
+      'Pragma': 'no-cache',
+      'Cache-Control': 'no-store, must-revalidate',
+      'Expires': '0'
     }
-    
-   
-    const csvText = await response.text();
-    const lines = csvText.split('\n');
-    
-    // Settings are on the second line (index 1), third column (index 2)
-    if (lines.length >= 2) {
-      const columns = lines[1].split(',');
-      if (columns.length >= 3) {
-        const fontStyle = columns[2].trim();
-        return { fontStyle };
-      }
-    }
-    
-    // Default if not found
-    return { fontStyle: 'serif' };
-  } catch (error) {
-    console.error('Error loading settings:', error);
-    return { fontStyle: 'serif' };
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch settings: ${response.status}`);
   }
+  
+  const csvText = await response.text();
+  const lines = csvText.split('\n');
+  
+  // Settings are on the second line (index 1), third column (index 2)
+  if (lines.length >= 2) {
+    const columns = lines[1].split(',');
+    if (columns.length >= 3) {
+      return { fontStyle: columns[2].trim() };
+    }
+  }
+  
+  throw new Error('Invalid settings CSV format');
 }
 
 
 // Find the getSettings function and modify it:
 
 export async function getSettings() {
-  try {
-    // Add timestamp parameter for cache busting
-    const timestamp = Date.now();
-    const response = await fetch(`/api/settings?t=${timestamp}`, {
-      cache: 'no-store',
-      headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-store, must-revalidate',
-        'Expires': '0'
-      }
-    });
-    
-    if (!response.ok) {
-      console.error('Failed to fetch settings');
-      return { fontStyle: 'serif' }; // Default fallback
+  const timestamp = Date.now();
+  const response = await fetch(`/api/settings?t=${timestamp}`, {
+    cache: 'no-store',
+    headers: {
+      'Pragma': 'no-cache',
+      'Cache-Control': 'no-store, must-revalidate',
+      'Expires': '0'
     }
-    
-    
-    const csvText = await response.text();
-    const lines = csvText.split('\n');
-    
-    // Settings are on the second line (index 1), third column (index 2)
-    if (lines.length >= 2) {
-      const columns = lines[1].split(',');
-      if (columns.length >= 3) {
-        const fontStyle = columns[2].trim();
-        return { fontStyle };
-      }
-    }
-    
-    return { fontStyle: 'serif' }; // Default fallback
-  } catch (error) {
-    console.error('Error fetching settings:', error);
-    return { fontStyle: 'serif' }; // Default fallback
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch settings: ${response.status}`);
   }
+  
+  const csvText = await response.text();
+  const lines = csvText.split('\n');
+  
+  if (lines.length >= 2) {
+    const columns = lines[1].split(',');
+    if (columns.length >= 3) {
+      return { fontStyle: columns[2].trim() };
+    }
+  }
+  
+  throw new Error('Invalid settings CSV format');
 }
-
-// Add this to the end of loadBlogServer.ts
 
 // Function to update settings from client components
 export async function updateSettings(newSettings: Settings): Promise<boolean> {
-  try {
-    console.log('Updating settings at:', new Date().toISOString());
-    console.log('New settings:', newSettings);
-    const timestamp = Date.now();
-    
-    // Create CSV content string (same as before)
-    const csvContent = 'Settings,type,value\nEditor Layout,font style,' + newSettings.fontStyle;
-    console.log('Sending CSV content:', csvContent);
-    
-    const response = await fetch(`/api/settings/save?t=${timestamp}&r=${Math.random()}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/csv',
-        'Cache-Control': 'no-store',
-        'Pragma': 'no-cache'
-      },
-      body: csvContent
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Server returned error:', response.status, errorText);
-      throw new Error(`Failed to update settings: ${response.status}`);
-    }
-    
-    // Parse the response as CSV since that's what we're getting back
-    const responseText = await response.text();
-    console.log('Got CSV response:', responseText);
-    
-    const lines = responseText.split('\n');
-    if (lines.length >= 2) {
-      const statusLine = lines[1].split(',');
-      if (statusLine[0] === 'Success') {
-        console.log('Settings updated successfully:', statusLine[1]);
-        return true;
-      }
-    }
-    
-    console.warn('Unexpected response format:', responseText);
-    return false;
-  } catch (error) {
-    console.error('Error updating settings:', error);
-    return false;
+  const csvContent = 'Settings,type,value\nEditor Layout,font style,' + newSettings.fontStyle;
+  
+  const response = await fetch('/api/revalidate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store'
+    },
+    body: JSON.stringify({
+      csvContent,
+      sheetType: 'settings',
+      secret: 'your_default_secret'
+    })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to update settings: ${response.status}`);
   }
-}
-
-// Debug helper function to check settings file
-export async function debugCheckSettings(): Promise<void> {
-  try {
-    const timestamp = Date.now();
-    const settingsUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv?t=${timestamp}&r=${Math.random()}`;
-    
-    console.log('Checking settings file at:', new Date().toISOString());
-    console.log('URL:', settingsUrl);
-    
-    const response = await fetch(settingsUrl, {
-      cache: 'no-store',
-      headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-store, must-revalidate',
-        'Expires': '0'
-      }
-    });
-    
-    if (!response.ok) {
-      console.error('Failed to fetch settings file:', response.status);
-      return;
-    }
-    
-    const csvText = await response.text();
-    console.log('Current settings file content:');
-    console.log(csvText);
-    
-    // Try to parse it
-    const lines = csvText.split('\n');
-    if (lines.length >= 2) {
-      const columns = lines[1].split(',');
-      if (columns.length >= 3) {
-        console.log('Current font style:', columns[2].trim());
-      }
-    }
-  } catch (error) {
-    console.error('Error checking settings:', error);
-  }
+  
+  return true;
 }

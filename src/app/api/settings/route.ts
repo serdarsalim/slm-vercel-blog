@@ -1,37 +1,43 @@
 import { NextResponse } from 'next/server';
-import { loadSettingsFromServer } from '@/app/utils/loadBlogServer';
 
 export const dynamic = 'force-dynamic';
 
-// In /api/settings/route.ts
-// In /api/settings/route.ts
 export async function GET() {
   try {
-    const settings = await loadSettingsFromServer();
+    // Add timestamp to prevent caching
+    const timestamp = Date.now();
+    const randomValue = Math.random();
     
-    // Return consistent CSV format
-    return new Response(
-      'Settings,type,value\nEditor Layout,font style,' + settings.fontStyle, 
+    // Fetch the original CSV directly
+    const response = await fetch(
+      `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/settings.csv?t=${timestamp}&r=${randomValue}`,
       {
+        cache: 'no-store',
         headers: {
-          'Content-Type': 'text/csv',
-          'Cache-Control': 'no-store, max-age=0, must-revalidate',
           'Pragma': 'no-cache',
-          'Expires': '0'
+          'Cache-Control': 'no-store'
         }
       }
     );
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch settings: ${response.status}`);
+    }
+    
+    // Get the raw CSV text
+    const csvText = await response.text();
+    
+    // Return the exact CSV from Blob storage without modifying it
+    return new Response(csvText, {
+      headers: {
+        'Content-Type': 'text/csv',
+        'Cache-Control': 'no-store, max-age=0, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
   } catch (error) {
-    console.error('Error fetching settings:', error);
-    // Fallback for errors
-    return new Response(
-      'Settings,type,value\nEditor Layout,font style,serif', 
-      { 
-        status: 200,
-        headers: {
-          'Content-Type': 'text/csv'
-        }
-      }
-    );
+    console.error('Error fetching settings CSV:', error);
+    throw error; // Let the error propagate up
   }
 }
