@@ -104,7 +104,7 @@ useEffect(() => {
   refreshPosts();
   
   // Different interval for dev vs production
-  const interval = process.env.NODE_ENV === 'development' ? 5000 : 15000;
+  const interval = process.env.NODE_ENV === 'development' ?  30000 : 300000; 
   
   // Then set interval to check periodically
   const refreshTimer = setInterval(() => {
