@@ -21,8 +21,10 @@ interface ExtendedBlogPost extends BlogPost {
 // The local file and Google Sheets are used as fallbacks
 const DIRECT_BLOB_URL = 'https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/blogPosts.csv';
 const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=1366419500&single=true&output=csv';
-const FALLBACK_URL = '/data/blogPosts.csv';
-const TIMEOUT_MS = 10000; // 3 second timeout
+const FALLBACK_URL = process.env.NODE_ENV === 'production'
+  ? 'https://www.writeaway.blog/data/blogPosts.csv'  // Full URL in production 
+  : '/data/blogPosts.csv';  // Local path in development
+const TIMEOUT_MS = 10000;
 
 function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
   try {
@@ -183,19 +185,19 @@ export async function loadBlogPostsServer(): Promise<BlogPost[]> {
       console.log("Successfully loaded posts from Vercel Blob");
       return posts;
     } catch (blobError) {
-      console.error("Direct Blob access failed, trying local fallback:", blobError.message);
+      console.error("Direct Blob access failed, trying Google Sheets:", blobError.message);
       
-      // Second try: Local fallback file
+      // Second try: Google Sheets
       try {
-        const posts = await fetchAndProcessPosts(FALLBACK_URL);
-        console.log("Successfully loaded posts from local fallback");
-        return posts;
-      } catch (localError) {
-        console.error("Local fallback failed, trying Google Sheets:", localError.message);
-        
-        // Third try: Google Sheets
         const posts = await fetchAndProcessPosts(GOOGLE_SHEETS_URL);
         console.log("Successfully loaded posts from Google Sheets");
+        return posts;
+      } catch (sheetsError) {
+        console.error("Google Sheets failed, trying local fallback as last resort:", sheetsError.message);
+        
+        // Third try: Local fallback file
+        const posts = await fetchAndProcessPosts(FALLBACK_URL);
+        console.log("Successfully loaded posts from local fallback");
         return posts;
       }
     }
