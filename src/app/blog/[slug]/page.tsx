@@ -1,6 +1,5 @@
 "use client";
 
-import { fetchBlogDataWithTags } from '@/app/utils/loadBlogServer';
 import { Suspense, useState, useRef, lazy, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
