@@ -22,7 +22,7 @@ interface ExtendedBlogPost extends BlogPost {
 const DIRECT_BLOB_URL = 'https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/blogPosts.csv';
 const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=1366419500&single=true&output=csv';
 const FALLBACK_URL = '/data/blogPosts.csv';
-const TIMEOUT_MS = 3000; // 3 second timeout
+const TIMEOUT_MS = 10000; // 3 second timeout
 
 function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
   try {
