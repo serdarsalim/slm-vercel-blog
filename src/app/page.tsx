@@ -3,6 +3,9 @@ import { Suspense } from "react";
 import { loadBlogPostsServer } from '@/app/utils/loadBlogServer';
 import BlogClientContent from "@/app/components/BlogClientContent";
 
+// Enable ISR with a long cache time
+export const revalidate = 86400; // 24 hours
+
 // Server Component (no "use client" directive)
 export default async function BlogPage() {
   // Fetch data server-side during rendering
