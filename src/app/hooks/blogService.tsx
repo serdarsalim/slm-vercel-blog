@@ -195,15 +195,47 @@ export function usePostBySlug(slug: string, initialPost: BlogPost | null = null)
 }
 
 
-// In src/app/hooks/blogService.ts (or wherever your blog service is)
+
+
+// Module-level preferences cache
+const prefCache = {
+  csvData: null,
+  lastFetched: 0
+};
+
+// Then replace your existing getPreferences with this:
 export async function getPreferences() {
   try {
-    const timestamp = Date.now();
-    const response = await fetch(`/api/preferences?t=${timestamp}`, {
+    const now = Date.now();
+    
+    // Skip network request if we've fetched in the last 5 minutes
+    // This prevents excessive API calls on client side
+    const shouldRefetch = now - prefCache.lastFetched > 5 * 60 * 1000;
+    
+    if (!shouldRefetch && prefCache.csvData) {
+      console.log('Using cached preferences data');
+      
+      // Process the cached data the same way we would fresh data
+      const lines = prefCache.csvData.split('\n');
+      if (lines.length >= 2) {
+        const columns = lines[1].split(',');
+        if (columns.length >= 3) {
+          const fontStyle = columns[2].trim();
+          return { fontStyle };
+        }
+      }
+    }
+    
+    // Add minimal cache busting for development
+    const cacheBuster = process.env.NODE_ENV === 'development' 
+      ? `?t=${Date.now()}` 
+      : '';
+    
+    const response = await fetch(`/api/preferences${cacheBuster}`, {
       cache: 'no-store',
       headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-store'
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     });
     
@@ -211,11 +243,15 @@ export async function getPreferences() {
       throw new Error('Failed to fetch preferences');
     }
     
-    
     const csvText = await response.text();
+    
+    // Cache the raw CSV for future use
+    prefCache.csvData = csvText;
+    prefCache.lastFetched = now;
+    
+    // Process the same way as before
     const lines = csvText.split('\n');
     
-    // preferences are on the second line (index 1), third column (index 2)
     if (lines.length >= 2) {
       const columns = lines[1].split(',');
       if (columns.length >= 3) {
@@ -228,7 +264,22 @@ export async function getPreferences() {
     return { fontStyle: 'serif' };
   } catch (error) {
     console.error('Error fetching preferences:', error);
-    return { fontStyle: 'serif' }; // Default fallback
+    
+    // If we have cached data, use it as fallback
+    if (prefCache.csvData) {
+      console.log('Using cached preferences as fallback after error');
+      const lines = prefCache.csvData.split('\n');
+      if (lines.length >= 2) {
+        const columns = lines[1].split(',');
+        if (columns.length >= 3) {
+          const fontStyle = columns[2].trim();
+          return { fontStyle };
+        }
+      }
+    }
+    
+    // Last resort - return default
+    return { fontStyle: 'serif' };
   }
 }
 

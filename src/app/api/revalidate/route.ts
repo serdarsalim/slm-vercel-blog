@@ -12,15 +12,46 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 // GET handler – for testing and basic info
 export async function GET(request: NextRequest) {
   console.log('GET request to /api/revalidate');
-  return NextResponse.json(
-    { message: "This endpoint accepts POST requests for blog updates" },
-    {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
-      }
-    }
-  );
+  
+  // Use your environment variable or a fallback for the secret token
+  const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
+  
+  // Get the token from the request
+  const token = request.nextUrl.searchParams.get('token');
+  
+  // Validate the token
+  if (token !== secretToken) {
+    console.log('Invalid revalidation token');
+    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+  }
+  
+  try {
+    // Get the path to revalidate (default to blog)
+    const path = request.nextUrl.searchParams.get('path') || '/blog';
+    
+    // Log the revalidation attempt
+    console.log(`Revalidating: ${path}`);
+    
+    // Revalidate both the tag and the path for complete coverage
+    revalidateTag('posts');
+    revalidatePath(path);
+    
+    // For thoroughness, also revalidate the home page and individual post pattern
+    revalidatePath('/');
+    revalidatePath('/blog/[slug]', 'page');
+    
+    return NextResponse.json({
+      revalidated: true,
+      message: `Revalidated ${path} and related paths`,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Revalidation error:', error);
+    return NextResponse.json({
+      revalidated: false,
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
 }
 
 // POST handler – receives CSV data, saves it, and triggers revalidation
@@ -35,7 +66,7 @@ export async function POST(request: NextRequest) {
     console.log('Received request body:', body);
 
     // Validate the secret token
-    if (body.secret !== secretToken) {
+    if (body.secret !== secretToken && body.token !== secretToken) {
       console.log('Invalid token provided');
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
@@ -53,6 +84,34 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // Handle two cases:
+    // 1. Google Apps Script sending a simple revalidation trigger
+    if (body.action === 'revalidate' || !body.csvContent) {
+      // Simple revalidation without updating the blob
+      console.log('Running cache revalidation (no content update)');
+      
+      // Get the path to revalidate
+      const path = body.path || '/blog';
+      
+      // Revalidate cache tags and paths
+      revalidateTag('posts');
+      revalidatePath(path);
+      revalidatePath('/');
+      revalidatePath('/blog/[slug]', 'page');
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Blog pages revalidated',
+        timestamp: new Date().toISOString()
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        }
+      });
+    }
+
+    // 2. CSV content upload and revalidation
+    
     // Ensure CSV content is provided
     if (!body.csvContent) {
       console.log('No CSV content provided');
@@ -69,60 +128,42 @@ export async function POST(request: NextRequest) {
       console.log('Processing blog posts data...');
     }
 
-    // Upload the CSV to Vercel Blob storage with consistent path and filename
-    console.log(`Uploading ${filename} to Vercel Blob...`);
+    // Try to delete existing file before upload
+    try {
+      console.log(`Attempting to delete existing ${filename} before upload...`);
+      await del(filename);
+      console.log(`Successfully deleted existing ${filename}`);
+    } catch (deleteError) {
+      console.warn(`Warning when deleting ${filename}:`, deleteError);
+      // Continue with upload even if delete fails
+    }
+
+    // Add a tiny delay after deletion
+    await new Promise(resolve => setTimeout(resolve, 300));
     
-// Add this code right before uploading the file
-try {
-  console.log(`Attempting to delete existing ${filename} before upload...`);
-  await del(filename);
-  console.log(`Successfully deleted existing ${filename}`);
-} catch (deleteError) {
-  console.warn(`Warning when deleting ${filename}:`, deleteError);
-  // Continue with upload even if delete fails
-}
+    // Handle preferences specifically
+    if (body.sheetType === 'preferences') {
+      // For preferences specifically, add a unique suffix to the content
+      const timestamp = new Date().toISOString();
+      const uniqueMarker = `\n<!-- Generated: ${timestamp} -->\n`;
+      
+      // Append the marker to the CSV content (it will be ignored when parsing CSV)
+      body.csvContent = body.csvContent + uniqueMarker;
+    }
 
-    // Rest of the code remains the same
-    const blob = await (async () => {
-      try {
-        // Add a tiny delay after deletion (only 100ms) to ensure deletion completes
-
-          if (body.sheetType === 'preferences') {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            // For preferences specifically, add a unique suffix to the content
-            const timestamp = new Date().toISOString();
-            const uniqueMarker = `\n<!-- Generated: ${timestamp} -->\n`;
-            
-            // Append the marker to the CSV content (it will be ignored when parsing CSV)
-            body.csvContent = body.csvContent + uniqueMarker;
-          }
-
-          // Standard upload with basic parameters
-          const result = await put(filename, body.csvContent, {
-            access: 'public',
-            contentType: 'text/csv',
-            addRandomSuffix: false
-          });
-                  
-        console.log('CSV uploaded successfully, blob URL:', result.url);
-        
-        // Store the URL without any cache-busting parameters
-        const cleanUrl = new URL(result.url);
-        cleanUrl.search = ''; // Remove any query parameters
-        console.log('Clean persistent URL:', cleanUrl.toString());
-        
-        // Verify the upload by checking if the URL contains the expected filename
-        if (!result.url.includes(filename)) {
-          console.warn(`Warning: Blob URL doesn't contain expected filename '${filename}'. URL: ${result.url}`);
-        }
-        
-        return result;
-      } catch (error) {
-        console.error('Error uploading to Vercel Blob:', error);
-        throw new Error(`Failed to upload to Vercel Blob: ${error.message}`);
-      }
-    })();
+    // Upload to Vercel Blob
+    const blob = await put(filename, body.csvContent, {
+      access: 'public',
+      contentType: 'text/csv',
+      addRandomSuffix: false
+    });
+    
+    console.log('CSV uploaded successfully, blob URL:', blob.url);
+    
+    // Store the URL without any cache-busting parameters
+    const cleanUrl = new URL(blob.url);
+    cleanUrl.search = ''; // Remove any query parameters
+    console.log('Clean persistent URL:', cleanUrl.toString());
 
     // Revalidate cache tags
     console.log('Running enhanced cache revalidation...');
@@ -163,14 +204,14 @@ try {
     }
 
     // Return a success response with the clean URL
-    const cleanUrl = new URL(blob.url);
-    cleanUrl.search = ''; // Remove any query parameters
+    const cleanBlobUrl = new URL(blob.url);
+    cleanBlobUrl.search = ''; // Remove any query parameters
     
     return NextResponse.json(
       {
         success: true,
         message: 'Blog updated and pages revalidated',
-        url: cleanUrl.toString(),
+        url: cleanBlobUrl.toString(),
         originalUrl: blob.url // Include original URL for debugging if needed
       },
       {
@@ -182,7 +223,7 @@ try {
   } catch (error) {
     console.error('Error processing request:', error);
     return NextResponse.json(
-      { error: error.message || 'Unknown error' },
+      { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

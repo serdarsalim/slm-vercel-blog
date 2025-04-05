@@ -1,10 +1,11 @@
+// src/app/api/posts/route.ts
 import { NextResponse } from 'next/server';
-import { loadBlogPostsServer, processCsvData } from '@/app/utils/loadBlogServer';
+import { loadBlogPostsServer } from '@/app/utils/loadBlogServer';
 
 // These variables persist between requests in production - server memory cache
 let cachedPosts = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 
 // Keep dynamic to ensure the function runs on each request
 export const dynamic = 'force-dynamic';
@@ -20,8 +21,8 @@ export async function GET(request) {
         return NextResponse.json(cachedPosts, {
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'public, max-age=60, s-maxage=60',
-                'Expires': new Date(now + 60000).toUTCString(),
+                'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+                'Expires': new Date(now + 3600000).toUTCString(),
                 'X-Cache': 'HIT',
                 'X-Cache-Age': `${Math.round((now - cacheTimestamp)/1000)}s`
             }
@@ -32,7 +33,7 @@ export async function GET(request) {
     console.log('Cache miss or expired, fetching fresh data');
     
     try {
-        // Fetch fresh data from loadBlogPostsServer instead of direct Blob URL
+        // Fetch fresh data using your existing loadBlogPostsServer function
         const posts = await loadBlogPostsServer();
         
         // Update our cache
@@ -44,8 +45,8 @@ export async function GET(request) {
         return NextResponse.json(posts, {
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'public, max-age=60, s-maxage=60',
-                'Expires': new Date(now + 60000).toUTCString(),
+                'Cache-Control': 'public, max-age=3600, s-maxage=86400',
+                'Expires': new Date(now + 3600000).toUTCString(),
                 'X-Cache': 'MISS',
                 'X-Updated': new Date().toISOString()
             }
@@ -59,8 +60,8 @@ export async function GET(request) {
             return NextResponse.json(cachedPosts, {
                 headers: {
                     'Content-Type': 'application/json',
-                    'Cache-Control': 'public, max-age=30, s-maxage=30', // Shorter TTL for stale data
-                    'Expires': new Date(now + 30000).toUTCString(),
+                    'Cache-Control': 'public, max-age=1800, s-maxage=3600', // Shorter TTL for stale data
+                    'Expires': new Date(now + 1800000).toUTCString(),
                     'X-Cache': 'STALE',
                     'X-Cache-Age': `${Math.round((now - cacheTimestamp)/1000)}s`
                 }
@@ -72,7 +73,7 @@ export async function GET(request) {
             status: 500,
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'public, max-age=30, s-maxage=30',
+                'Cache-Control': 'no-cache',
                 'X-Error': error.message || 'Unknown error'
             }
         });

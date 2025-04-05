@@ -12,8 +12,6 @@ import Fuse from "fuse.js";
 import BlogPostCard from "./BlogPostCard";
 import type { BlogPost } from "@/app/types/blogpost";
 
-
-
 interface BlogClientContentProps {
   initialPosts: BlogPost[];
   initialFeaturedPosts: BlogPost[];
@@ -35,8 +33,6 @@ function useDebounce<T>(value: T, delay: number): T {
 
   return debouncedValue;
 }
-
-
 
 export default function BlogClientContent({
   initialPosts,
@@ -60,78 +56,83 @@ export default function BlogClientContent({
   const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
   const [isBrowser, setIsBrowser] = useState(false);
 
-  // Function to refresh post data
-// Update the refreshPosts function with stronger cache prevention
-
-const refreshPosts = useCallback(async () => {
-  try {
-    setShowLoader(true);
-    // Add an even more aggressive cache-busting approach for localhost
-    const timestamp = Date.now();
-    const nonce = Math.random().toString(36).substring(2, 15);
-    const response = await fetch(`/api/posts?t=${timestamp}&nonce=${nonce}`, {
-      method: 'GET', // Explicitly set method
-      cache: 'no-store',
-      headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-store, must-revalidate',
-        'Expires': '0',
-        'X-Cache-Bust': nonce // Custom header to prevent caching
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error('Failed to refresh posts');
-    }
-    
-    const freshPosts = await response.json();
-    
-    // Debug - log the posts to verify we're getting fresh data
-    console.log('Refreshed posts:', freshPosts.length, 'First post:', freshPosts[0]?.title);
-    
-    // Force a re-render by creating a new array
-    setPosts([...freshPosts]);
-    setShowLoader(false);
-  } catch (error) {
-    console.error('Error refreshing posts:', error);
-    setShowLoader(false);
-  }
-}, []);
-
-// Make the refresh interval shorter for development
-useEffect(() => {
-  // Initial check on component mount
-  refreshPosts();
-  
-  // Different interval for dev vs production
-  const interval = process.env.NODE_ENV === 'development' ?  30000 : 300000; 
-  
-  // Then set interval to check periodically
-  const refreshTimer = setInterval(() => {
-    console.log('Checking for updates...');
-    refreshPosts();
-  }, interval); // 5 seconds in dev, 15 seconds in production
-  
-  return () => clearInterval(refreshTimer);
-}, [refreshPosts]);
-
-
-// Add this useEffect between your existing effects
-useEffect(() => {
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'visible') {
-      console.log('Tab visible again, refreshing posts...');
-      refreshPosts();
-    }
-  };
-  
-  document.addEventListener('visibilitychange', handleVisibilityChange);
-  return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-}, [refreshPosts]);
-
-
   // Track if the component is mounted
   const isMounted = useRef(false);
+  // Track last data update time for optimization
+  const lastUpdate = useRef(Date.now());
+
+  // Function to refresh post data with optimization
+  const refreshPosts = useCallback(async (isManualRefresh = false) => {
+    try {
+      // Show loader only for manual refreshes
+      if (isManualRefresh) {
+        setShowLoader(true);
+      }
+      
+      // Optimization: Check if we need to refresh by comparing the cache timestamp
+      // First do a lightweight HEAD request
+      const response = await fetch('/api/posts?check=timestamp', {
+        method: 'HEAD',
+        cache: 'no-store'
+      });
+      
+      // If the server indicates we have fresh data, don't fetch again
+      const serverCacheAge = response.headers.get('X-Cache-Age');
+      const cacheStatus = response.headers.get('X-Cache');
+      
+      // If cache is recent (less than 5 minutes old) and we've updated in last 10 minutes, skip
+      const timeSinceLastUpdate = Date.now() - lastUpdate.current;
+      if (
+        serverCacheAge && 
+        parseInt(serverCacheAge) < 300 && // Less than 5 minutes old server cache
+        cacheStatus === 'HIT' &&
+        timeSinceLastUpdate < 600000 && // Less than 10 minutes since our last update
+        !isManualRefresh
+      ) {
+        console.log('Using recent cache, skipping refresh');
+        if (isManualRefresh) setShowLoader(false);
+        return;
+      }
+      
+      // Otherwise fetch fresh data
+      const dataResponse = await fetch('/api/posts', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'X-Client-Refresh': Date.now().toString()
+        }
+      });
+      
+      if (!dataResponse.ok) {
+        throw new Error('Failed to refresh posts');
+      }
+      
+      const freshPosts = await dataResponse.json();
+      
+      // Only update state if we have new data and component is still mounted
+      if (freshPosts.length > 0 && isMounted.current) {
+        // Simple comparison of post count and first/last posts
+        const hasChanges = 
+          freshPosts.length !== posts.length ||
+          (freshPosts[0]?.id !== posts[0]?.id) ||
+          (freshPosts[freshPosts.length - 1]?.id !== posts[posts.length - 1]?.id);
+        
+        if (hasChanges) {
+          console.log('Updating with fresh data:', freshPosts.length, 'posts');
+          setPosts([...freshPosts]);
+          lastUpdate.current = Date.now();
+        } else {
+          console.log('No changes in data detected');
+        }
+      }
+      
+      if (isManualRefresh) setShowLoader(false);
+    } catch (error) {
+      console.error('Error refreshing posts:', error);
+      if (isManualRefresh) setShowLoader(false);
+    }
+  }, [posts]);
 
   // Set browser state for hydration safety
   useEffect(() => {
@@ -149,6 +150,41 @@ useEffect(() => {
     // Reset render count when search changes
     setRenderedCount(8);
   }, [debouncedSearchTerm]);
+
+  // Optimized data refreshing - reduced frequency
+  useEffect(() => {
+    // Initial fetch on component mount (but only if needed)
+    if (initialPosts.length === 0) {
+      refreshPosts(false); // Not a manual refresh
+    }
+    
+    // Poll much less frequently - once every 5 minutes in production is plenty
+    // In development, we can check more often for testing
+    const interval = process.env.NODE_ENV === 'development' ? 60000 : 300000; // 1 min dev, 5 min prod
+    
+    const refreshTimer = setInterval(() => {
+      refreshPosts(false); // Background refresh, not manual
+    }, interval);
+    
+    return () => clearInterval(refreshTimer);
+  }, [refreshPosts, initialPosts.length]);
+
+  // Refresh when tab becomes visible again
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Check if it's been at least 5 minutes since last update
+        const timeSinceLastUpdate = Date.now() - lastUpdate.current;
+        if (timeSinceLastUpdate > 300000) { // 5 minutes
+          console.log('Tab visible again, checking for updates...');
+          refreshPosts(false); // Not a manual refresh
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refreshPosts]);
 
   // Create optimized Fuse instance for search
   const fuse = useMemo(() => {
@@ -331,7 +367,6 @@ useEffect(() => {
     }),
     exit: { opacity: 0, transition: { duration: 0.2 } },
     hover: {
-  
       transition: { duration: 0.2, ease: "easeOut" },
     },
   };
@@ -550,18 +585,17 @@ useEffect(() => {
                 />
               )}
 
-{/* Loading indicator */}
-{showLoader && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    className="flex justify-center py-8"
-  >
-    <div className="w-10 h-10 border-4 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin"></div>
-  </motion.div>
-)}
+              {/* Loading indicator */}
+              {showLoader && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="flex justify-center py-8"
+                >
+                  <div className="w-10 h-10 border-4 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin"></div>
+                </motion.div>
+              )}
               
-
               {/* End message - only shown when no more posts */}
               {!hasMorePosts && sortedPosts.length > 10 && (
                 <motion.div

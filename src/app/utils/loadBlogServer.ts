@@ -1,4 +1,4 @@
-// src/app/utils/loadBlogServerPost.ts
+// src/app/utils/loadBlogServer.ts - simplified version
 import Papa from 'papaparse';
 import type { BlogPost } from '@/app/types/blogpost';
 
@@ -17,13 +17,12 @@ interface ExtendedBlogPost extends BlogPost {
   load: boolean;
 }
 
-// In production, we primarily use the API route which fetches from Vercel Blob storage
-// The local file and Google Sheets are used as fallbacks
-const DIRECT_BLOB_URL = 'https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/blogPosts.csv';
-const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=337002501&single=true&output=csv';
+// Simplified with just one primary source and one fallback
+// No Vercel Blob storage needed
+const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQY0mDz0IreKP5ZdYTcPu0T0XIm5vbpcagposyo7sW0S4JVCdCRwWaluF7y2tX1PbNfh0n9Jy9qqt49/pub?gid=337002501&single=true&output=csv';
 const FALLBACK_URL = process.env.NODE_ENV === 'production'
-  ? 'https://www.writeaway.blog/data/blogPosts.csv'  // Full URL in production 
-  : '/data/blogPosts.csv';  // Local path in development
+  ? 'https://www.writeaway.blog/data/blogPosts.csv'
+  : '/data/blogPosts.csv';
 const TIMEOUT_MS = 10000;
 
 function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
@@ -35,7 +34,7 @@ function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
     
     return {
       load,
-      id: item.id?.toString() || "0", // Make sure id is a string
+      id: item.id?.toString() || "0",
       title: item.title || 'Untitled Post',
       slug: item.slug || 'untitled-post',
       excerpt: item.excerpt || '',
@@ -55,7 +54,7 @@ function parseBlogData(item: Record<string, any>): ExtendedBlogPost {
   } catch (error) {
     console.error("Error parsing blog post data:", error, item);
     return {
-      load: false, // Don't load error posts by default
+      load: false,
       id: "0",
       title: 'Error Post',
       slug: 'error-post',
@@ -92,131 +91,109 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}): Promise
   }
 }
 
-// SIMPLIFIED: Function to fetch and process blog posts without internal fallback
-async function fetchAndProcessPosts(url: string): Promise<BlogPost[]> {
-  // Create a timestamped URL for cache busting
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2);
-  const timestampedUrl = url.includes('?') 
-    ? `${url}&t=${timestamp}&r=${random}` 
-    : `${url}?t=${timestamp}&r=${random}`;
-  
-  console.log(`Fetching blog posts from: ${timestampedUrl}`);
-  
-  // Determine if this is a relative URL (for local file in public directory)
-  const isRelativeUrl = url.startsWith('/') && !url.startsWith('//');
-  const isBlobUrl = url.includes('blob.vercel-storage.com');
-  
-  // For server components and relative URLs, we need to handle differently
-  let csvText: string;
-  
-  if (isRelativeUrl && typeof window === 'undefined') {
-    // Server-side with relative URL - use fs
-    const fs = require('fs');
-    const path = require('path');
-    const publicDir = path.join(process.cwd(), 'public');
-    const filePath = path.join(publicDir, url);
-    
-    try {
-      csvText = fs.readFileSync(filePath, 'utf8');
-    } catch (fsError) {
-      console.error("Error reading local file:", fsError);
-      throw new Error(`Failed to read file: ${filePath}`);
-    }
-  } else {
-    // Client-side or server-side with absolute URL
-    const fetchOptions: RequestInit = {
-      cache: 'no-store',
-      headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-store, must-revalidate',
-        'Expires': '0',
-        'X-Request-Time': timestamp.toString()
-      }
-    };
-    
-    const response = await fetchWithTimeout(timestampedUrl, fetchOptions);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    csvText = await response.text();
-  }
-  
-  if (!csvText || csvText.trim().length === 0) {
-    throw new Error('Empty CSV response');
-  }
-  
-  const { data, errors } = Papa.parse(csvText, { 
-    header: true,
-    skipEmptyLines: true,
-  });
-
-  if (errors.length > 0 && errors[0].code !== "TooFewFields") {
-    console.warn("CSV parsing had errors:", errors);
-  }
-
-  if (!Array.isArray(data) || data.length === 0) {
-    throw new Error('No valid data in CSV');
-  }
-
-  // Parse all posts but only return those with load: true
-  const allPosts = data.map(parseBlogData).filter(Boolean);
-  
-  // Early filter for posts that should be loaded
-  const posts = allPosts.filter(post => post.load);
-  
-  console.log(`Loaded ${posts.length} posts from ${url}`);
-  return posts; // Return only posts with load: true
-}
-
 // Main function to load blog posts - can be used in server components
-// This is the ONLY place with fallback logic now
 export async function loadBlogPostsServer(): Promise<BlogPost[]> {
   console.log("Loading blog posts from server");
   
-  // Try sources in sequence with proper error handling
-//  try {
-    // First try: Vercel Blob with direct access
-    //      console.log("Trying primary source: Vercel Blob");
-   //       try {
-   //         const posts = await fetchAndProcessPosts(DIRECT_BLOB_URL);
-    //        console.log("Successfully loaded posts from Vercel Blob");
-    //        return posts;
-    //      } catch (blobError) {
-   //         console.error("Direct Blob access failed, trying Google Sheets:", blobError.message); 
+  try {
+    // First try: Google Sheets (primary source)
+    console.log("Trying primary source: Google Sheets");
+    try {
+      // Add cache busting params but only in development
+      const timestamp = process.env.NODE_ENV === 'development' ? `?t=${Date.now()}` : '';
+      const response = await fetchWithTimeout(`${GOOGLE_SHEETS_URL}${timestamp}`, {
+        next: { 
+          tags: ['posts'],
+          // Add revalidate only in production to enable ISR
+          ...(process.env.NODE_ENV === 'production' && { revalidate: 86400 })
+        }
+      });
       
-      // Second try: Google Sheets
-    
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const csvText = await response.text();
+      
+      if (!csvText || csvText.trim().length === 0) {
+        throw new Error('Empty CSV response');
+      }
+      
+      const result = Papa.parse(csvText, { 
+        header: true,
+        skipEmptyLines: true,
+      });
+      
+      if (!Array.isArray(result.data) || result.data.length === 0) {
+        throw new Error('No valid data in CSV');
+      }
+      
+      // Parse all posts but only return those with load: true
+      const allPosts = result.data.map(parseBlogData).filter(Boolean);
+      const posts = allPosts.filter(post => post.load);
+      
+      console.log(`Successfully loaded ${posts.length} posts from Google Sheets`);
+      return posts;
+    } catch (sheetsError) {
+      console.error("Google Sheets failed, trying local fallback:", sheetsError.message);
+      
+      // Fallback: Local file
+      // For server components, read the file directly
+      if (typeof window === 'undefined' && FALLBACK_URL.startsWith('/')) {
+        const fs = require('fs');
+        const path = require('path');
+        const publicDir = path.join(process.cwd(), 'public');
+        const filePath = path.join(publicDir, FALLBACK_URL);
         
         try {
-          // First try: Google Sheets (now primary source)
-          console.log("Trying primary source: Google Sheets");
-          try {
-            const posts = await fetchAndProcessPosts(GOOGLE_SHEETS_URL);
-            console.log("Successfully loaded posts from Google Sheets");
-            return posts;
-          } catch (sheetsError) {
-            console.error("Google Sheets failed, trying local fallback as last resort:", sheetsError.message);
-            
-            // Second try: Local fallback file
-            const posts = await fetchAndProcessPosts(FALLBACK_URL);
-            console.log("Successfully loaded posts from local fallback");
-            return posts;
-          }
-        } catch (error) {
-          console.error("All blog post sources failed:", error.message);
-          return []; // Return empty array as last resort
+          const csvText = fs.readFileSync(filePath, 'utf8');
+          const result = Papa.parse(csvText, { 
+            header: true,
+            skipEmptyLines: true,
+          });
+          
+          const allPosts = result.data.map(parseBlogData).filter(Boolean);
+          const posts = allPosts.filter(post => post.load);
+          
+          console.log(`Successfully loaded ${posts.length} posts from local file`);
+          return posts;
+        } catch (fsError) {
+          console.error("Error reading local file:", fsError);
+          return [];
         }
+      } else {
+        // For client-side or absolute URLs
+        const response = await fetchWithTimeout(FALLBACK_URL);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const csvText = await response.text();
+        const result = Papa.parse(csvText, { 
+          header: true,
+          skipEmptyLines: true,
+        });
+        
+        const allPosts = result.data.map(parseBlogData).filter(Boolean);
+        const posts = allPosts.filter(post => post.load);
+        
+        console.log(`Successfully loaded ${posts.length} posts from fallback URL`);
+        return posts;
       }
+    }
+  } catch (error) {
+    console.error("All blog post sources failed:", error.message);
+    return []; // Return empty array as last resort
+  }
+}
 
 // Get a specific post by slug - can be used in server components
 export async function getPostBySlugServer(slug: string): Promise<BlogPost | null> {
   try {
     console.log(`Looking for post with slug: "${slug}"`);
     
-    // Try to get all posts from our optimized chain
+    // Try to get all posts
     const posts = await loadBlogPostsServer();
     
     // Find the post with the matching slug
@@ -233,104 +210,4 @@ export async function getPostBySlugServer(slug: string): Promise<BlogPost | null
     console.error(`Failed to get post ${slug}:`, error);
     return null;
   }
-}
-
-// Modify the function to make it safe for client-side use
-export async function fetchBlogDataWithTags() {
-  // Check if we're on client or server side
-  if (typeof window !== 'undefined') {
-    // CLIENT SIDE: Use the API route with strong cache busting
-    try {
-      const timestamp = Date.now();
-      const nonce = Math.random().toString(36).substring(2);
-      const response = await fetch(`/api/posts?t=${timestamp}&n=${nonce}`, {
-        cache: 'no-store',
-        headers: {
-          'Pragma': 'no-cache',
-          'Cache-Control': 'no-store, must-revalidate',
-          'Expires': '0',
-          'X-Client-Time': new Date().toISOString()
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch blog data: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log(`Fetched ${data.length} posts via client API`);
-      return data;
-    } catch (error) {
-      console.error("Error fetching blog data on client:", error);
-      return [];
-    }
-  } else {
-    // SERVER SIDE: Use next.js tags
-    console.log("Fetching blog data with server tags");
-    
-    try {
-      // Add strong cache busting
-      const timestamp = Date.now();
-      const nonce = Math.random().toString(36).substring(2);
-      const url = `${DIRECT_BLOB_URL}?t=${timestamp}&n=${nonce}`;
-      
-      const response = await fetch(url, {
-        next: { 
-          tags: ['posts'],
-          revalidate: 0 // Force revalidation on each request
-        },
-        cache: 'no-store',
-        headers: {
-          'Pragma': 'no-cache',
-          'Cache-Control': 'no-store, must-revalidate',
-          'Expires': '0',
-          'X-Server-Time': new Date().toISOString()
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch blog data: ${response.status}`);
-      }
-      
-      const csvText = await response.text();
-      return processCsvData(csvText);
-    } catch (error) {
-      console.error("Error fetching blog data with tags:", error);
-      // Fall back to our efficient implementation
-      return loadBlogPostsServer();
-    }
-  }
-}
-
-// Helper function to process CSV data
-export function processCsvData(csvText: string): Promise<BlogPost[]> {
-  return new Promise((resolve, reject) => {
-    Papa.parse(csvText, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.errors.length > 0 && results.errors[0].code !== "TooFewFields") {
-          console.warn("CSV parsing had errors:", results.errors);
-        }
-        
-        if (!Array.isArray(results.data) || results.data.length === 0) {
-          reject(new Error('No valid data in CSV'));
-          return;
-        }
-        
-        // Parse all posts but only return those with load: true
-        const allPosts = results.data.map(parseBlogData).filter(Boolean);
-        
-        // Early filter for posts that should be loaded
-        const posts = allPosts.filter(post => post.load);
-        
-        console.log(`Loaded ${posts.length} posts successfully via processCsvData`);
-        resolve(posts); // Return only posts with load: true
-      },
-      error: (error) => {
-        console.error("Error parsing CSV:", error);
-        reject(error);
-      }
-    });
-  });
 }
