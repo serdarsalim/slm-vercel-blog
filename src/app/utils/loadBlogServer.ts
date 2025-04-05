@@ -20,7 +20,7 @@ interface ExtendedBlogPost extends BlogPost {
 // In production, we primarily use the API route which fetches from Vercel Blob storage
 // The local file and Google Sheets are used as fallbacks
 const DIRECT_BLOB_URL = 'https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/blogPosts.csv';
-const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzuUNByiRaAKH5LpQXusWmoCTku7SG7FEjEtPSHVkQDC5x5g1KLlpJJhf2GxUBIC9EgClwqS1PG-j8/pub?gid=1366419500&single=true&output=csv';
+const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=1366419500&single=true&output=csv';
 const FALLBACK_URL = '/data/blogPosts.csv';
 const TIMEOUT_MS = 3000; // 3 second timeout
 
