@@ -2,9 +2,7 @@
 // Add these important configurations at the top:
 export const runtime = 'nodejs'; // Use Node.js runtime to match revalidate route
 export const dynamic = 'force-dynamic'; // Already have this, but keep it
-
 import { NextResponse } from 'next/server';
-import { revalidateTag } from 'next/cache'; // Add this import
 
 export async function GET() {
   try {
@@ -13,7 +11,7 @@ export async function GET() {
     const random = Math.random().toString(36).substring(2);
     
     // Add BOTH to the URL
-    const fullUrl = `https://9ilxqyx7fm3eyyfw.public.blob.vercel-storage.com/preferences.csv?nocache=${timestamp}-${random}`;
+    const fullUrl = `https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=337002501&single=true&output=csv`;
     
     console.log(`Fetching preferences from: ${fullUrl}`);
     
