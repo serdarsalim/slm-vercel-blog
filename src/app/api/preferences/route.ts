@@ -11,7 +11,7 @@ let cacheTimestamp = 0;
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes in milliseconds (shorter than blog posts)
 
 // Google Sheets URL
-const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=337002501&single=true&output=csv';
+const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=1665518073&single=true&output=csv';
 
 export async function GET() {
   const now = Date.now();

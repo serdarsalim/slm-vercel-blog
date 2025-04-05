@@ -100,8 +100,11 @@ export async function loadBlogPostsServer(): Promise<BlogPost[]> {
     console.log("Trying primary source: Google Sheets");
     try {
       // Add cache busting params but only in development
-      const timestamp = process.env.NODE_ENV === 'development' ? `?t=${Date.now()}` : '';
-      const response = await fetchWithTimeout(`${GOOGLE_SHEETS_URL}${timestamp}`, {
+      const timestamp = process.env.NODE_ENV === 'development' 
+  ? (GOOGLE_SHEETS_URL.includes('?') ? `&t=${Date.now()}` : `?t=${Date.now()}`)
+  : '';
+  
+const response = await fetchWithTimeout(`${GOOGLE_SHEETS_URL}${timestamp}`, {
         next: { 
           tags: ['posts'],
           // Add revalidate only in production to enable ISR
