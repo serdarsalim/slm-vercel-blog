@@ -19,7 +19,7 @@ interface ExtendedBlogPost extends BlogPost {
 
 // Simplified with just one primary source and one fallback
 // No Vercel Blob storage needed
-const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQY0mDz0IreKP5ZdYTcPu0T0XIm5vbpcagposyo7sW0S4JVCdCRwWaluF7y2tX1PbNfh0n9Jy9qqt49/pub?gid=337002501&single=true&output=csv';
+const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=337002501&single=true&output=csv';
 const FALLBACK_URL = process.env.NODE_ENV === 'production'
   ? 'https://www.writeaway.blog/data/blogPosts.csv'
   : '/data/blogPosts.csv';
