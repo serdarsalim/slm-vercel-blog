@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
-// GET handler – for testing and triggering revalidation
+// GET handler – for direct API access and testing
 export async function GET(request: NextRequest) {
   console.log('GET request to /api/revalidate');
   
@@ -24,33 +24,50 @@ export async function GET(request: NextRequest) {
   try {
     // Get the path to revalidate (default to blog)
     const path = request.nextUrl.searchParams.get('path') || '/blog';
+    const slug = request.nextUrl.searchParams.get('slug') || null;
     
     // Log the revalidation attempt
-    console.log(`Revalidating: ${path}`);
+    console.log(`Revalidating: ${path}${slug ? ` for slug: ${slug}` : ''}`);
     
-    // Revalidate both the tag and the path for complete coverage
+    // Step 1: Revalidate tags - affects all post-related pages
+    console.log('Revalidating tags: posts');
     revalidateTag('posts');
-    revalidatePath(path);
     
-    // For thoroughness, also revalidate the home page and individual post pattern
-    revalidatePath('/');
-    revalidatePath('/blog/[slug]', 'page');
+    // Step 2: Revalidate specific paths for comprehensive coverage
+    console.log('Revalidating common paths');
+    revalidatePath('/', 'page');              // Home page
+    revalidatePath('/blog', 'page');          // Blog index page
+    revalidatePath('/blog/[slug]', 'layout'); // Blog post layout
+    
+    // Step 3: If a specific slug is provided, handle that explicitly
+    if (slug) {
+      console.log(`Specifically revalidating: /blog/${slug}`);
+      revalidatePath(`/blog/${slug}`, 'page');
+    } else if (path !== '/' && path !== '/blog') {
+      // If a custom path is provided and it's not one we already revalidated
+      console.log(`Revalidating custom path: ${path}`);
+      revalidatePath(path, 'page');
+    }
     
     return NextResponse.json({
       revalidated: true,
-      message: `Revalidated ${path} and related paths`,
-      timestamp: new Date().toISOString()
+      message: slug 
+        ? `Revalidated post: ${slug} and related paths` 
+        : `Revalidated ${path} and related paths`,
+      timestamp: new Date().toISOString(),
+      warning: "Newly added content may take a moment to become available as pages regenerate"
     });
   } catch (error) {
     console.error('Revalidation error:', error);
     return NextResponse.json({
       revalidated: false,
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
     }, { status: 500 });
   }
 }
 
-// POST handler – simplified to just trigger revalidation
+// POST handler – for server-to-server API calls
 export async function POST(request: NextRequest) {
   console.log('POST request to /api/revalidate');
 
@@ -59,9 +76,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    console.log('Received request body:', body);
+    console.log('Received revalidation request:', JSON.stringify(body).substring(0, 200));
 
-    // Validate the secret token
+    // Validate the secret token (check both formats)
     if (body.secret !== secretToken && body.token !== secretToken) {
       console.log('Invalid token provided');
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
@@ -72,7 +89,8 @@ export async function POST(request: NextRequest) {
       console.log('API key test successful');
       return NextResponse.json({ 
         success: true, 
-        message: 'API key is valid' 
+        message: 'API key is valid',
+        timestamp: new Date().toISOString()
       }, {
         headers: {
           'Access-Control-Allow-Origin': '*'
@@ -82,35 +100,56 @@ export async function POST(request: NextRequest) {
 
     console.log('Running cache revalidation');
     
-    // Get the path to revalidate
+    // Extract parameters
     const path = body.path || '/blog';
+    const slug = body.slug || null;
     
-    // Revalidate cache tags and paths
+    // Step 1: Revalidate tags - affects all post-related pages
+    console.log('Revalidating tags: posts');
     revalidateTag('posts');
-    revalidatePath(path);
-    revalidatePath('/');
-    revalidatePath('/blog/[slug]', 'page');
     
-    // If we have slug info, revalidate that specific post too
-    if (body.slug) {
-      console.log(`Revalidating specific post: ${body.slug}`);
-      revalidatePath(`/blog/${body.slug}`, 'page');
+    // Step 2: Revalidate specific paths for comprehensive coverage
+    console.log('Revalidating common paths');
+    revalidatePath('/', 'page');              // Home page
+    revalidatePath('/blog', 'page');          // Blog index page
+    revalidatePath('/blog/[slug]', 'layout'); // Blog post layout
+    
+    // Step 3: If a specific slug is provided, handle that explicitly
+    if (slug) {
+      console.log(`Specifically revalidating: /blog/${slug}`);
+      revalidatePath(`/blog/${slug}`, 'page');
+    } else if (path !== '/' && path !== '/blog') {
+      // If a custom path is provided and it's not one we already revalidated
+      console.log(`Revalidating custom path: ${path}`);
+      revalidatePath(path, 'page');
     }
     
     return NextResponse.json({
       success: true,
-      message: 'Blog pages revalidated',
-      timestamp: new Date().toISOString()
+      message: slug 
+        ? `Revalidated post: ${slug} and related paths` 
+        : `Revalidated ${path} and related paths`,
+      timestamp: new Date().toISOString(),
+      warning: "Newly added content may take a moment to become available as pages regenerate"
     }, {
       headers: {
         'Access-Control-Allow-Origin': '*'
       }
     });
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error('Error processing revalidation request:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        }
+      }
     );
   }
 }
