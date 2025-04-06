@@ -1,6 +1,7 @@
-// src/lib/data.ts
+// src/lib/data.ts - Consolidated data access layer
 import { supabase } from './supabase';
-import type { Post, SitePreferences } from './supabase';
+import type { Post } from './supabase';
+import type { BlogPost } from '@/app/types/blogpost';
 
 /**
  * Fetch all published blog posts
@@ -22,6 +23,33 @@ export async function getAllPosts(): Promise<Post[]> {
 }
 
 /**
+ * Legacy function for backward compatibility - use getAllPosts() instead
+ */
+export async function loadBlogPostsServer(): Promise<BlogPost[]> {
+  console.log("Loading blog posts from Supabase (legacy function)");
+  
+  const posts = await getAllPosts();
+  
+  // Convert Post[] to BlogPost[]
+  return posts.map(post => ({
+    id: post.id,
+    slug: post.slug,
+    title: post.title,
+    content: post.content,
+    excerpt: post.excerpt || '',
+    date: post.date,
+    categories: post.categories || [],
+    featured: post.featured || false,
+    author: post.author || 'Anonymous',
+    featuredImage: post.featuredImage || '',
+    comment: post.comment !== undefined ? post.comment : true,
+    socmed: post.socmed !== undefined ? post.socmed : true,
+    created_at: post.created_at,
+    updated_at: post.updated_at
+  }));
+}
+
+/**
  * Fetch a specific post by slug
  */
 export async function getPostBySlug(slug: string): Promise<Post | null> {
@@ -39,6 +67,35 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   }
   
   return data as Post;
+}
+
+/**
+ * Legacy function for backward compatibility - use getPostBySlug() instead
+ */
+export async function getPostBySlugServer(slug: string): Promise<BlogPost | null> {
+  console.log(`Looking for post with slug: "${slug}" in Supabase (legacy function)`);
+  
+  const post = await getPostBySlug(slug);
+  
+  if (!post) return null;
+  
+  // Convert Post to BlogPost
+  return {
+    id: post.id,
+    slug: post.slug,
+    title: post.title,
+    content: post.content,
+    excerpt: post.excerpt || '',
+    date: post.date,
+    categories: post.categories || [],
+    featured: post.featured || false,
+    author: post.author || 'Anonymous',
+    featuredImage: post.featuredImage || '',
+    comment: post.comment !== undefined ? post.comment : true,
+    socmed: post.socmed !== undefined ? post.socmed : true,
+    created_at: post.created_at,
+    updated_at: post.updated_at
+  };
 }
 
 /**
@@ -64,7 +121,7 @@ export async function getFeaturedPosts(): Promise<Post[]> {
 /**
  * Fetch site preferences
  */
-export async function getPreferences(): Promise<SitePreferences> {
+export async function getPreferences(): Promise<{ fontStyle: string, [key: string]: any }> {
   console.log("Getting site preferences from Supabase");
   const { data, error } = await supabase
     .from('preferences')
@@ -74,26 +131,8 @@ export async function getPreferences(): Promise<SitePreferences> {
   
   if (error) {
     console.error('Error loading preferences:', error);
-    return { fontStyle: 'serif' };
+    return { fontStyle: 'serif' }; // Default preference
   }
   
-  return data.value as SitePreferences;
-}
-
-/**
- * Compatibility function for pages still using the old API
- * This should be removed gradually as pages are updated
- */
-export async function loadBlogPostsServer(): Promise<Post[]> {
-  console.log("Loading blog posts from Supabase via compatibility function");
-  return getAllPosts();
-}
-
-/**
- * Compatibility function for pages still using the old API
- * This should be removed gradually as pages are updated
- */
-export async function getPostBySlugServer(slug: string): Promise<Post | null> {
-  console.log(`Getting post with slug: "${slug}" from Supabase via compatibility function`);
-  return getPostBySlug(slug);
+  return data.value;
 }

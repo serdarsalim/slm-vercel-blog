@@ -3,8 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
-import { getPostBySlugServer } from '@/app/utils/loadBlogServer';
-
+import { getPostBySlugServer } from '@/lib/data';
 export async function POST(request: NextRequest) {
   const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
 

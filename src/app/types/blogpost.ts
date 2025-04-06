@@ -11,7 +11,6 @@ export interface BlogPost {
   featuredImage?: string;
   comment: boolean;
   socmed: boolean;
-  published: boolean;
   created_at: string;
   updated_at: string;
 }

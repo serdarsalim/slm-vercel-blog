@@ -1,18 +1,18 @@
-// src/app/page.tsx or src/app/blog/page.tsx
+// src/app/page.tsx
 import { Suspense } from "react";
-import { loadBlogPostsServer } from '@/app/utils/loadBlogServer';
+import { getAllPosts, getFeaturedPosts } from '@/lib/data';
 import BlogClientContent from "@/app/components/BlogClientContent";
 
-// Enable ISR with a long cache time
-export const revalidate = 60 * 60 * 24 * 30; // 30 days
+// Enable ISR with a reasonable cache time
+export const revalidate = 3600; // 1 hour
 
 // Server Component (no "use client" directive)
 export default async function BlogPage() {
-  // Fetch data server-side during rendering
-  const posts = await loadBlogPostsServer();
+  // Fetch data server-side directly from Supabase
+  const posts = await getAllPosts();
   
-  // Get featured posts
-  const featuredPosts = posts.filter((post) => post.featured);
+  // Get featured posts directly with optimized query
+  const featuredPosts = await getFeaturedPosts();
   
   // Pass pre-fetched data to client component
   return (

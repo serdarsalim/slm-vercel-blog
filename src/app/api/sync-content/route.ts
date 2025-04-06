@@ -16,7 +16,8 @@ const FIELD_MAPPING: Record<string, string> = {
   'featuredImage': 'featuredImage',
   'comment': 'comment',
   'socmed': 'socmed',
-  'load': 'published'
+  'load': 'published',
+  'lastModified': 'last_modified_at' // New field mapping for tracking changes
 };
 
 export async function POST(request: NextRequest) {
@@ -32,13 +33,13 @@ export async function POST(request: NextRequest) {
     }
     
     // Parse posts data from request
-    const { posts = [] } = body;
+    const { posts = [], incrementalSync = false } = body;
     
     if (!Array.isArray(posts) || posts.length === 0) {
       return NextResponse.json({ error: 'No posts data provided' }, { status: 400 });
     }
     
-    console.log(`Processing ${posts.length} posts for sync...`);
+    console.log(`Processing ${posts.length} posts for ${incrementalSync ? 'incremental' : 'full'} sync...`);
     
     // Extract all slugs from incoming posts for efficient comparison
     const incomingSlugs = new Set(posts.map(p => p.slug));
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Get all existing post slugs for comparison
     const { data: existingPosts, error: fetchError } = await supabase
       .from('posts')
-      .select('slug');
+      .select('slug, last_modified_at');
     
     if (fetchError) {
       console.error('Error fetching existing posts:', fetchError);
@@ -55,15 +56,18 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
     
+    // Create mapping of existing slugs to their last modified dates
     const existingSlugs = new Set(existingPosts?.map(p => p.slug) || []);
-    
-    // Find posts to delete (in DB but not in incoming data)
-    const slugsToDelete = Array.from(existingSlugs).filter(slug => !incomingSlugs.has(slug));
+    const existingModifiedDates = new Map();
+    existingPosts?.forEach(post => {
+      existingModifiedDates.set(post.slug, post.last_modified_at);
+    });
     
     // Track operations
     let updated = 0;
     let inserted = 0;
     let deleted = 0;
+    let skipped = 0;
     let errors = 0;
     
     // Process updates and inserts one by one for better error handling
@@ -123,10 +127,28 @@ export async function POST(request: NextRequest) {
         // Add timestamps
         mappedPost['updated_at'] = new Date().toISOString();
         
+        // If no explicit last_modified_at, use the current time
+        if (!mappedPost['last_modified_at']) {
+          mappedPost['last_modified_at'] = new Date().toISOString();
+        }
+        
         // Check if post exists
         const exists = existingSlugs.has(post.slug);
         
         if (exists) {
+          // For incremental sync, check if the post has been modified
+          if (incrementalSync) {
+            const existingModifiedDate = existingModifiedDates.get(post.slug);
+            const incomingModifiedDate = mappedPost['last_modified_at'];
+            
+            // Skip update if post hasn't changed (and we have valid timestamps)
+            if (existingModifiedDate && incomingModifiedDate && 
+                new Date(existingModifiedDate) >= new Date(incomingModifiedDate)) {
+              skipped++;
+              continue;
+            }
+          }
+          
           // Update existing post
           const { error } = await supabase
             .from('posts')
@@ -161,25 +183,30 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Delete posts that were removed from the sheet
-    if (slugsToDelete.length > 0) {
-      try {
-        const { error } = await supabase
-          .from('posts')
-          .delete()
-          .in('slug', slugsToDelete);
-        
-        if (error) {
-          console.error('Error deleting posts:', error);
-          errors += slugsToDelete.length;
-        } else {
-          deleted = slugsToDelete.length;
-        }
-      } catch (err) {
-        console.error('Error deleting posts:', err);
-        errors += slugsToDelete.length;
-      }
+   // After processing individual posts, handle deletions
+    
+// Find posts to delete (in DB but not in incoming data)
+const slugsToDelete = Array.from(existingSlugs).filter(slug => !incomingSlugs.has(slug));
+    
+// Only delete posts in full sync mode (not incremental)
+if (!incrementalSync && slugsToDelete.length > 0) {
+  try {
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .in('slug', slugsToDelete);
+    
+    if (error) {
+      console.error('Error deleting posts:', error);
+      errors += slugsToDelete.length;
+    } else {
+      deleted = slugsToDelete.length;
     }
+  } catch (err) {
+    console.error('Error deleting posts:', err);
+    errors += slugsToDelete.length;
+  }
+}
     
     // Revalidate paths after database changes
     if (updated > 0 || inserted > 0 || deleted > 0) {
@@ -205,10 +232,13 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    const syncTimestamp = new Date().toISOString();
+    
     return NextResponse.json({
       success: true,
-      stats: { updated, inserted, deleted, errors },
-      timestamp: new Date().toISOString()
+      stats: { updated, inserted, deleted, skipped, errors },
+      syncTimestamp: syncTimestamp,
+      timestamp: syncTimestamp
     });
     
   } catch (error) {
