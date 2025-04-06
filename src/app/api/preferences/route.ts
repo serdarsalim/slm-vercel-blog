@@ -8,6 +8,7 @@ import { parse } from 'csv-parse/sync';
 const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=1665518073&single=true&output=csv';
 
 // Convert CSV to structured preferences object matching YOUR actual sheet structure
+// Convert CSV to structured preferences object matching YOUR actual sheet structure
 const parsePreferencesCSV = (csvText) => {
   try {
     console.log('Raw CSV:', csvText.substring(0, 200)); // Log the beginning of the CSV
@@ -21,21 +22,24 @@ const parsePreferencesCSV = (csvText) => {
     
     console.log('Parsed records:', records);
     
-    // Map your actual column names to preference keys
+    // Default preferences
     const preferences = {
-      // Default preferences
       fontStyle: 'serif',
     };
     
     // Process each row based on YOUR sheet structure
     records.forEach(record => {
-      // Check for Font style in the type column
-      if (record.type === 'Font style') {
+      // Check for fontStyle in the Preference column
+      if (record.Preference === 'fontStyle') {
         preferences.fontStyle = record.value;
         console.log(`Found font style preference: ${record.value}`);
       }
       
       // Add other preference mappings as needed
+      // Example:
+      // if (record.Preference === 'blogTitle') {
+      //   preferences.blogTitle = record.value;
+      // }
     });
     
     console.log('Final preferences:', preferences);
