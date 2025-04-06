@@ -4,7 +4,7 @@ import { loadBlogPostsServer } from '@/app/utils/loadBlogServer';
 import BlogClientContent from "@/app/components/BlogClientContent";
 
 // Enable ISR with a long cache time
-export const revalidate = 86400; // 24 hours
+export const revalidate = 60 * 60 * 24 * 30; // 30 days
 
 // Server Component (no "use client" directive)
 export default async function BlogPage() {

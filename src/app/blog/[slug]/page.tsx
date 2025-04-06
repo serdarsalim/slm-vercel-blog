@@ -3,7 +3,7 @@ import BlogPostContent from './BlogPostContent';
 import { notFound } from 'next/navigation';
 
 // Enable ISR with a long cache time
-export const revalidate = 86400; // 24 hours
+export const revalidate = 60 * 60 * 24 * 30; // 30 days
 
 // Generate static paths at build time
 export async function generateStaticParams() {

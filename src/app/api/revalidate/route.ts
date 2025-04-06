@@ -1,7 +1,5 @@
 // src/app/api/revalidate/route.ts
 
-// No need for Node.js runtime as we're not using blob operations anymore
-// Keep dynamic to ensure the endpoint always executes
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';

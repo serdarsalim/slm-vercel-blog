@@ -108,7 +108,7 @@ const response = await fetchWithTimeout(`${GOOGLE_SHEETS_URL}${timestamp}`, {
         next: { 
           tags: ['posts'],
           // Add revalidate only in production to enable ISR
-          ...(process.env.NODE_ENV === 'production' && { revalidate: 86400 })
+          ...(process.env.NODE_ENV === 'production' && { revalidate: 60 * 60 * 24 * 30 })
         }
       });
       
