@@ -1,19 +1,19 @@
-import { getPostBySlugServer, loadBlogPostsServer } from '@/app/utils/loadBlogServer';
+import { getPostBySlug, getAllPosts } from '@/lib/data';
 import BlogPostContent from './BlogPostContent';
 import { notFound } from 'next/navigation';
 
-// Enable ISR with a long cache time
-export const revalidate = 60 * 60 * 24 * 30; // 30 days
+// Enable ISR with a reasonable cache time
+export const revalidate = 3600; // 1 hour (you can adjust this)
 
 // Generate static paths at build time
 export async function generateStaticParams() {
-  const posts = await loadBlogPostsServer();
+  const posts = await getAllPosts();
   return posts.map(post => ({ slug: post.slug }));
 }
 
 // Server component - statically generated with ISR
 export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = await getPostBySlugServer(params.slug);
+  const post = await getPostBySlug(params.slug);
   
   if (!post) {
     notFound();
