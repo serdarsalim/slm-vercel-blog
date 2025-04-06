@@ -1,49 +1,41 @@
 // src/app/api/preferences/update/route.ts
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 
 export async function POST(request: NextRequest) {
-  console.log('POST to /api/preferences/update - Settings-only update');
+  console.log('POST to /api/preferences/update');
   
   // Use your environment variable for the secret token
   const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
 
   try {
     const body = await request.json();
-    console.log('Received settings update request');
+    console.log('Received preferences update request');
 
     // Validate the secret token
     if (body.secret !== secretToken) {
-      console.log('Invalid token provided for settings update');
+      console.log('Invalid token provided');
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Verify this is a settings-only update
-    if (body.updateType !== 'settings-only') {
-      console.log('Missing settings-only flag');
-      return NextResponse.json({ 
-        error: 'Invalid request type'
-      }, { status: 400 });
-    }
-
-    console.log('Revalidating ONLY preferences data');
+    console.log('Revalidating preferences data');
     
-    // ONLY revalidate the preferences data, nothing else
+    // Revalidate both the tag and path
     revalidateTag('preferences');
     revalidatePath('/api/preferences');
     
-    // Do NOT revalidate blog posts or other content!
+    // Clear any server-side caches
+    global.preferencesCache = null;
     
     return NextResponse.json({
       success: true,
-      message: 'Settings updated successfully',
+      message: 'Preferences updated successfully',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error processing settings update:', error);
+    console.error('Error updating preferences:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

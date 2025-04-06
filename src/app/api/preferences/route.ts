@@ -1,119 +1,117 @@
 // src/app/api/preferences/route.ts
-// Add these important configurations at the top:
-export const runtime = 'nodejs'; // Use Node.js runtime to match revalidate route
-export const dynamic = 'force-dynamic'; // Keep endpoint dynamic
+export const dynamic = 'force-dynamic';
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { parse } from 'csv-parse/sync';
 
-// These variables persist between requests in production - server memory cache
-let cachedCsvText = null;
-let cacheTimestamp = 0;
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes in milliseconds (shorter than blog posts)
-
-// Google Sheets URL
+// Google Sheets URL for preferences
 const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRIZrizw82G-s5sJ_wHvXv4LUBStl-iS3G8cpJ3bAyDuBI9cjvrEkj_-dl97CccPAQ0R7fKiP66BiwZ/pub?gid=1665518073&single=true&output=csv';
 
-export async function GET() {
-  const now = Date.now();
-  
-  // Check if we have valid cached preferences
-  if (cachedCsvText && (now - cacheTimestamp < CACHE_TTL)) {
-    console.log(`Serving preferences from memory cache (age: ${Math.round((now - cacheTimestamp)/1000)}s)`);
+// Convert CSV to structured preferences object matching YOUR actual sheet structure
+const parsePreferencesCSV = (csvText) => {
+  try {
+    console.log('Raw CSV:', csvText.substring(0, 200)); // Log the beginning of the CSV
     
-    // Return cached preferences with headers indicating cache source
-    return new Response(cachedCsvText, {
+    // Parse CSV to records
+    const records = parse(csvText, { 
+      columns: true, 
+      skip_empty_lines: true,
+      trim: true // Trim whitespace from values
+    });
+    
+    console.log('Parsed records:', records);
+    
+    // Map your actual column names to preference keys
+    const preferences = {
+      // Default preferences
+      fontStyle: 'serif',
+    };
+    
+    // Process each row based on YOUR sheet structure
+    records.forEach(record => {
+      // Check for Font style in the type column
+      if (record.type === 'Font style') {
+        preferences.fontStyle = record.value;
+        console.log(`Found font style preference: ${record.value}`);
+      }
+      
+      // Add other preference mappings as needed
+    });
+    
+    console.log('Final preferences:', preferences);
+    return preferences;
+    
+  } catch (error) {
+    console.error("Error parsing CSV:", error);
+    console.error("CSV content:", csvText);
+    return { fontStyle: 'serif' };
+  }
+};
+
+// Rest of your code remains the same
+let preferencesCache = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+export async function GET(request: NextRequest) {
+  const now = Date.now();
+  const forceRefresh = request.nextUrl.searchParams.get('refresh') === 'true';
+  
+  // Use cache if available and not forced refresh
+  if (!forceRefresh && preferencesCache && (now - cacheTimestamp < CACHE_TTL)) {
+    console.log('Serving preferences from memory cache (age:', Math.round((now - cacheTimestamp)/1000) + 's)');
+    return NextResponse.json(preferencesCache, {
       headers: {
-        'Content-Type': 'text/csv',
-        'Cache-Control': 'public, max-age=1800, s-maxage=7200',
-        'Expires': new Date(now + 1800000).toUTCString(),
+        'Cache-Control': 'private, max-age=0',
         'X-Cache': 'HIT',
-        'X-Cache-Age': `${Math.round((now - cacheTimestamp)/1000)}s`
       }
     });
   }
   
-  // If we reach here, cache is empty or stale
-  console.log('Preferences cache miss or expired, fetching fresh data');
-  
   try {
-    // Generate cache busters if needed (mainly for development)
-    const queryParams = process.env.NODE_ENV === 'development' 
-      ? `?t=${Date.now()}&r=${Math.random().toString(36).substring(2)}`
+    // Add cache buster for development
+    const cacheBuster = process.env.NODE_ENV === 'development' 
+      ? `&t=${Date.now()}` 
       : '';
     
-    // Fetch from Google Sheets
-    console.log(`Fetching preferences from: ${GOOGLE_SHEETS_URL}${queryParams}`);
-    
-    const response = await fetch(`${GOOGLE_SHEETS_URL}${queryParams}`, {
-      next: { 
-        tags: ['preferences'],
-        // Add revalidate only in production to enable ISR
-        ...(process.env.NODE_ENV === 'production' && { revalidate: 3600 })
-      },
-      headers: {
-        'Pragma': 'no-cache',
-        'Cache-Control': 'no-store, must-revalidate, max-age=0',
-        'Expires': '0',
-        'X-Request-Time': now.toString()
-      }
+    // Fetch preferences from Google Sheets  
+    console.log(`Fetching preferences from: ${GOOGLE_SHEETS_URL}`);
+    const response = await fetch(`${GOOGLE_SHEETS_URL}${cacheBuster}`, {
+      cache: 'no-store',
+      next: { tags: ['preferences'] }
     });
     
     if (!response.ok) {
-      throw new Error(`Failed to fetch preferences: ${response.status}`);
+      throw new Error(`Failed to fetch: ${response.status}`);
     }
     
-    // Get the raw CSV text
     const csvText = await response.text();
+    const preferences = parsePreferencesCSV(csvText);
     
-    // Validate it's not empty
-    if (!csvText || csvText.trim().length === 0) {
-      throw new Error('Empty CSV response');
-    }
-    
-    // Update our cache
-    cachedCsvText = csvText;
+    // Update cache
+    preferencesCache = preferences;
     cacheTimestamp = now;
     
     console.log('Successfully fetched fresh preferences from Google Sheets');
     
-    // Return the CSV with cache headers
-    return new Response(csvText, {
+    return NextResponse.json(preferences, {
       headers: {
-        'Content-Type': 'text/csv',
-        'Cache-Control': 'public, max-age=1800, s-maxage=7200',
-        'Pragma': 'no-cache',
-        'Expires': new Date(now + 1800000).toUTCString(),
-        'X-Cache': 'MISS',
-        'X-Updated': new Date().toISOString()
+        'Cache-Control': 'private, max-age=0',
+        'X-Cache': 'MISS'
       }
     });
   } catch (error) {
-    console.error('Error fetching preferences CSV:', error);
+    console.error('Error fetching preferences:', error);
     
-    // If we still have cached data but it's expired, use it anyway
-    if (cachedCsvText) {
-      console.log('Error fetching fresh data, using stale preferences cache');
-      return new Response(cachedCsvText, {
+    // Return cached preferences if available, otherwise defaults
+    return NextResponse.json(
+      preferencesCache || { fontStyle: 'serif' }, 
+      { 
         headers: {
-          'Content-Type': 'text/csv',
-          'Cache-Control': 'no-cache',
-          'X-Cache': 'STALE',
-          'X-Cache-Age': `${Math.round((now - cacheTimestamp)/1000)}s`,
-          'X-Error': error.message || 'Unknown error'
+          'Cache-Control': 'private, max-age=0',
+          'X-Error': error instanceof Error ? error.message : String(error)
         }
-      });
-    }
-    
-    // Last resort - return a minimal valid CSV with default preferences
-    const defaultCsv = 'setting,value,fontStyle\ndefault,1,serif';
-    
-    return new Response(defaultCsv, {
-      headers: {
-        'Content-Type': 'text/csv',
-        'Cache-Control': 'no-cache',
-        'X-Cache': 'DEFAULT',
-        'X-Error': error.message || 'Unknown error'
       }
-    });
+    );
   }
 }

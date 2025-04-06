@@ -1,11 +1,12 @@
 "use client";
-
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Suspense } from "react";
 import Utterances from "@/app/components/Utterances";
 import VirtualizedCsvViewer from "@/app/components/VirtualizedCsvViewer";
+import useSWR from 'swr';
 
 // Define Post type interface
 interface Post {
@@ -39,26 +40,64 @@ export default function BlogPostContent({ initialPost }: { initialPost: Post }) 
   >([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [processedContent, setProcessedContent] = useState("");
-
+  const pathname = usePathname();
+  const router = useRouter();
   // Use server-provided data
   const post = initialPost;
 
   // Fetch user preferences
-  useEffect(() => {
-    async function fetchSettings() {
-      try {
-        const response = await fetch('/api/user/preferences');
-        if (response.ok) {
-          const { fontStyle } = await response.json();
-          setFontStyle(fontStyle);
-        }
-      } catch (error) {
-        console.error('Error fetching preferences:', error);
+
+// Custom fetcher for SWR
+
+// Add this after your SWR declaration
+useEffect(() => {
+  // One-time direct API check
+  fetch('/api/preferences?refresh=true&t=' + Date.now())
+    .then(res => res.json())
+    .then(data => {
+      console.log('DIRECT API CHECK:', data);
+    })
+    .catch(err => console.error('API check failed:', err));
+}, []);
+
+
+const preferencesFetcher = async () => {
+  const res = await fetch('/api/preferences?t=' + Date.now());
+  if (!res.ok) throw new Error('Failed to load preferences');
+  return res.json();
+};
+
+// Fetch preferences with SWR for caching and revalidation
+const { data: preferences, error: preferencesError } = useSWR(
+  'preferences', 
+  preferencesFetcher, 
+  {
+    refreshInterval: 60000, // Check every minute
+    revalidateOnFocus: true,
+    onSuccess: (data) => {
+      console.log('Preferences loaded:', data);
+      if (data?.fontStyle) {
+        setFontStyle(data.fontStyle);
       }
     }
+  }
+);
 
-    fetchSettings();
-  }, []);
+
+// Debug panel for development mode
+const PreferencesDebug = () => {
+  if (process.env.NODE_ENV !== 'development') return null;
+  
+  return (
+    <div className="fixed bottom-2 left-2 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border text-xs z-50 opacity-70 hover:opacity-100">
+      <div className="font-bold mb-1">Preferences</div>
+      <div>Font: {fontStyle}</div>
+      <div className="text-xs text-gray-500 mt-1">
+        {preferences ? 'Loaded ' + new Date().toLocaleTimeString() : 'Loading...'}
+      </div>
+    </div>
+  );
+};
 
   // Calculate reading progress and extract headings for TOC
   useEffect(() => {
@@ -899,6 +938,8 @@ export default function BlogPostContent({ initialPost }: { initialPost: Post }) 
           />
         </svg>
       </motion.button>
+      {/* Add this before the closing </article> tag */}
+{process.env.NODE_ENV === 'development' && <PreferencesDebug />}
     </article>
   );
 }
