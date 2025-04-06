@@ -1,11 +1,12 @@
-// /Users/slm/my-portfolio/vercel-blog/src/lib/data.ts
-
-import { supabase, Post, SitePreferences } from './supabase';
+// src/lib/data.ts
+import { supabase } from './supabase';
+import type { Post, SitePreferences } from './supabase';
 
 /**
  * Fetch all published blog posts
  */
 export async function getAllPosts(): Promise<Post[]> {
+  console.log("Getting all posts from Supabase");
   const { data, error } = await supabase
     .from('posts')
     .select('*')
@@ -24,6 +25,7 @@ export async function getAllPosts(): Promise<Post[]> {
  * Fetch a specific post by slug
  */
 export async function getPostBySlug(slug: string): Promise<Post | null> {
+  console.log(`Getting post with slug: "${slug}" from Supabase`);
   const { data, error } = await supabase
     .from('posts')
     .select('*')
@@ -43,6 +45,7 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
  * Fetch featured posts
  */
 export async function getFeaturedPosts(): Promise<Post[]> {
+  console.log("Getting featured posts from Supabase");
   const { data, error } = await supabase
     .from('posts')
     .select('*')
@@ -62,6 +65,7 @@ export async function getFeaturedPosts(): Promise<Post[]> {
  * Fetch site preferences
  */
 export async function getPreferences(): Promise<SitePreferences> {
+  console.log("Getting site preferences from Supabase");
   const { data, error } = await supabase
     .from('preferences')
     .select('value')
@@ -74,4 +78,22 @@ export async function getPreferences(): Promise<SitePreferences> {
   }
   
   return data.value as SitePreferences;
+}
+
+/**
+ * Compatibility function for pages still using the old API
+ * This should be removed gradually as pages are updated
+ */
+export async function loadBlogPostsServer(): Promise<Post[]> {
+  console.log("Loading blog posts from Supabase via compatibility function");
+  return getAllPosts();
+}
+
+/**
+ * Compatibility function for pages still using the old API
+ * This should be removed gradually as pages are updated
+ */
+export async function getPostBySlugServer(slug: string): Promise<Post | null> {
+  console.log(`Getting post with slug: "${slug}" from Supabase via compatibility function`);
+  return getPostBySlug(slug);
 }
