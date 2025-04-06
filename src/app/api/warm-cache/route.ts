@@ -1,38 +1,11 @@
+// src/app/api/warm-cache/route.ts
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
 
-// Function to fetch and warm a single URL cache
-async function warmUrl(url: string) {
-  try {
-    console.log(`Warming cache for: ${url}`);
-    const response = await fetch(url, { 
-      method: 'GET',
-      cache: 'no-store',
-      headers: { 'X-Cache-Warmer': 'true' }
-    });
-    return {
-      url,
-      status: response.status,
-      ok: response.ok
-    };
-  } catch (error) {
-    console.error(`Error warming ${url}:`, error);
-    return {
-      url,
-      status: 500,
-      ok: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
-}
-
-// POST handler - handles cache warming requests
 export async function POST(request: NextRequest) {
   console.log('POST request to /api/warm-cache');
   
-  // Use your environment variable or a fallback for the secret token
   const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
 
   try {
@@ -40,50 +13,75 @@ export async function POST(request: NextRequest) {
     
     // Validate the secret token
     if (body.secret !== secretToken && body.token !== secretToken) {
-      console.log('Invalid token provided');
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Get the base URL (using request headers or your site's URL)
-    const origin = request.headers.get('origin') || 
-                   'https://slm-vercel-blog-git-main-serdar-salims-projects.vercel.app';
+    // Get the base URL
+    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://writeaway.blog';
     
-    // Define pages to warm - start with main pages
-    const urlsToWarm = [
-      `${origin}/`,
-      `${origin}/blog`
-    ];
-    
-    // If specific paths are provided, add them
-    if (body.paths && Array.isArray(body.paths)) {
-      body.paths.forEach((path: string) => {
-        if (path.startsWith('/')) {
-          urlsToWarm.push(`${origin}${path}`);
-        } else {
-          urlsToWarm.push(`${origin}/${path}`);
-        }
-      });
+    // Get the paths to warm
+    const paths = body.paths || [];
+    if (!Array.isArray(paths) || paths.length === 0) {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'No paths provided for warming' 
+      }, { status: 400 });
     }
     
-    // Warm all the URLs in parallel
-    console.log(`Starting cache warming for ${urlsToWarm.length} URLs...`);
-    const results = await Promise.all(
-      urlsToWarm.map(url => warmUrl(url))
-    );
+    console.log(`Starting cache warming for ${paths.length} paths...`);
     
-    const success = results.every(r => r.ok);
-    const successCount = results.filter(r => r.ok).length;
+    // Process each URL sequentially to avoid overwhelming the server
+    const results = [];
+    let warmedCount = 0;
+    
+    for (const path of paths) {
+      try {
+        const fullUrl = path.startsWith('http') ? path : `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
+        console.log(`Warming: ${fullUrl}`);
+        
+        const start = Date.now();
+        const response = await fetch(fullUrl, { 
+          method: 'GET',
+          cache: 'no-store', // Force fresh fetch
+          headers: { 
+            'X-Cache-Warmer': 'true',
+            'User-Agent': 'WriteAway Cache Warmer Bot'
+          }
+        });
+        
+        const timeMs = Date.now() - start;
+        const success = response.ok;
+        
+        if (success) warmedCount++;
+        
+        results.push({
+          path,
+          url: fullUrl,
+          status: response.status,
+          success,
+          timeMs
+        });
+        
+        console.log(`Warmed ${path}: ${response.status} in ${timeMs}ms`);
+        
+        // Small delay between requests to be gentle on the server
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } catch (error) {
+        console.error(`Error warming ${path}:`, error);
+        results.push({ 
+          path, 
+          success: false, 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        });
+      }
+    }
     
     return NextResponse.json({
-      success: success,
-      message: `Cache warming ${success ? 'completed' : 'partially completed'}`,
-      warmed: successCount,
-      total: urlsToWarm.length,
-      results: results
-    }, {
-      headers: {
-        'Access-Control-Allow-Origin': '*'
-      }
+      success: warmedCount > 0,
+      warmed: warmedCount,
+      failed: paths.length - warmedCount,
+      total: paths.length,
+      results
     });
   } catch (error) {
     console.error('Error processing warm-cache request:', error);
