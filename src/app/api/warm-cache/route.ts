@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the base URL
-    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://writeaway.blog';
+    const origin = request.headers.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'https://slm-vercel-blog-git-main-serdar-salims-projects.vercel.app';
     
     // Get the paths to warm
     const paths = body.paths || [];
