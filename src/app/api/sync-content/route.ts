@@ -20,6 +20,27 @@ const FIELD_MAPPING: Record<string, string> = {
   position: "position", // Add this new mapping
 };
 
+
+// Add this helper function at the top of your file
+// Add this helper function at the top of your file
+function normalizeDate(dateStr: string): string {
+  if (!dateStr) return '';
+  
+  // Convert "2025-04-07 10:28:45+00" to "2025-04-07T10:28:45+00:00"
+  if (dateStr.includes(' ') && !dateStr.includes('T')) {
+    // Replace space with T
+    dateStr = dateStr.replace(' ', 'T');
+    
+    // Add minutes to timezone offset if missing
+    if (dateStr.match(/\+\d{2}$/) || dateStr.match(/-\d{2}$/)) {
+      dateStr += ':00';
+    }
+  }
+  
+  return dateStr;
+}
+
+
 export async function POST(request: NextRequest) {
   try {
     // Get the secret token from env vars
@@ -49,6 +70,9 @@ export async function POST(request: NextRequest) {
       } sync...`
     );
 
+
+
+    
     // Extract all slugs from incoming posts for efficient comparison
     const incomingSlugs = new Set(posts.map((p) => p.slug));
 
@@ -179,36 +203,33 @@ export async function POST(request: NextRequest) {
               incomingModifiedDate &&
               typeof incomingModifiedDate === "string"
             ) {
-              // Handle various date formats including your specified format
-              try {
-                const existingDate = new Date(existingModifiedDate);
-                const incomingDate = new Date(incomingModifiedDate);
+              // Normalize date formats before comparison
+              const normalizedExisting = normalizeDate(existingModifiedDate);
+              const normalizedIncoming = normalizeDate(incomingModifiedDate);
+              
+              console.log(`Normalized dates for ${post.slug}:`, {
+                existingDate: normalizedExisting,
+                incomingDate: normalizedIncoming,
+              });
+              
+              const existingDate = new Date(normalizedExisting);
+              const incomingDate = new Date(normalizedIncoming);
 
-                if (
-                  !isNaN(existingDate.getTime()) &&
-                  !isNaN(incomingDate.getTime())
-                ) {
-                  if (existingDate >= incomingDate) {
-                    console.log(
-                      `Skipping post ${post.slug} - not modified since last sync`
-                    );
-                    skipped++;
-                    continue;
-                  } else {
-                    console.log(
-                      `Updating post ${post.slug} - modified since last sync`
-                    );
-                  }
+              if (!isNaN(existingDate.getTime()) && !isNaN(incomingDate.getTime())) {
+                // Log timestamps to verify comparison
+                console.log(`Date timestamps for ${post.slug}:`, {
+                  existing: existingDate.getTime(),
+                  incoming: incomingDate.getTime(),
+                  difference: existingDate.getTime() - incomingDate.getTime()
+                });
+                
+                if (existingDate.getTime() >= incomingDate.getTime()) {
+                  console.log(`Skipping post ${post.slug} - not modified since last sync`);
+                  skipped++;
+                  continue;
                 } else {
-                  console.log(
-                    `Invalid date format for ${post.slug}, forcing update`
-                  );
+                  console.log(`Updating post ${post.slug} - modified since last sync`);
                 }
-              } catch (e) {
-                console.log(
-                  `Error comparing dates for ${post.slug}, forcing update:`,
-                  e
-                );
               }
             } else {
               console.log(
