@@ -279,6 +279,20 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// In your Next.js API route for fetching posts
+export async function GET() {
+  try {
+    const { data: posts } = await supabase
+      .from('posts')
+      .select('*')
+      .order('position', { ascending: true });
+    
+    return Response.json({ posts });
+  } catch (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}
+
 // Add OPTIONS handler for CORS preflight requests
 export async function OPTIONS() {
   return new NextResponse(null, {
