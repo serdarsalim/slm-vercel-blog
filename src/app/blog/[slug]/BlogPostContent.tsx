@@ -51,9 +51,12 @@ export default function BlogPostContent({
   const post = initialPost;
 
   // Fetch user preferences
+  const [isPreferencesLoading, setIsPreferencesLoading] = useState(true);
 
   // Custom fetcher for SWR
 
+
+  
   // Add this after your SWR declaration
   useEffect(() => {
     // One-time direct API check
@@ -65,27 +68,35 @@ export default function BlogPostContent({
       .catch((err) => console.error("API check failed:", err));
   }, []);
 
-  const preferencesFetcher = async () => {
-    const res = await fetch("/api/preferences?t=" + Date.now());
-    if (!res.ok) throw new Error("Failed to load preferences");
-    return res.json();
-  };
+ // In BlogPostContent.tsx
+const preferencesFetcher = async () => {
+  const res = await fetch("/api/preferences?t=" + Date.now());
+  if (!res.ok) throw new Error("Failed to load preferences");
+  return res.json();
+};
 
-  // Fetch preferences with SWR for caching and revalidation
-  const { data: preferences, error: preferencesError } = useSWR(
-    "preferences",
-    preferencesFetcher,
-    {
-      refreshInterval: 60000, // Check every minute
-      revalidateOnFocus: true,
-      onSuccess: (data) => {
-        console.log("Preferences loaded:", data);
-        if (data?.fontStyle) {
-          setFontStyle(data.fontStyle);
-        }
-      },
+// Fetch preferences with SWR
+const { data: preferences, error: preferencesError } = useSWR(
+  "preferences", 
+  preferencesFetcher,
+  {
+    refreshInterval: 60000,
+    revalidateOnFocus: true,
+    onSuccess: (data) => {
+      console.log("Preferences loaded:", data);
+      // Handle both direct and nested fontStyle
+      if (data?.fontStyle) {
+        setFontStyle(data.fontStyle);
+      } else if (data?.value?.fontStyle) {
+        setFontStyle(data.value.fontStyle);
+      }
+      setIsPreferencesLoading(false);
+    },
+    onError: () => {
+      setIsPreferencesLoading(false);
     }
-  );
+  }
+);
 
   // Debug panel for development mode
   const PreferencesDebug = () => {

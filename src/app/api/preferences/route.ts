@@ -7,13 +7,13 @@ export async function GET(request: NextRequest) {
   try {
     const { data, error } = await supabase
       .from('preferences')
-      .select(
-        'value')
+      .select('value')
       .eq('key', 'site')
       .single();
     
     if (error) throw error;
     
+    // Return JUST the value object, not the whole record
     return NextResponse.json(data.value, {
       headers: {
         'Cache-Control': 'private, max-age=60'
