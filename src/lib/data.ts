@@ -30,6 +30,7 @@ export async function getAllPosts(): Promise<Post[]> {
     const { data: allPosts, error: allPostsError } = await supabase
       .from('posts')
       .select('id, title, slug')
+      .order('position', { ascending: false })
       .order('date', { ascending: false });
     
     if (allPostsError) {
@@ -46,7 +47,7 @@ export async function getAllPosts(): Promise<Post[]> {
     const { data, error } = await supabase
     .from('posts')
     .select('*')
-    .order('position', { ascending: true });  // Order by position first
+    .order('position', { ascending: false });  // Order by position first
   
   // If no position or as fallback, still keep the date order
   if (data?.length && data.some(post => post.position === null)) {
@@ -54,7 +55,7 @@ export async function getAllPosts(): Promise<Post[]> {
     data.sort((a, b) => {
       // First by position (if available)
       if (a.position !== null && b.position !== null) {
-        return a.position - b.position;
+        return b.position - a.position; // This sorts in descending order
       }
       // Fall back to date for posts without position
       return new Date(b.date).getTime() - new Date(a.date).getTime();
@@ -180,6 +181,7 @@ export async function getFeaturedPosts(): Promise<Post[]> {
     .from('posts')
     .select('*')
     .eq('featured', true)
+    .order('position', { ascending: false })
     .order('date', { ascending: false });
   
   if (error) {
