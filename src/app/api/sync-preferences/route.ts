@@ -23,13 +23,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Update or insert preferences
-    const { error } = await supabase
-      .from('preferences')
-      .upsert({ 
-        key: 'site',
-        value: preferences,
-        updated_at: new Date().toISOString()
-      });
+    // Update or insert preferences
+const { error } = await supabase
+.from('preferences')
+.upsert({ 
+  key: 'site',
+  value: preferences,
+  updated_at: new Date().toISOString()
+}, {
+  onConflict: 'key'
+});
     
     if (error) {
       console.error('Error updating preferences:', error);
