@@ -16,7 +16,6 @@ const FIELD_MAPPING: Record<string, string> = {
   'featuredImage': 'featuredImage',
   'comment': 'comment',
   'socmed': 'socmed',
-  'load': 'published',
   'lastModified': 'last_modified_at' // New field mapping for tracking changes
 };
 
@@ -102,11 +101,7 @@ export async function POST(request: NextRequest) {
                                  mappedPost['socmed'] === true;
         }
         
-        if ('published' in mappedPost) {
-          mappedPost['published'] = mappedPost['published'] === 'TRUE' || 
-                                   mappedPost['published'] === 'true' || 
-                                   mappedPost['published'] === true;
-        }
+    
         
         // Handle categories
         if ('categories' in mappedPost && typeof mappedPost['categories'] === 'string') {

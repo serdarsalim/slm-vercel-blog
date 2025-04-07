@@ -4,7 +4,7 @@ import type { Post } from './supabase';
 import type { BlogPost } from '@/app/types/blogpost';
 
 /**
- * Fetch all published blog posts with enhanced logging
+ * Fetch all blog posts with enhanced logging
  */
 export async function getAllPosts(): Promise<Post[]> {
   console.log("🔍 Getting all posts from Supabase");
@@ -26,10 +26,10 @@ export async function getAllPosts(): Promise<Post[]> {
     
     console.log(`✅ Supabase connection successful! Found approximately ${postCount} total posts`);
     
-    // Check what posts we have (both published and unpublished)
+    // Check what posts we have
     const { data: allPosts, error: allPostsError } = await supabase
       .from('posts')
-      .select('id, title, slug, published')
+      .select('id, title, slug')
       .order('date', { ascending: false });
     
     if (allPostsError) {
@@ -38,26 +38,25 @@ export async function getAllPosts(): Promise<Post[]> {
       console.log(`📊 Database contains ${allPosts.length} total posts:`);
       console.log(allPosts.map(p => ({ 
         title: p.title, 
-        slug: p.slug, 
-        published: p.published ? '✅' : '❌' 
+        slug: p.slug 
       })));
     }
     
-    // Now get only published posts (our main query)
+    // Get all posts (our main query)
     const { data, error } = await supabase
       .from('posts')
       .select('*')
       .order('date', { ascending: false });
     
     if (error) {
-      console.error('❌ Error loading published posts:', error);
+      console.error('❌ Error loading posts:', error);
       return [];
     }
     
     if (data.length === 0) {
-      console.warn('⚠️ No published posts found! Make sure posts have published=true');
+      console.warn('⚠️ No posts found in database!');
     } else {
-      console.log(`✅ Successfully loaded ${data.length} published posts:`);
+      console.log(`✅ Successfully loaded ${data.length} posts:`);
       console.log('📝 Post titles:', data.map(p => p.title).join(', '));
     }
     
@@ -102,25 +101,22 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   console.log(`🔍 Getting post with slug: "${slug}" from Supabase`);
   
   try {
-    // First check if the post exists at all (regardless of published status)
+    // First check if the post exists
     const { data: existCheck, error: existError } = await supabase
       .from('posts')
-      .select('id, title, slug, published')
+      .select('id, title, slug')
       .eq('slug', slug)
       .maybeSingle();
     
     if (existError) {
       console.error(`❌ Error checking if post "${slug}" exists:`, existError);
     } else if (existCheck) {
-      console.log(`📄 Post "${slug}" exists with published=${existCheck.published}`);
-      if (!existCheck.published) {
-        console.warn(`⚠️ Post exists but is not published: "${existCheck.title}"`);
-      }
+      console.log(`📄 Post "${slug}" exists with title: "${existCheck.title}"`);
     } else {
       console.log(`❓ Post with slug "${slug}" not found in database`);
     }
     
-    // Now get the published post
+    // Now get the full post data
     const { data, error } = await supabase
       .from('posts')
       .select('*')
@@ -133,7 +129,7 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
     }
     
     if (!data) {
-      console.log(`❌ No published post found with slug "${slug}"`);
+      console.log(`❌ No post found with slug "${slug}"`);
       return null;
     }
     
