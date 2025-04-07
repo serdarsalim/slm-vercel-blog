@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import Fuse from "fuse.js";
 import BlogPostCard from "./BlogPostCard";
 import type { BlogPost } from "@/app/types/blogpost";
+import { getCategoryArray } from '@/app/utils/categoryHelpers';
+
 
 interface BlogClientContentProps {
   initialPosts: BlogPost[];
@@ -229,12 +231,9 @@ export default function BlogClientContent({
   // Get category counts for filter buttons
   const categoryCounts = useMemo(() => {
     return posts.reduce((acc, post) => {
-      const categories = Array.isArray(post.categories)
-        ? post.categories
-        : post.categories
-        ? [post.categories]
-        : [];
-
+      // Use the helper to get clean category array
+      const categories = getCategoryArray(post.categories);
+  
       categories.forEach((cat) => {
         if (cat) {
           const lowerCat = cat.toLowerCase().trim();

@@ -1,12 +1,13 @@
 "use client";
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Suspense } from "react";
 import Utterances from "@/app/components/Utterances";
 import VirtualizedCsvViewer from "@/app/components/VirtualizedCsvViewer";
-import useSWR from 'swr';
+import useSWR from "swr";
+import { getCategoryArray } from "@/app/utils/categoryHelpers";
 
 // Define Post type interface
 interface Post {
@@ -32,7 +33,11 @@ const openSharePopup = (url: string, title: string = "Share") => {
 };
 
 // Main client component
-export default function BlogPostContent({ initialPost }: { initialPost: Post }) {
+export default function BlogPostContent({
+  initialPost,
+}: {
+  initialPost: Post;
+}) {
   const [fontStyle, setFontStyle] = useState("serif");
   const [readingProgress, setReadingProgress] = useState(0);
   const [tableOfContents, setTableOfContents] = useState<
@@ -47,57 +52,57 @@ export default function BlogPostContent({ initialPost }: { initialPost: Post }) 
 
   // Fetch user preferences
 
-// Custom fetcher for SWR
+  // Custom fetcher for SWR
 
-// Add this after your SWR declaration
-useEffect(() => {
-  // One-time direct API check
-  fetch('/api/preferences?refresh=true&t=' + Date.now())
-    .then(res => res.json())
-    .then(data => {
-      console.log('DIRECT API CHECK:', data);
-    })
-    .catch(err => console.error('API check failed:', err));
-}, []);
+  // Add this after your SWR declaration
+  useEffect(() => {
+    // One-time direct API check
+    fetch("/api/preferences?refresh=true&t=" + Date.now())
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("DIRECT API CHECK:", data);
+      })
+      .catch((err) => console.error("API check failed:", err));
+  }, []);
 
+  const preferencesFetcher = async () => {
+    const res = await fetch("/api/preferences?t=" + Date.now());
+    if (!res.ok) throw new Error("Failed to load preferences");
+    return res.json();
+  };
 
-const preferencesFetcher = async () => {
-  const res = await fetch('/api/preferences?t=' + Date.now());
-  if (!res.ok) throw new Error('Failed to load preferences');
-  return res.json();
-};
-
-// Fetch preferences with SWR for caching and revalidation
-const { data: preferences, error: preferencesError } = useSWR(
-  'preferences', 
-  preferencesFetcher, 
-  {
-    refreshInterval: 60000, // Check every minute
-    revalidateOnFocus: true,
-    onSuccess: (data) => {
-      console.log('Preferences loaded:', data);
-      if (data?.fontStyle) {
-        setFontStyle(data.fontStyle);
-      }
+  // Fetch preferences with SWR for caching and revalidation
+  const { data: preferences, error: preferencesError } = useSWR(
+    "preferences",
+    preferencesFetcher,
+    {
+      refreshInterval: 60000, // Check every minute
+      revalidateOnFocus: true,
+      onSuccess: (data) => {
+        console.log("Preferences loaded:", data);
+        if (data?.fontStyle) {
+          setFontStyle(data.fontStyle);
+        }
+      },
     }
-  }
-);
-
-
-// Debug panel for development mode
-const PreferencesDebug = () => {
-  if (process.env.NODE_ENV !== 'development') return null;
-  
-  return (
-    <div className="fixed bottom-2 left-2 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border text-xs z-50 opacity-70 hover:opacity-100">
-      <div className="font-bold mb-1">Preferences</div>
-      <div>Font: {fontStyle}</div>
-      <div className="text-xs text-gray-500 mt-1">
-        {preferences ? 'Loaded ' + new Date().toLocaleTimeString() : 'Loading...'}
-      </div>
-    </div>
   );
-};
+
+  // Debug panel for development mode
+  const PreferencesDebug = () => {
+    if (process.env.NODE_ENV !== "development") return null;
+
+    return (
+      <div className="fixed bottom-2 left-2 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border text-xs z-50 opacity-70 hover:opacity-100">
+        <div className="font-bold mb-1">Preferences</div>
+        <div>Font: {fontStyle}</div>
+        <div className="text-xs text-gray-500 mt-1">
+          {preferences
+            ? "Loaded " + new Date().toLocaleTimeString()
+            : "Loading..."}
+        </div>
+      </div>
+    );
+  };
 
   // Calculate reading progress and extract headings for TOC
   useEffect(() => {
@@ -191,16 +196,17 @@ const PreferencesDebug = () => {
   // Modified to accept isDarkMode as a parameter
   const processHtmlContent = (htmlContent: string, isDark: boolean): string => {
     // First, check if this is a CSV file by looking for typical patterns
-    if (htmlContent.includes('<div class="ql-code-block-container"') && 
-        (htmlContent.match(/,/g) || []).length > 20 && 
-        // Count the number of code blocks - if there are many, it's probably a CSV
-        (htmlContent.match(/<div class="ql-code-block"/g) || []).length > 15 &&
-        // Check if content has typical CSV patterns (many commas per line)
-        htmlContent.includes(',') && 
-        !htmlContent.includes('<h1') && 
-        !htmlContent.includes('<h2') && 
-        !htmlContent.includes('<h3')) {
-      
+    if (
+      htmlContent.includes('<div class="ql-code-block-container"') &&
+      (htmlContent.match(/,/g) || []).length > 20 &&
+      // Count the number of code blocks - if there are many, it's probably a CSV
+      (htmlContent.match(/<div class="ql-code-block"/g) || []).length > 15 &&
+      // Check if content has typical CSV patterns (many commas per line)
+      htmlContent.includes(",") &&
+      !htmlContent.includes("<h1") &&
+      !htmlContent.includes("<h2") &&
+      !htmlContent.includes("<h3")
+    ) {
       // Fast path for CSVs - minimal processing, just basic styling
       return `<div class="csv-content" style="overflow-x:auto;max-width:100%;">
                 ${htmlContent}
@@ -365,10 +371,10 @@ const PreferencesDebug = () => {
   // Process HTML content for headings
   const renderHtml = () => {
     if (!processedContent) return { __html: "" };
-    
+
     // Detect if content is likely a CSV
     const isCsvContent = processedContent.includes('<div class="csv-content"');
-    
+
     if (isCsvContent) {
       // Return the CSV wrapper but don't process further
       return { __html: processedContent };
@@ -429,69 +435,75 @@ const PreferencesDebug = () => {
           </motion.h1>
 
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="flex items-center gap-4 text-gray-600 dark:text-gray-400 mb-4"
-          >
-            <span className="flex items-center">
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-              </svg>
-              {formatDate(post.date)}
-            </span>
-            <span className="flex items-center">
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {readingTime} min read
-            </span>
-            {post.categories &&
-              Array.isArray(post.categories) &&
-              post.categories.length > 0 &&
-              post.categories.map((category, idx) => (
-                <motion.span
-                  key={idx}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 + idx * 0.1 }}
-                  className="px-3 py-1 text-xs font-medium bg-orange-50 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 rounded-full"
-                >
-                  {category}
-                </motion.span>
-              ))}
-          </motion.div>
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, delay: 0.1 }}
+  className="flex flex-wrap items-center gap-2 sm:gap-4 text-gray-600 dark:text-gray-400 mb-4 text-xs sm:text-sm"
+>
+  {/* Date display */}
+  <span className="flex items-center mb-1 sm:mb-0">
+    <svg
+      className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
+    </svg>
+    {formatDate(post.date)}
+  </span>
+  
+  {/* Reading time display */}
+  <span className="flex items-center mb-1 sm:mb-0">
+    <svg
+      className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+      />
+    </svg>
+    {readingTime} min read
+  </span>
+  
+  {/* Category labels */}
+  {getCategoryArray(post.categories).map((category, idx) => (
+    <motion.span
+      key={`cat-${idx}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 + idx * 0.1 }}
+      className="px-2 py-0.5 sm:px-3 sm:py-1 text-xs font-medium bg-orange-50 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 rounded-full mb-1 sm:mb-0"
+    >
+      {category}
+    </motion.span>
+  ))}
+</motion.div>
         </div>
 
         {/* Main blog post content in a centered column */}
         <div className="max-w-3xl mx-auto">
           {processedContent.includes('<div class="csv-content"') ? (
-            <Suspense fallback={
-              <div className="flex items-center justify-center py-16">
-                <div className="animate-spin w-10 h-10 border-4 border-orange-500 rounded-full border-t-transparent"></div>
-                <span className="ml-3 text-gray-600 dark:text-gray-400">Loading CSV data...</span>
-              </div>
-            }>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-16">
+                  <div className="animate-spin w-10 h-10 border-4 border-orange-500 rounded-full border-t-transparent"></div>
+                  <span className="ml-3 text-gray-600 dark:text-gray-400">
+                    Loading CSV data...
+                  </span>
+                </div>
+              }
+            >
               <VirtualizedCsvViewer htmlContent={processedContent} />
             </Suspense>
           ) : (
@@ -749,7 +761,7 @@ const PreferencesDebug = () => {
                 }
 
                 /* Add this to your existing <style jsx global> block */
-                .prose ul, 
+                .prose ul,
                 .prose ol {
                   padding-left: 1.5em !important; /* Override Tailwind's default */
                   margin-top: 0.5em !important;
@@ -939,7 +951,7 @@ const PreferencesDebug = () => {
         </svg>
       </motion.button>
       {/* Add this before the closing </article> tag */}
-{process.env.NODE_ENV === 'development' && <PreferencesDebug />}
+      {process.env.NODE_ENV === "development" && <PreferencesDebug />}
     </article>
   );
 }

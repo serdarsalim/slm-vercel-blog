@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useContext, ReactNode } from 'react';
 
+
 interface BlogContextType {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
