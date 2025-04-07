@@ -15,7 +15,6 @@ export type Post = {
   featuredImage?: string;
   comment: boolean;
   socmed: boolean;
-  published: boolean;
   created_at: string;
   updated_at: string;
 };

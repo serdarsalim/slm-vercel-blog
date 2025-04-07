@@ -56,7 +56,7 @@ export async function GET() {
     const { data: publishedPosts, error: publishedError } = await supabase
       .from('posts')
       .select('id, title, slug')
-      .eq('published', true);
+
     
     if (publishedError) {
       console.error('❌ Error fetching published posts:', publishedError);

@@ -47,7 +47,6 @@ export async function getAllPosts(): Promise<Post[]> {
     const { data, error } = await supabase
       .from('posts')
       .select('*')
-      .eq('published', true)
       .order('date', { ascending: false });
     
     if (error) {
@@ -126,7 +125,6 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
       .from('posts')
       .select('*')
       .eq('slug', slug)
-      .eq('published', true)
       .maybeSingle();
     
     if (error) {
@@ -184,7 +182,6 @@ export async function getFeaturedPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')
     .select('*')
-    .eq('published', true)
     .eq('featured', true)
     .order('date', { ascending: false });
   
