@@ -16,7 +16,7 @@ const FIELD_MAPPING: Record<string, string> = {
   'featuredImage': 'featuredImage',
   'comment': 'comment',
   'socmed': 'socmed',
-  'lastModified': 'last_modified_at' // New field mapping for tracking changes
+  'lastModified': 'updated_at' // New field mapping for tracking changes
 };
 
 export async function POST(request: NextRequest) {
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Get all existing post slugs for comparison
     const { data: existingPosts, error: fetchError } = await supabase
       .from('posts')
-      .select('slug, last_modified_at');
+      .select('slug, updated_at');
     
     if (fetchError) {
       console.error('Error fetching existing posts:', fetchError);
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const existingSlugs = new Set(existingPosts?.map(p => p.slug) || []);
     const existingModifiedDates = new Map();
     existingPosts?.forEach(post => {
-      existingModifiedDates.set(post.slug, post.last_modified_at);
+      existingModifiedDates.set(post.slug, post.updated_at);
     });
     
     // Track operations
@@ -122,9 +122,9 @@ export async function POST(request: NextRequest) {
         // Add timestamps
         mappedPost['updated_at'] = new Date().toISOString();
         
-        // If no explicit last_modified_at, use the current time
-        if (!mappedPost['last_modified_at']) {
-          mappedPost['last_modified_at'] = new Date().toISOString();
+        // If no explicit updated_at, use the current time
+        if (!mappedPost['updated_at']) {
+          mappedPost['updated_at'] = new Date().toISOString();
         }
         
         // Check if post exists
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           // For incremental sync, check if the post has been modified
           if (incrementalSync) {
             const existingModifiedDate = existingModifiedDates.get(post.slug);
-            const incomingModifiedDate = mappedPost['last_modified_at'];
+            const incomingModifiedDate = mappedPost['updated_at'];
             
             // Skip update if post hasn't changed (and we have valid timestamps)
             if (existingModifiedDate && incomingModifiedDate && 
