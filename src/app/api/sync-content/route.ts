@@ -17,8 +17,7 @@ const FIELD_MAPPING: Record<string, string> = {
   comment: "comment",
   socmed: "socmed",
   lastModified: "updated_at", // New field mapping for tracking changes
-  position: "position",  // Add this new mapping
-
+  position: "position", // Add this new mapping
 };
 
 export async function POST(request: NextRequest) {
@@ -165,17 +164,78 @@ export async function POST(request: NextRequest) {
           // For incremental sync, check if the post has been modified
           if (incrementalSync) {
             const existingModifiedDate = existingModifiedDates.get(post.slug);
-            const incomingModifiedDate = mappedPost["updated_at"];
 
-            // Skip update if post hasn't changed (and we have valid timestamps)
+            // Get the lastModified date from the incoming post data
+            let incomingModifiedDate = post.lastModified;
+
+            console.log(`Comparing dates for ${post.slug}:`, {
+              existingDate: existingModifiedDate,
+              incomingDate: incomingModifiedDate,
+            });
+
+            // Skip update if post hasn't changed AND we have valid timestamps
             if (
               existingModifiedDate &&
               incomingModifiedDate &&
-              new Date(existingModifiedDate) >= new Date(incomingModifiedDate)
+              typeof incomingModifiedDate === "string"
             ) {
-              skipped++;
-              continue;
+              // Handle various date formats including your specified format
+              try {
+                const existingDate = new Date(existingModifiedDate);
+                const incomingDate = new Date(incomingModifiedDate);
+
+                if (
+                  !isNaN(existingDate.getTime()) &&
+                  !isNaN(incomingDate.getTime())
+                ) {
+                  if (existingDate >= incomingDate) {
+                    console.log(
+                      `Skipping post ${post.slug} - not modified since last sync`
+                    );
+                    skipped++;
+                    continue;
+                  } else {
+                    console.log(
+                      `Updating post ${post.slug} - modified since last sync`
+                    );
+                  }
+                } else {
+                  console.log(
+                    `Invalid date format for ${post.slug}, forcing update`
+                  );
+                }
+              } catch (e) {
+                console.log(
+                  `Error comparing dates for ${post.slug}, forcing update:`,
+                  e
+                );
+              }
+            } else {
+              console.log(
+                `Missing date information for ${post.slug}, forcing update`
+              );
             }
+          }
+
+          // Always ensure we're storing the lastModified date correctly
+          if (post.lastModified) {
+            // For storage in the database, standardize the date format
+            try {
+              const parsedDate = new Date(post.lastModified);
+              if (!isNaN(parsedDate.getTime())) {
+                mappedPost["updated_at"] = parsedDate.toISOString();
+              }
+            } catch (e) {
+              console.error(
+                `Failed to parse lastModified date for ${post.slug}:`,
+                e
+              );
+              // Still update the post, but use current time as fallback
+              mappedPost["updated_at"] = new Date().toISOString();
+            }
+          } else {
+            // If no lastModified provided, use current time
+            mappedPost["updated_at"] = new Date().toISOString();
           }
 
           // Update existing post
@@ -209,7 +269,6 @@ export async function POST(request: NextRequest) {
         errors++;
       }
     }
-
 
     // Find posts to delete (in DB but not in incoming data)
     const slugsToDelete = Array.from(existingSlugs).filter(
@@ -286,7 +345,7 @@ export async function GET() {
     const { data: posts } = await supabase
       .from('posts')
       .select('*')
-      .order('position', { ascending: true });
+      .order('position', { ascending: false }); // Use descending to show newest posts first
     
     return Response.json({ posts });
   } catch (error) {
