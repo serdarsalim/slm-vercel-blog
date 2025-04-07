@@ -111,32 +111,30 @@ export default function BlogClientContent({
   };
 
   // Apply filters and search
-  const filteredPosts = useMemo(() => {
-    if (searchTerm && fuse) {
-      return fuse.search(searchTerm).map((result) => result.item);
-    }
+// Apply filters and search
+const filteredPosts = useMemo(() => {
+  if (searchTerm && fuse) {
+    return fuse.search(searchTerm).map((result) => result.item);
+  }
 
-    return posts.filter((p) => {
-      // Show all posts if "all" is selected
-      if (selectedCategories.includes("all")) return true;
+  return posts.filter((p) => {
+    // Show all posts if "all" is selected
+    if (selectedCategories.includes("all")) return true;
 
-      // Handle categories consistently
-      const postCategories = Array.isArray(p.categories)
-        ? p.categories
-        : p.categories
-        ? [p.categories]
-        : [];
+    // Use the same getCategoryArray helper we use elsewhere for consistency
+    const postCategories = getCategoryArray(p.categories).map(cat => 
+      cat.toLowerCase().trim()
+    );
+    
+    // Debug what's happening
+    // console.log('Post:', p.title, 'Categories:', postCategories, 'Selected:', selectedCategories);
 
-      return selectedCategories.some((selectedCat) =>
-        postCategories.some(
-          (postCat) =>
-            postCat &&
-            typeof postCat === "string" &&
-            postCat.toLowerCase().trim() === selectedCat.toLowerCase().trim()
-        )
-      );
-    });
-  }, [posts, fuse, searchTerm, selectedCategories]);
+    // Check if any selected category matches any post category
+    return selectedCategories.some((selectedCat) =>
+      postCategories.includes(selectedCat.toLowerCase().trim())
+    );
+  });
+}, [posts, fuse, searchTerm, selectedCategories]);
 
   // Featured posts first, then regular posts
   const sortedPosts = useMemo(() => {
