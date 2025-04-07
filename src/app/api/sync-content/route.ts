@@ -17,6 +17,8 @@ const FIELD_MAPPING: Record<string, string> = {
   comment: "comment",
   socmed: "socmed",
   lastModified: "updated_at", // New field mapping for tracking changes
+  position: "position",  // Add this new mapping
+
 };
 
 export async function POST(request: NextRequest) {
@@ -208,7 +210,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // After processing individual posts, handle deletions
 
     // Find posts to delete (in DB but not in incoming data)
     const slugsToDelete = Array.from(existingSlugs).filter(

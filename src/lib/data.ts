@@ -44,21 +44,22 @@ export async function getAllPosts(): Promise<Post[]> {
     
     // Get all posts (our main query)
     const { data, error } = await supabase
-      .from('posts')
-      .select('*')
-      .order('date', { ascending: false });
-    
-    if (error) {
-      console.error('❌ Error loading posts:', error);
-      return [];
-    }
-    
-    if (data.length === 0) {
-      console.warn('⚠️ No posts found in database!');
-    } else {
-      console.log(`✅ Successfully loaded ${data.length} posts:`);
-      console.log('📝 Post titles:', data.map(p => p.title).join(', '));
-    }
+    .from('posts')
+    .select('*')
+    .order('position', { ascending: true });  // Order by position first
+  
+  // If no position or as fallback, still keep the date order
+  if (data?.length && data.some(post => post.position === null)) {
+    console.log('⚠️ Some posts missing position values, also using date for ordering');
+    data.sort((a, b) => {
+      // First by position (if available)
+      if (a.position !== null && b.position !== null) {
+        return a.position - b.position;
+      }
+      // Fall back to date for posts without position
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+  }
     
     return data as Post[];
   } catch (e) {
