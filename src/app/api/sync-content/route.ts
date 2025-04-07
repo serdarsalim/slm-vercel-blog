@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse posts data from request
-    const { posts = [], incrementalSync = false } = body;
+    const { posts = [] } = body;
 
     if (!Array.isArray(posts) || posts.length === 0) {
       return NextResponse.json(
@@ -65,9 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(
-      `Processing ${posts.length} posts for ${
-        incrementalSync ? "incremental" : "full"
-      } sync...`
+      `Processing ${posts.length} posts with smart sync...`
     );
 
 
@@ -185,57 +183,50 @@ export async function POST(request: NextRequest) {
         const exists = existingSlugs.has(post.slug);
 
         if (exists) {
-          // For incremental sync, check if the post has been modified
-          if (incrementalSync) {
-            const existingModifiedDate = existingModifiedDates.get(post.slug);
-
-            // Get the lastModified date from the incoming post data
-            let incomingModifiedDate = post.lastModified;
-
-            console.log(`Comparing dates for ${post.slug}:`, {
-              existingDate: existingModifiedDate,
-              incomingDate: incomingModifiedDate,
+          const existingModifiedDate = existingModifiedDates.get(post.slug);
+          let incomingModifiedDate = post.lastModified;
+          
+          console.log(`Comparing dates for ${post.slug}:`, {
+            existingDate: existingModifiedDate,
+            incomingDate: incomingModifiedDate,
+          });
+          
+          // Skip update if post hasn't changed AND we have valid timestamps
+          if (
+            existingModifiedDate &&
+            incomingModifiedDate &&
+            typeof incomingModifiedDate === "string"
+          ) {
+            // Normalize date formats before comparison
+            const normalizedExisting = normalizeDate(existingModifiedDate);
+            const normalizedIncoming = normalizeDate(incomingModifiedDate);
+            
+            console.log(`Normalized dates for ${post.slug}:`, {
+              existingDate: normalizedExisting,
+              incomingDate: normalizedIncoming,
             });
-
-            // Skip update if post hasn't changed AND we have valid timestamps
-            if (
-              existingModifiedDate &&
-              incomingModifiedDate &&
-              typeof incomingModifiedDate === "string"
-            ) {
-              // Normalize date formats before comparison
-              const normalizedExisting = normalizeDate(existingModifiedDate);
-              const normalizedIncoming = normalizeDate(incomingModifiedDate);
-              
-              console.log(`Normalized dates for ${post.slug}:`, {
-                existingDate: normalizedExisting,
-                incomingDate: normalizedIncoming,
+            
+            const existingDate = new Date(normalizedExisting);
+            const incomingDate = new Date(normalizedIncoming);
+            
+            if (!isNaN(existingDate.getTime()) && !isNaN(incomingDate.getTime())) {
+              // Log timestamps to verify comparison
+              console.log(`Date timestamps for ${post.slug}:`, {
+                existing: existingDate.getTime(),
+                incoming: incomingDate.getTime(),
+                difference: existingDate.getTime() - incomingDate.getTime()
               });
               
-              const existingDate = new Date(normalizedExisting);
-              const incomingDate = new Date(normalizedIncoming);
-
-              if (!isNaN(existingDate.getTime()) && !isNaN(incomingDate.getTime())) {
-                // Log timestamps to verify comparison
-                console.log(`Date timestamps for ${post.slug}:`, {
-                  existing: existingDate.getTime(),
-                  incoming: incomingDate.getTime(),
-                  difference: existingDate.getTime() - incomingDate.getTime()
-                });
-                
-                if (existingDate.getTime() >= incomingDate.getTime()) {
-                  console.log(`Skipping post ${post.slug} - not modified since last sync`);
-                  skipped++;
-                  continue;
-                } else {
-                  console.log(`Updating post ${post.slug} - modified since last sync`);
-                }
+              if (existingDate.getTime() >= incomingDate.getTime()) {
+                console.log(`Skipping post ${post.slug} - not modified since last sync`);
+                skipped++;
+                continue;
+              } else {
+                console.log(`Updating post ${post.slug} - modified since last sync`);
               }
-            } else {
-              console.log(
-                `Missing date information for ${post.slug}, forcing update`
-              );
             }
+          } else {
+            console.log(`Missing date information for ${post.slug}, forcing update`);
           }
 
           // Always ensure we're storing the lastModified date correctly
@@ -296,8 +287,8 @@ export async function POST(request: NextRequest) {
       (slug) => !incomingSlugs.has(slug)
     );
 
-    // Only delete posts in full sync mode (not incremental)
-    if (!incrementalSync && slugsToDelete.length > 0) {
+    // Always perform deletions regardless of sync mode
+    if (slugsToDelete.length > 0) {
       try {
         const { error } = await supabase
           .from("posts")
