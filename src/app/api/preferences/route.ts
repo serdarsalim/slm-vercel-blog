@@ -1,3 +1,5 @@
+// app/api/preferences/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase'
 
@@ -5,7 +7,8 @@ export async function GET(request: NextRequest) {
   try {
     const { data, error } = await supabase
       .from('preferences')
-      .select('value')
+      .select(
+        'value')
       .eq('key', 'site')
       .single();
     
