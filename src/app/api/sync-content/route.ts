@@ -224,29 +224,49 @@ export async function POST(request: NextRequest) {
           const existingModifiedDate = existingModifiedDates.get(String(post.id));
           let incomingModifiedDate = post.lastModified;
           
-          // ONLY skip update if optimizeByDate is true AND we have valid timestamps
+          // Skip update if optimizeByDate is true AND we have valid timestamps
           if (
-            optimizeByDate === true && // <-- KEY FIX: Only optimize if flag is true
+            optimizeByDate === true &&
             existingModifiedDate &&
             incomingModifiedDate &&
             typeof incomingModifiedDate === "string"
           ) {
-            // Normalize date formats before comparison
-            const normalizedExisting = normalizeDate(existingModifiedDate);
-            const normalizedIncoming = normalizeDate(incomingModifiedDate);
+            // Log raw dates for debugging
+            console.log(`[${requestId}] Post ID ${post.id} date comparison:`);
+            console.log(`[${requestId}] - Existing: ${existingModifiedDate}`);
+            console.log(`[${requestId}] - Incoming: ${incomingModifiedDate}`);
             
-            const existingDate = new Date(normalizedExisting);
-            const incomingDate = new Date(normalizedIncoming);
-            
-            if (!isNaN(existingDate.getTime()) && !isNaN(incomingDate.getTime())) {
-              if (existingDate.getTime() >= incomingDate.getTime()) {
-                console.log(`[${requestId}] Skipping post ID ${post.id} - not modified since last sync`);
-                skipped++;
-                continue;
+            try {
+              // Normalize date formats before comparison
+              const normalizedExisting = normalizeDate(existingModifiedDate);
+              const normalizedIncoming = normalizeDate(incomingModifiedDate);
+              
+              console.log(`[${requestId}] - Normalized existing: ${normalizedExisting}`);
+              console.log(`[${requestId}] - Normalized incoming: ${normalizedIncoming}`);
+              
+              const existingDate = new Date(normalizedExisting);
+              const incomingDate = new Date(normalizedIncoming);
+              
+              if (!isNaN(existingDate.getTime()) && !isNaN(incomingDate.getTime())) {
+                console.log(`[${requestId}] - Existing timestamp: ${existingDate.getTime()}`);
+                console.log(`[${requestId}] - Incoming timestamp: ${incomingDate.getTime()}`);
+                
+                if (existingDate.getTime() >= incomingDate.getTime()) {
+                  console.log(`[${requestId}] Skipping post ID ${post.id} - not modified since last sync`);
+                  skipped++;
+                  continue;
+                } else {
+                  console.log(`[${requestId}] Post ID ${post.id} is newer, updating`);
+                }
+              } else {
+                console.log(`[${requestId}] Invalid date comparison for post ID ${post.id}, forcing update`);
               }
+            } catch (e) {
+              console.error(`[${requestId}] Error comparing dates for post ID ${post.id}:`, e);
+              // If we can't compare dates, don't skip the update
             }
           }
-
+        
           // Always ensure we're storing the lastModified date correctly
           if (post.lastModified) {
             try {
@@ -261,7 +281,7 @@ export async function POST(request: NextRequest) {
           } else {
             mappedPost["updated_at"] = new Date().toISOString();
           }
-
+        
           // Add to update batch
           updateBatch.push(mappedPost);
         } else {
