@@ -22,7 +22,6 @@ const FIELD_MAPPING: Record<string, string> = {
 
 
 // Add this helper function at the top of your file
-// Add this helper function at the top of your file
 function normalizeDate(dateStr: string): string {
   if (!dateStr) return '';
   
@@ -263,7 +262,7 @@ export async function POST(request: NextRequest) {
             updated++;
           }
         } else {
-          // Add created_at for new posts
+          // Add created_at for new posts - la arkadas siliyoruz ya aha bu yeni iste ya!!
           mappedPost["created_at"] = new Date().toISOString();
 
           // Insert new post
