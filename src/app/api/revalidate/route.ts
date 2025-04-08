@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     console.log('Revalidating common paths');
     revalidatePath('/', 'page');              // Home page
     revalidatePath('/blog', 'page');          // Blog index page
-    revalidatePath('/blog/[slug]', 'layout'); // Blog post layout
+    revalidatePath('/blog/[slug]', 'layout'); 
     
     // Step 3: If a specific slug is provided, handle that explicitly
     if (slug) {
