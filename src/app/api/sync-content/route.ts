@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 
 // Map CSV column names to database fields (adjust to match your sheet)
 const FIELD_MAPPING: Record<string, string> = {
+  id: "id", // Explicit ID mapping
   title: "title",
   slug: "slug",
   content: "content",
@@ -16,12 +17,10 @@ const FIELD_MAPPING: Record<string, string> = {
   featuredImage: "featuredImage",
   comment: "comment",
   socmed: "socmed",
-  lastModified: "updated_at", // New field mapping for tracking changes
-  position: "position", // Add this new mapping
+  lastModified: "updated_at",
+  position: "position",
 };
 
-
-// Add this helper function at the top of your file
 function normalizeDate(dateStr: string): string {
   if (!dateStr) return '';
   
@@ -39,13 +38,10 @@ function normalizeDate(dateStr: string): string {
   return dateStr;
 }
 
-
 export async function POST(request: NextRequest) {
   try {
     // Get the secret token from env vars
-    const secretToken =
-      process.env.REVALIDATION_SECRET || "your_default_secret";
-
+    const secretToken = process.env.REVALIDATION_SECRET || "your_default_secret";
     const body = await request.json();
 
     // Validate request
@@ -63,36 +59,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(
-      `Processing ${posts.length} posts with smart sync...`
-    );
+    console.log(`Processing ${posts.length} posts with ID-based sync...`);
 
-
-
+    // Extract all IDs from incoming posts for efficient comparison
+    // Filter out any falsy IDs (null, undefined, empty strings)
+    const incomingIds = new Set(posts.map((p) => p.id).filter(Boolean));
     
-    // Extract all slugs from incoming posts for efficient comparison
-    const incomingSlugs = new Set(posts.map((p) => p.slug));
+    // For revalidation purposes, we still need slugs
+    const incomingSlugs = new Map();
+    posts.forEach(post => {
+      if (post.id && post.slug) {
+        incomingSlugs.set(post.id, post.slug);
+      }
+    });
 
-    // Get all existing post slugs for comparison
+    // Get all existing post IDs and their last modified dates
     const { data: existingPosts, error: fetchError } = await supabase
       .from("posts")
-      .select("slug, updated_at");
+      .select("id, slug, updated_at");
 
     if (fetchError) {
       console.error("Error fetching existing posts:", fetchError);
       return NextResponse.json(
-        {
-          error: `Database error: ${fetchError.message}`,
-        },
+        { error: `Database error: ${fetchError.message}` },
         { status: 500 }
       );
     }
 
-    // Create mapping of existing slugs to their last modified dates
-    const existingSlugs = new Set(existingPosts?.map((p) => p.slug) || []);
+    // Create mapping of existing IDs to their last modified dates
+    const existingIds = new Set(existingPosts?.map((p) => p.id) || []);
     const existingModifiedDates = new Map();
+    const existingSlugsById = new Map(); // Keep track of slugs for revalidation
+    
     existingPosts?.forEach((post) => {
-      existingModifiedDates.set(post.slug, post.updated_at);
+      existingModifiedDates.set(post.id, post.updated_at);
+      existingSlugsById.set(post.id, post.slug);
     });
 
     // Track operations
@@ -102,28 +103,34 @@ export async function POST(request: NextRequest) {
     let skipped = 0;
     let errors = 0;
 
-    // Process updates and inserts one by one for better error handling
+    // Process updates and inserts
     for (const post of posts) {
       try {
+        // Skip posts without IDs
+        if (!post.id) {
+          console.warn("Skipping post without ID:", post.title || post.slug || "unknown");
+          skipped++;
+          continue;
+        }
+        
         // Map fields using the field mapping
         const mappedPost = {};
 
         // Process each field with the mapping
         Object.entries(post).forEach(([key, value]) => {
-          // Get the corresponding database field name, or use the original if not in mapping
           const dbField = FIELD_MAPPING[key] || key;
           mappedPost[dbField] = value;
         });
 
-        // Handle the special 'text:' prefix for categories
+        // Handle categories with text: prefix
         if (
           typeof post.categories === "string" &&
           post.categories.startsWith("text:")
         ) {
-          mappedPost["categories"] = post.categories.substring(5); // Remove the prefix
+          mappedPost["categories"] = post.categories.substring(5);
         }
 
-        // Special handling for booleans and arrays
+        // Handle boolean fields
         if ("featured" in mappedPost) {
           mappedPost["featured"] =
             mappedPost["featured"] === "TRUE" ||
@@ -145,12 +152,11 @@ export async function POST(request: NextRequest) {
             mappedPost["socmed"] === true;
         }
 
-        // Handle categories
+        // Handle categories as arrays
         if (
           "categories" in mappedPost &&
           typeof mappedPost["categories"] === "string"
         ) {
-          // Try to convert string categories to array
           let categoriesArray = [];
 
           if (mappedPost["categories"].includes("|")) {
@@ -173,19 +179,14 @@ export async function POST(request: NextRequest) {
         // Add timestamps
         mappedPost["updated_at"] = new Date().toISOString();
 
-        // If no explicit updated_at, use the current time
-        if (!mappedPost["updated_at"]) {
-          mappedPost["updated_at"] = new Date().toISOString();
-        }
-
-        // Check if post exists
-        const exists = existingSlugs.has(post.slug);
+        // Check if post exists BY ID (not slug)
+        const exists = existingIds.has(post.id);
 
         if (exists) {
-          const existingModifiedDate = existingModifiedDates.get(post.slug);
+          const existingModifiedDate = existingModifiedDates.get(post.id);
           let incomingModifiedDate = post.lastModified;
           
-          console.log(`Comparing dates for ${post.slug}:`, {
+          console.log(`Comparing dates for post ID ${post.id}:`, {
             existingDate: existingModifiedDate,
             incomingDate: incomingModifiedDate,
           });
@@ -200,37 +201,22 @@ export async function POST(request: NextRequest) {
             const normalizedExisting = normalizeDate(existingModifiedDate);
             const normalizedIncoming = normalizeDate(incomingModifiedDate);
             
-            console.log(`Normalized dates for ${post.slug}:`, {
-              existingDate: normalizedExisting,
-              incomingDate: normalizedIncoming,
-            });
-            
             const existingDate = new Date(normalizedExisting);
             const incomingDate = new Date(normalizedIncoming);
             
             if (!isNaN(existingDate.getTime()) && !isNaN(incomingDate.getTime())) {
-              // Log timestamps to verify comparison
-              console.log(`Date timestamps for ${post.slug}:`, {
-                existing: existingDate.getTime(),
-                incoming: incomingDate.getTime(),
-                difference: existingDate.getTime() - incomingDate.getTime()
-              });
-              
               if (existingDate.getTime() >= incomingDate.getTime()) {
-                console.log(`Skipping post ${post.slug} - not modified since last sync`);
+                console.log(`Skipping post ID ${post.id} - not modified since last sync`);
                 skipped++;
                 continue;
               } else {
-                console.log(`Updating post ${post.slug} - modified since last sync`);
+                console.log(`Updating post ID ${post.id} - modified since last sync`);
               }
             }
-          } else {
-            console.log(`Missing date information for ${post.slug}, forcing update`);
           }
 
           // Always ensure we're storing the lastModified date correctly
           if (post.lastModified) {
-            // For storage in the database, standardize the date format
             try {
               const parsedDate = new Date(post.lastModified);
               if (!isNaN(parsedDate.getTime())) {
@@ -238,71 +224,68 @@ export async function POST(request: NextRequest) {
               }
             } catch (e) {
               console.error(
-                `Failed to parse lastModified date for ${post.slug}:`,
+                `Failed to parse lastModified date for post ID ${post.id}:`,
                 e
               );
-              // Still update the post, but use current time as fallback
               mappedPost["updated_at"] = new Date().toISOString();
             }
-          } else {
-            // If no lastModified provided, use current time
-            mappedPost["updated_at"] = new Date().toISOString();
           }
 
-          // Update existing post
+          // Update existing post BY ID (not slug)
           const { error } = await supabase
             .from("posts")
             .update(mappedPost)
-            .eq("slug", post.slug);
+            .eq("id", post.id);
 
           if (error) {
-            console.error(`Error updating post ${post.slug}:`, error);
+            console.error(`Error updating post ID ${post.id}:`, error);
             errors++;
           } else {
             updated++;
           }
         } else {
-          // Add created_at for new posts - la arkadas siliyoruz ya aha bu yeni iste ya!!
+          // Add created_at for new posts
           mappedPost["created_at"] = new Date().toISOString();
 
           // Insert new post
           const { error } = await supabase.from("posts").insert([mappedPost]);
 
           if (error) {
-            console.error(`Error inserting post ${post.slug}:`, error);
+            console.error(`Error inserting post ID ${post.id}:`, error);
             errors++;
           } else {
             inserted++;
           }
         }
       } catch (err) {
-        console.error(`Error processing post ${post.slug}:`, err);
+        const identifier = post.id || post.slug || "unknown";
+        console.error(`Error processing post ${identifier}:`, err);
         errors++;
       }
     }
 
     // Find posts to delete (in DB but not in incoming data)
-    const slugsToDelete = Array.from(existingSlugs).filter(
-      (slug) => !incomingSlugs.has(slug)
+    const idsToDelete = Array.from(existingIds).filter(
+      (id) => !incomingIds.has(id)
     );
 
-    // Always perform deletions regardless of sync mode
-    if (slugsToDelete.length > 0) {
+    // Delete by ID instead of slug
+    if (idsToDelete.length > 0) {
       try {
         const { error } = await supabase
           .from("posts")
           .delete()
-          .in("slug", slugsToDelete);
+          .in("id", idsToDelete);
 
         if (error) {
           console.error("Error deleting posts:", error);
-          errors += slugsToDelete.length;
+          errors += idsToDelete.length;
         } else {
-          deleted = slugsToDelete.length;
+          deleted = idsToDelete.length;
         }
       } catch (err) {
         console.error("Error deleting posts:", err);
-        errors += slugsToDelete.length;
+        errors += idsToDelete.length;
       }
     }
 
@@ -313,15 +296,13 @@ export async function POST(request: NextRequest) {
       revalidatePath("/", "page");
       revalidatePath("/blog", "page");
 
-      // Additional specific revalidations for newly added posts
+      // Revalidate new post pages (using slugs for path construction)
       if (inserted > 0) {
-        // Get slugs of newly inserted posts
+        // Get new posts that have slugs
         const newPosts = posts.filter((post) => {
-          const mappedSlug = post.slug || "";
-          return !existingSlugs.has(mappedSlug);
+          return post.id && post.slug && !existingIds.has(post.id);
         });
 
-        // Revalidate each new post page individually
         for (const post of newPosts) {
           if (post.slug) {
             revalidatePath(`/blog/${post.slug}`, "page");
@@ -350,13 +331,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// In your Next.js API route for fetching posts
+// GET and OPTIONS handlers remain the same
 export async function GET() {
   try {
     const { data: posts } = await supabase
       .from('posts')
       .select('*')
-      .order('position', { ascending: false }); // Use descending to show newest posts first
+      .order('position', { ascending: false });
     
     return Response.json({ posts });
   } catch (error) {
@@ -364,7 +345,6 @@ export async function GET() {
   }
 }
 
-// Add OPTIONS handler for CORS preflight requests
 export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
