@@ -6,8 +6,8 @@ const Papa = require('papaparse');
 
 // IMPORTANT: Use hardcoded credentials for reliability, since environment variables seem problematic
 // Remove these before committing to version control!
-const supabaseUrl = 'https://ubcyqbscoojgpzxawwjb.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InViY3lxYnNjb29qZ3B6eGF3d2piIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Mzk1MjIwMywiZXhwIjoyMDU5NTI4MjAzfQ.99E8ZoXFZNEt0q1viLwvcajn-u-FHTs1ZIEo0YFM5KI';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
 
 // Create Supabase client
 console.log('🔌 Creating Supabase client...');
