@@ -507,12 +507,13 @@ export async function POST(request: NextRequest) {
     // Delete by ID instead of slug
     if (uniqueIdsToDelete.length > 0) {
       console.log(
-        `[${requestId}] Deleting ${idsToDelete.length} posts no longer in source`
+        `[${requestId}] Deleting ${uniqueIdsToDelete.length} posts no longer in source`
       );
+    
 
-      // Process deletes in chunks as well
-      for (let i = 0; i < idsToDelete.length; i += BATCH_SIZE) {
-        const chunk = uniqueIdsToDelete.slice(i, i + BATCH_SIZE);
+      // Fix the for loop
+for (let i = 0; i < uniqueIdsToDelete.length; i += BATCH_SIZE) {
+  const chunk = uniqueIdsToDelete.slice(i, i + BATCH_SIZE);
 
         try {
           const result = await supabase.from("posts").delete().in("id", chunk);
