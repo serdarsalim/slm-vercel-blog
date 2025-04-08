@@ -19,6 +19,8 @@ const FIELD_MAPPING: Record<string, string> = {
   socmed: "socmed",
   lastModified: "updated_at",
   position: "position",
+  load: "publish"  // ADD THIS LINE to map incoming 'load' to your new 'publish' column
+
 };
 
 /**
@@ -193,7 +195,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Handle boolean fields
-        ['featured', 'comment', 'socmed'].forEach(field => {
+        ['featured', 'comment', 'socmed', 'load'].forEach(field => {
           if (field in mappedPost) {
             mappedPost[field] = 
               mappedPost[field] === "TRUE" ||
