@@ -70,10 +70,16 @@ function normalizeDate(dateStr: string): string {
   }
 }
 
+// List of fields that should be excluded from the database
+const EXCLUDED_FIELDS = ['rowIndex', 'syncStatus'];
+
 export async function POST(request: NextRequest) {
   // Generate a unique request ID for tracing this sync operation
   const requestId = `sync-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
   const startTime = Date.now();
+  
+  // Array to collect all specific error details to return to client
+  const errorMessages: string[] = [];
   
   console.log(`[${requestId}] Starting sync operation`);
   
@@ -101,11 +107,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`[${requestId}] Processing ${posts.length} posts with ID-based sync (optimizeByDate: ${optimizeByDate})`);
 
-    // Set up the main sync process
     // Validate posts - Accept both string and numeric IDs
     const validPosts = posts.filter(post => {
       if (!post.id) {
         console.warn(`[${requestId}] Skipping post without ID`);
+        errorMessages.push(`Skipping post without ID: ${JSON.stringify(post).substring(0, 100)}...`);
         return false;
       }
       return true;
@@ -130,7 +136,9 @@ export async function POST(request: NextRequest) {
       .select("id, slug, updated_at");
 
     if (fetchError) {
-      console.error(`[${requestId}] Error fetching existing posts:`, fetchError);
+      const errorMsg = `Error fetching existing posts: ${fetchError.message}`;
+      console.error(`[${requestId}] ${errorMsg}`);
+      errorMessages.push(errorMsg);
       throw new Error(`Database error: ${fetchError.message}`);
     }
 
@@ -154,7 +162,7 @@ export async function POST(request: NextRequest) {
     console.log(`[${requestId}] Found ${existingIds.size} existing posts in database`);
 
     // Process in batches for better performance
-    const BATCH_SIZE = 50;
+    const BATCH_SIZE = 10;  // Smaller batch size for better error tracking
     const updateBatch = [];
     const insertBatch = [];
     
@@ -170,6 +178,7 @@ export async function POST(request: NextRequest) {
         // Process each field with the mapping
         Object.entries(post).forEach(([key, value]) => {
           if (key === 'id') return; // Skip id as we already handled it
+          if (EXCLUDED_FIELDS.includes(key)) return; // Skip excluded fields
           
           const dbField = FIELD_MAPPING[key] || key;
           mappedPost[dbField] = value;
@@ -224,9 +233,9 @@ export async function POST(request: NextRequest) {
           const existingModifiedDate = existingModifiedDates.get(String(post.id));
           let incomingModifiedDate = post.lastModified;
           
-          // Skip update if optimizeByDate is true AND we have valid timestamps
+          // ONLY skip update if optimizeByDate is true AND we have valid timestamps
           if (
-            optimizeByDate === true &&
+            optimizeByDate === true && // Only optimize if flag is true
             existingModifiedDate &&
             incomingModifiedDate &&
             typeof incomingModifiedDate === "string"
@@ -266,7 +275,7 @@ export async function POST(request: NextRequest) {
               // If we can't compare dates, don't skip the update
             }
           }
-        
+
           // Always ensure we're storing the lastModified date correctly
           if (post.lastModified) {
             try {
@@ -281,25 +290,69 @@ export async function POST(request: NextRequest) {
           } else {
             mappedPost["updated_at"] = new Date().toISOString();
           }
-        
+
           // Add to update batch
           updateBatch.push(mappedPost);
         } else {
-          // Add created_at for new posts
-          mappedPost["created_at"] = mappedPost["updated_at"] || new Date().toISOString();
+          // NEW POST LOGIC (always insert)
+          console.log(`[${requestId}] New post ID ${post.id} detected, will insert`);
+          
+          // Add created_at and updated_at for new posts
+          mappedPost["created_at"] = new Date().toISOString();
+          mappedPost["updated_at"] = post.lastModified ? normalizeDate(post.lastModified) : new Date().toISOString();
           
           // Add to insert batch
           insertBatch.push(mappedPost);
         }
       } catch (err) {
         const identifier = post.id || "unknown";
-        console.error(`[${requestId}] Error processing post ${identifier}:`, err);
+        const errorMsg = `Error processing post ${identifier}: ${err instanceof Error ? err.message : String(err)}`;
+        console.error(`[${requestId}] ${errorMsg}`);
         console.error(`[${requestId}] Problematic post data:`, JSON.stringify(post).substring(0, 500));
+        errorMessages.push(errorMsg);
         errors++;
       }
     }
 
     console.log(`[${requestId}] Categorized posts: ${updateBatch.length} updates, ${insertBatch.length} inserts`);
+
+    // Process insert batch first (this is more likely to have issues)
+    if (insertBatch.length > 0) {
+      console.log(`[${requestId}] Processing ${insertBatch.length} inserts`);
+      
+      // Process in chunks to avoid overwhelming the database
+      for (let i = 0; i < insertBatch.length; i += BATCH_SIZE) {
+        const chunk = insertBatch.slice(i, i + BATCH_SIZE);
+        console.log(`[${requestId}] Processing insert chunk ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(insertBatch.length/BATCH_SIZE)}`);
+        
+        // Insert each post individually to better trace errors
+        for (const post of chunk) {
+          try {
+            // Log the actual post we're trying to insert for debugging
+            console.log(`[${requestId}] Inserting post ID ${post.id}, data:`, JSON.stringify(post).substring(0, 200));
+            
+            const result = await supabase
+              .from("posts")
+              .insert([post]);  // Use insert instead of upsert for new posts
+
+            if (result.error) {
+              const errorMsg = `Error inserting post ID ${post.id}: ${result.error.message}`;
+              console.error(`[${requestId}] ${errorMsg}`);
+              errorMessages.push(errorMsg);
+              errors++;
+            } else {
+              inserted++;
+              console.log(`[${requestId}] Successfully inserted post ID ${post.id}`);
+            }
+          } catch (error) {
+            const errorMsg = `Exception inserting post ID ${post.id}: ${error instanceof Error ? error.message : String(error)}`;
+            console.error(`[${requestId}] ${errorMsg}`);
+            errorMessages.push(errorMsg);
+            errors++;
+          }
+        }
+      }
+    }
 
     // Process update batch
     if (updateBatch.length > 0) {
@@ -311,51 +364,28 @@ export async function POST(request: NextRequest) {
         // Update each post individually to better trace errors
         for (const post of chunk) {
           try {
+            console.log(`[${requestId}] Updating post ID ${post.id}`);
+            
             const result = await supabase
               .from("posts")
               .update(post)
               .eq("id", post.id);
             
             if (result.error) {
-              console.error(`[${requestId}] Error updating post ID ${post.id}:`, result.error);
-              console.error(`[${requestId}] Post data causing error:`, JSON.stringify(post).substring(0, 500));
+              const errorMsg = `Error updating post ID ${post.id}: ${result.error.message}`;
+              console.error(`[${requestId}] ${errorMsg}`);
+              errorMessages.push(errorMsg);
               errors++;
             } else {
               updated++;
+              console.log(`[${requestId}] Successfully updated post ID ${post.id}`);
             }
           } catch (error) {
-            console.error(`[${requestId}] Exception updating post ID ${post.id}:`, error);
+            const errorMsg = `Exception updating post ID ${post.id}: ${error instanceof Error ? error.message : String(error)}`;
+            console.error(`[${requestId}] ${errorMsg}`);
+            errorMessages.push(errorMsg);
             errors++;
           }
-        }
-      }
-    }
-
-    // Process insert batch
-    if (insertBatch.length > 0) {
-      // Process in chunks to avoid overwhelming the database
-      for (let i = 0; i < insertBatch.length; i += BATCH_SIZE) {
-        const chunk = insertBatch.slice(i, i + BATCH_SIZE);
-        console.log(`[${requestId}] Processing insert chunk ${Math.floor(i/BATCH_SIZE) + 1} of ${Math.ceil(insertBatch.length/BATCH_SIZE)}`);
-        
-        try {
-          const result = await supabase
-            .from("posts")
-            .upsert(chunk, { 
-              onConflict: 'id',
-              ignoreDuplicates: false 
-            });
-
-          if (result.error) {
-            console.error(`[${requestId}] Error inserting ${chunk.length} posts:`, result.error);
-            console.error(`[${requestId}] First post in batch:`, JSON.stringify(chunk[0]).substring(0, 500));
-            errors += chunk.length;
-          } else {
-            inserted += chunk.length;
-          }
-        } catch (error) {
-          console.error(`[${requestId}] Exception inserting batch:`, error);
-          errors += chunk.length;
         }
       }
     }
@@ -380,13 +410,17 @@ export async function POST(request: NextRequest) {
             .in("id", chunk);
 
           if (result.error) {
-            console.error(`[${requestId}] Error deleting ${chunk.length} posts:`, result.error);
+            const errorMsg = `Error deleting posts: ${result.error.message}`;
+            console.error(`[${requestId}] ${errorMsg}`);
+            errorMessages.push(errorMsg);
             errors += chunk.length;
           } else {
             deleted += chunk.length;
           }
         } catch (err) {
-          console.error(`[${requestId}] Exception deleting batch:`, err);
+          const errorMsg = `Exception deleting batch: ${err instanceof Error ? err.message : String(err)}`;
+          console.error(`[${requestId}] ${errorMsg}`);
+          errorMessages.push(errorMsg);
           errors += chunk.length;
         }
       }
@@ -424,7 +458,8 @@ export async function POST(request: NextRequest) {
       stats: { updated, inserted, deleted, skipped, errors },
       syncTimestamp: new Date().toISOString(),
       requestId,
-      duration: `${duration.toFixed(2)}s`
+      duration: `${duration.toFixed(2)}s`,
+      errorDetails: errorMessages.length > 0 ? errorMessages : undefined
     });
   } catch (error) {
     console.error(`[${requestId}] Error processing sync request:`, error);
@@ -437,14 +472,14 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         requestId,
-        duration: `${duration.toFixed(2)}s`
+        duration: `${duration.toFixed(2)}s`,
+        errorDetails: errorMessages
       },
       { status: 500 }
     );
   }
 }
 
-// GET and OPTIONS handlers remain the same
 export async function GET() {
   try {
     const { data: posts } = await supabase
