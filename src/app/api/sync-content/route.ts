@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Handle boolean fields
-        ["featured", "comment", "socmed", "publish"].forEach((field) => {
+        ["featured", "comment", "socmed"].forEach((field) => {
           if (field in mappedPost) {
             mappedPost[field] =
               mappedPost[field] === "TRUE" ||
@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
               mappedPost[field] === true;
           }
         });
-
+        delete mappedPost.publish;
         // Handle categories as arrays
         if (
           "categories" in mappedPost &&
