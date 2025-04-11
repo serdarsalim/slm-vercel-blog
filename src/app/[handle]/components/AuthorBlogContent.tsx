@@ -168,7 +168,8 @@ export default function AuthorBlogContent({
   return (
     <>
       {/* Blog Header Section */}
-      <section className="pt-0 pb-8 bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">            <div className="max-w-3xl mx-auto px-4">
+      <section className="pt-0 pb-8 bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">            
+      <div className="max-w-3xl mx-auto px-4">
           <motion.div
             initial={{ opacity: 0.9 }}
             animate={{ opacity: 1 }}
