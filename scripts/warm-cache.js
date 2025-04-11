@@ -9,8 +9,8 @@ const API_URL = `${BASE_URL}/api/posts`;
 const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET || 'your_default_secret';
 const CONCURRENT_REQUESTS = 3; // Adjust based on your server capacity
 
-console.log(`🔧 Environment: ${IS_DEV ? 'Development' : 'Production'}`);
-console.log(`🔧 Using base URL: ${BASE_URL}`);
+//console.log(`🔧 Environment: ${IS_DEV ? 'Development' : 'Production'}`);
+//console.log(`🔧 Using base URL: ${BASE_URL}`);
 
 // Utility function to wait between requests
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));

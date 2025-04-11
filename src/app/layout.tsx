@@ -30,7 +30,7 @@ const merriweather = Merriweather({
 
 export const metadata: Metadata = {
   title: "WriteAway",
-  description: "A modern blog built with Next.js and Tailwind CSS",
+  description: "A blog about technology, history and some personal stuff.",
 };
 // Add this line to your layout.tsx
 export const scrollRestoration = 'manual'; // Let browser handle restoration

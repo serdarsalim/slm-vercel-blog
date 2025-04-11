@@ -42,6 +42,6 @@ export const supabase = createClient(
 );
 
 // Log initialization in development to help with debugging
-if (process.env.NODE_ENV === 'development') {
-  console.log(`🔌 Supabase client initialized with URL: ${supabaseUrl?.substring(0, 10)}...`);
-}
+//if (process.env.NODE_ENV === 'development') {
+ // console.log(`🔌 Supabase client initialized with URL: ${supabaseUrl?.substring(0, 10)}...`);
+//}
