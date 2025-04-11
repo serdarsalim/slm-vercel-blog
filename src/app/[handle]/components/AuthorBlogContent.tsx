@@ -168,8 +168,7 @@ export default function AuthorBlogContent({
   return (
     <>
       {/* Blog Header Section */}
-      <section className="pt-0 pb-10 bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
-            <div className="max-w-3xl mx-auto px-4">
+      <section className="pt-0 pb-8 bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">            <div className="max-w-3xl mx-auto px-4">
           <motion.div
             initial={{ opacity: 0.9 }}
             animate={{ opacity: 1 }}
@@ -282,7 +281,7 @@ export default function AuthorBlogContent({
       </section>
 
       {/* Blog Posts */}
-      <section className="py-10 bg-white dark:bg-slate-900 -mt-14 relative w-full">
+      <section className="py-8 bg-white dark:bg-slate-900 -mt-14 relative w-full">
         <div className="w-full px-4 mb-20 sm:max-w-3xl sm:mx-auto">
           {sortedPosts.length === 0 ? (
             <motion.div
