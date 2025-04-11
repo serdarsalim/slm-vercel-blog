@@ -100,8 +100,29 @@ export function processContent(content: string, isDarkMode: boolean = false): st
         scaledValue = Math.round(scaledValue * 1.7);
         return `style="${before}font-size: ${scaledValue}px${after}"`;
       }
+      
+      
     );
-  
+  // Convert empty headings to paragraphs with no spacing
+processedContent = processedContent.replace(
+  /<h([1-6])(?:\s[^>]*)?>([\s\n]*|&nbsp;|<br\s*\/?>)*<\/h\1>/g,
+  (match, level, innerContent) => {
+    // Use empty div with minimal styling instead of paragraph
+    return `<div class="empty-heading-converted" style="margin:0;padding:0;height:0;min-height:0;overflow:hidden"></div>`;
+  }
+);
+    
+    // Add IDs to headings for TOC (your existing code)
+    processedContent = processedContent.replace(
+      /<h([2-3])(?:\s[^>]*)?>(.*?)<\/h\1>/g,
+      (match, level, content) => {
+        const plainText = content.replace(/<[^>]*>/g, "");
+        const id = plainText.toLowerCase().replace(/[^\w]+/g, "-");
+        return `<h${level} id="${id}">${content}</h${level}>`;
+      }
+    );
+
+
     // FONT TAG COLOR TRANSFORMATION - Only if in dark mode
     if (isDarkMode) {
       processedContent = processedContent.replace(
@@ -160,6 +181,8 @@ export function processContent(content: string, isDarkMode: boolean = false): st
       );
     }
   
+    
+    
     // Add IDs to headings for TOC
     processedContent = processedContent.replace(
       /<h([2-3])(?:\s[^>]*)?>(.*?)<\/h\1>/g,
@@ -172,6 +195,8 @@ export function processContent(content: string, isDarkMode: boolean = false): st
   
     return processedContent;
   }
+
+  
   
   /**
    * Extract table of contents from HTML content

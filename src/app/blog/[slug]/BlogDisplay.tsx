@@ -3,13 +3,14 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import ReadingBar from './components/ReadingBar';
 import CommentSection from './components/CommentSection';
 import ShareButtons from './components/ShareButtons';
 import { getCategoryArray } from '@/app/utils/categoryHelpers';
 import type { BlogPost } from '@/app/types/blogpost';
+import TableOfContents from './components/TableOfContents';
 
 type TocItem = {
   id: string;
@@ -34,7 +35,7 @@ export default function BlogDisplay({
 }: BlogDisplayProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [fontStyle, setFontStyle] = useState('serif');
-  
+  const [tocExpanded, setTocExpanded] = useState(false);
   // Detect dark mode
   useEffect(() => {
     const checkDarkMode = () => {
@@ -154,31 +155,8 @@ export default function BlogDisplay({
             ))}
           </motion.div>
         </div>
-
-        {/* Table of Contents - if present */}
-        {tableOfContents.length > 0 && (
-          <div className="max-w-3xl mx-auto mb-6 px-4 md:px-10 lg:px-9">
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold mb-2">Contents</h2>
-              <ul className="space-y-1">
-                {tableOfContents.map((item) => (
-                  <li 
-                    key={item.id} 
-                    className={`${item.level === '3' ? 'ml-4' : ''}`}
-                  >
-                    <a 
-                      href={`#${item.id}`}
-                      className="text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      {item.text}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-
+        <TableOfContents items={tableOfContents} />
+       
         {/* Main blog post content */}
         <div className="max-w-3xl mx-auto">
           <motion.div

@@ -7,7 +7,7 @@ import { BlogProvider } from "./blogContext";
 import GoogleTagManager from "./components/GoogleTagManager";
 import Analytics from "./components/analytics";
 import { SpeedInsights } from '@vercel/speed-insights/next';
-
+import ScrollManager from "./components/ScrollManager";
 
 // Keep your existing Inter font
 const inter = Inter({
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   title: "WriteAway",
   description: "A modern blog built with Next.js and Tailwind CSS",
 };
-
+export const scrollRestoration = 'manual';
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -51,6 +51,7 @@ export default function RootLayout({
           {children}
           <SpeedInsights />
           <Footer />
+          <ScrollManager />
         </BlogProvider>
       </body>
     </html>
