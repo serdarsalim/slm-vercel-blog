@@ -98,18 +98,14 @@ export default function BlogClientContent({
   }, [posts]);
 
   // Handle category selection
-  const handleCategoryClick = (cat: string) => {
-    setSelectedCategories((prev) => {
-      if (cat === "all") return ["all"];
-      const newCategories = prev.includes(cat)
-        ? prev.filter((c) => c !== cat)
-        : [...prev.filter((c) => c !== "all"), cat];
-      return newCategories.length === 0 ? ["all"] : newCategories;
-    });
-    // Reset render count when category changes
-    setRenderedCount(8);
-  };
-
+// Replace the current handleCategoryClick function with this:
+const handleCategoryClick = (cat: string) => {
+  // Always select exactly one category - the one clicked
+  setSelectedCategories([cat]);
+  
+  // Reset render count when category changes
+  setRenderedCount(8);
+};
   // Apply filters and search
 // Apply filters and search
 const filteredPosts = useMemo(() => {
