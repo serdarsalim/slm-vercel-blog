@@ -1,31 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { supabase } from '@/lib/supabase';
+import { checkAdminAuth } from '@/lib/auth-utils';
 
-// Move this helper function to a separate file
-// e.g., /src/lib/auth-utils.ts
-export async function checkAdminAuth() {
-  try {
-    const cookieStore = cookies();
-    const adminToken = cookieStore.get('admin_token')?.value;
-
-    if (!adminToken) {
-      return { authorized: false, error: 'No admin token found' };
-    }
-
-    // Verify this matches your admin token
-    if (adminToken === process.env.ADMIN_API_TOKEN) {
-      return { authorized: true };
-    }
-
-    return { authorized: false, error: 'Invalid admin token' };
-  } catch (error) {
-    console.error('Auth check error:', error);
-    return { authorized: false, error: 'Authentication check failed' };
-  }
-}
-
-// Add a proper route handler function
+// Only export route handlers (POST, GET, etc.)
 export async function POST(request: NextRequest) {
   try {
     // Check admin authentication
