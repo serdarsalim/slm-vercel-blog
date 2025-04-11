@@ -32,7 +32,8 @@ export const metadata: Metadata = {
   title: "WriteAway",
   description: "A modern blog built with Next.js and Tailwind CSS",
 };
-export const scrollRestoration = 'manual';
+// Add this line to your layout.tsx
+export const scrollRestoration = 'manual'; // Let browser handle restoration
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -45,13 +46,13 @@ export default function RootLayout({
       <body className={`${inter.variable} ${merriweather.variable} ${robotoMono.variable} antialiased`}>
         <GoogleTagManager gtmId={GTM_ID} />
         <Analytics />
-        
+        <ScrollManager />
         <BlogProvider>
           <Navbar />
           {children}
           <SpeedInsights />
           <Footer />
-          <ScrollManager />
+    
         </BlogProvider>
       </body>
     </html>

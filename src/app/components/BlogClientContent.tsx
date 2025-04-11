@@ -272,16 +272,7 @@ const filteredPosts = useMemo(() => {
           backface-visibility: hidden;
         }
 
-        /* Smooth scrolling */
-        html {
-          scroll-behavior: smooth;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          html {
-            scroll-behavior: auto;
-          }
-        }
+   
 
         /* Optimize rendering */
         .blog-card {
