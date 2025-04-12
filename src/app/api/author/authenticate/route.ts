@@ -1,4 +1,3 @@
-// src/app/api/author/authenticate/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
@@ -108,15 +107,36 @@ export async function POST(request: NextRequest) {
     // Support multiple parameter formats for maximum compatibility
     const { 
       apiToken, api_token, authorToken, token, 
-      handle, author, authorHandle, user 
+      handle, author, authorHandle, user,
+      secret, vercelToken // Added Vercel token support
     } = body;
     
-    // Accept any of the token parameters
+    // Check for Vercel authentication first (higher priority)
+    const vercelSecret = secret || vercelToken;
+    const expectedSecret = process.env.VERCEL_API_SECRET || process.env.API_SECRET_TOKEN;
+    
+    // If Vercel secret is provided and matches expected value
+    if (vercelSecret && expectedSecret && vercelSecret === expectedSecret) {
+      debugLog('Vercel API token authentication successful');
+      return NextResponse.json({
+        success: true,
+        authMethod: 'vercel',
+        author: {
+          handle: 'admin',
+          name: 'System Admin',
+          role: 'admin'
+        },
+        timestamp: requestTime.toISOString()
+      }, {
+        headers: corsHeaders
+      });
+    }
+    
+    // Fall back to author token authentication
     const tokenToValidate = authorToken || apiToken || api_token || token;
-    // Accept any of the handle parameters
     const handleToValidate = handle || author || authorHandle || user;
     
-    debugLog('Token validation request:', { 
+    debugLog('Author token validation request:', { 
       tokenProvided: !!tokenToValidate,
       handleProvided: !!handleToValidate,
       paramNames: Object.keys(body)
@@ -126,7 +146,7 @@ export async function POST(request: NextRequest) {
     if (!tokenToValidate) {
       return NextResponse.json({ 
         success: false, 
-        error: 'API token is required'
+        error: 'Authentication token is required'
       }, { 
         status: 400,
         headers: corsHeaders
@@ -172,9 +192,10 @@ export async function POST(request: NextRequest) {
     }
     
     // Authentication successful
-    debugLog('Authentication successful for', data.handle);
+    debugLog('Author API token authentication successful for', data.handle);
     return NextResponse.json({
       success: true,
+      authMethod: 'author',
       author: {
         handle: data.handle,
         name: data.name,
@@ -203,17 +224,42 @@ export async function POST(request: NextRequest) {
  * Handle GET requests for Google Apps Script compatibility
  */
 export async function GET(request: NextRequest) {
-  console.log("GET request received, likely from Google Apps Script");
+  debugLog("GET request received, likely from Google Apps Script");
   
   // Extract query parameters
   const searchParams = request.nextUrl.searchParams;
   const authorToken = searchParams.get('authorToken') || searchParams.get('apiToken');
   const handle = searchParams.get('handle');
+  const secret = searchParams.get('secret') || searchParams.get('vercelToken');
   
   // Log the parameters with safe truncation for tokens
-  console.log(`Params: token=${authorToken ? authorToken.substring(0,5) + '...' : 'none'}, handle=${handle || 'none'}`);
+  debugLog(`Params: token=${authorToken ? authorToken.substring(0,5) + '...' : 'none'}, handle=${handle || 'none'}, secret=${secret ? 'provided' : 'none'}`);
   
-  // If we have an authorToken, treat this as an auth request
+  // Check for Vercel authentication first
+  if (secret) {
+    const expectedSecret = process.env.VERCEL_API_SECRET || process.env.API_SECRET_TOKEN;
+    if (expectedSecret && secret === expectedSecret) {
+      debugLog('Vercel API token GET authentication successful');
+      return NextResponse.json({
+        success: true,
+        authMethod: 'vercel',
+        author: {
+          handle: 'admin',
+          name: 'System Admin',
+          role: 'admin'
+        },
+        timestamp: new Date().toISOString()
+      }, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
+        }
+      });
+    }
+  }
+  
+  // If we have an authorToken, treat this as an author auth request
   if (authorToken) {
     // Create a mock POST request to reuse our existing logic
     const mockBody = JSON.stringify({ authorToken, handle });
@@ -232,7 +278,7 @@ export async function GET(request: NextRequest) {
   // Otherwise return a helpful message
   return NextResponse.json({
     success: false,
-    error: 'For authentication, please provide authorToken and handle parameters',
+    error: 'For authentication, please provide authorToken/handle or secret parameter',
     supportedMethods: ['POST', 'GET with params']
   }, { 
     status: 400,
