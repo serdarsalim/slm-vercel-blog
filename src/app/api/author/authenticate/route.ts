@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabase";
 
 // Add this to ensure Next.js properly handles this as a dynamic route
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // Log authentication attempts (for security monitoring)
 function logAuthAttempt(handle: string, success: boolean, ip: string | null, error?: string) {
