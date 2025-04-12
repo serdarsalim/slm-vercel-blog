@@ -1,139 +1,150 @@
-//app/api/author/authenticate/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
-import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
-
-// Force dynamic execution to prevent caching issues
+// Ensure route is always dynamic and doesn't get cached
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'; // More reliable than edge for auth
 
-// CORS headers optimized for Google Apps Script compatibility
-function getCorsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-    'Access-Control-Max-Age': '86400',
-    'Access-Control-Allow-Credentials': 'true',
-    'Cache-Control': 'no-store, max-age=0, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0',
-    'Content-Type': 'application/json'
-  };
+// Debug helper function that doesn't log in production
+function debugLog(...args: any[]) {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Auth Debug]', ...args);
+  }
 }
 
-// Simple logging for debugging
-function logAuthAttempt(handle: string, success: boolean, ip: string | null, error?: string) {
-  console.log(JSON.stringify({
-    timestamp: new Date().toISOString(),
-    event: "author_auth_attempt",
-    handle,
-    success,
-    ip,
-    ...(error && { error })
-  }));
-}
-
-// Main authentication handler
 export async function POST(request: NextRequest) {
-  // Get client IP for logging
-  const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  console.log(`Authentication attempt from IP: ${ip}`);
+  const requestTime = new Date();
+  const clientIP = request.headers.get('x-forwarded-for') || 'unknown';
+  debugLog(`Auth request from ${clientIP} at ${requestTime.toISOString()}`);
   
   try {
-    // Parse request body with error handling
+    // Parse request body with better error handling
     let body;
     try {
       body = await request.json();
+      debugLog('Request body:', body);
     } catch (e) {
-      console.error("Body parse error:", e);
-      logAuthAttempt('parse-error', false, ip, 'Invalid JSON payload');
-      return NextResponse.json({ 
-        success: false, 
-        error: "Invalid request format" 
+      debugLog('Failed to parse JSON:', e);
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid request format. JSON body required.'
       }, { 
         status: 400,
-        headers: getCorsHeaders() 
+        headers: { 'Access-Control-Allow-Origin': '*' }
       });
     }
     
-    // Support both parameter names for maximum compatibility
-    const { handle, authorToken, api_token } = body;
-    const token = authorToken || api_token;
+    // Support multiple parameter formats for maximum compatibility
+    const { apiToken, api_token, authorToken, token, handle } = body;
     
-    // Validate required fields
-    if (!handle || !token) {
-      logAuthAttempt(handle || 'unknown', false, ip, 'Missing credentials');
+    // Accept any of the token parameters
+    const tokenToValidate = apiToken || authorToken || api_token || token;
+    
+    debugLog('Token validation request:', { 
+      tokenProvided: !!tokenToValidate,
+      handleProvided: !!handle,
+      paramNames: Object.keys(body)
+    });
+    
+    // Input validation
+    if (!tokenToValidate) {
       return NextResponse.json({ 
         success: false, 
-        error: "Handle and author token are required" 
+        error: 'API token is required'
       }, { 
         status: 400,
-        headers: getCorsHeaders()
+        headers: { 'Access-Control-Allow-Origin': '*' }
       });
     }
     
-    console.log(`Auth attempt for handle: ${handle}`);
-    
-    // Verify credentials in Supabase
-    const { data, error } = await supabase
+    // Build query - start with token validation
+    let query = supabase
       .from("authors")
       .select("handle, name, role")
-      .eq("handle", handle)
-      .eq("api_token", token)
-      .single();
+      .eq("api_token", tokenToValidate);
     
-    if (error || !data) {
-      logAuthAttempt(handle, false, ip, 'Invalid credentials');
+    // If handle is provided, use it for additional validation
+    if (handle) {
+      query = query.eq("handle", handle);
+    }
+    
+    // Execute the query
+    const { data, error } = await query.single();
+    
+    if (error) {
+      debugLog('Supabase query error:', error);
       return NextResponse.json({ 
         success: false, 
-        error: "Invalid credentials" 
+        error: 'Invalid credentials',
+        debug: process.env.NODE_ENV === 'development' ? error.message : undefined
       }, { 
         status: 401,
-        headers: getCorsHeaders()
+        headers: { 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+    
+    if (!data) {
+      debugLog('No matching author found');
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Invalid credentials'
+      }, { 
+        status: 401,
+        headers: { 'Access-Control-Allow-Origin': '*' }
       });
     }
     
     // Authentication successful
-    logAuthAttempt(handle, true, ip);
+    debugLog('Authentication successful for', data.handle);
     return NextResponse.json({
       success: true,
       author: {
         handle: data.handle,
         name: data.name,
         role: data.role
-      }
+      },
+      timestamp: requestTime.toISOString()
     }, {
-      headers: getCorsHeaders()
+      headers: {
+        // Comprehensive CORS and cache headers
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
+    
   } catch (error) {
-    console.error("Auth error:", error);
-    logAuthAttempt('error', false, ip, error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : "Authentication failed" 
+    debugLog('Unhandled error:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Authentication service error',
+      message: error instanceof Error ? error.message : String(error),
+      debug: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : undefined) : undefined
     }, { 
       status: 500,
-      headers: getCorsHeaders()
+      headers: { 'Access-Control-Allow-Origin': '*' }
     });
   }
 }
 
-// Handle OPTIONS requests (required for CORS)
+// Handle OPTIONS preflight requests with comprehensive CORS support
 export async function OPTIONS(request: NextRequest) {
+  debugLog('OPTIONS request received');
+  
+  // Get origin or default to '*'
+  const origin = request.headers.get('origin') || '*';
+  
   return new NextResponse(null, {
     status: 204,
-    headers: getCorsHeaders()
-  });
-}
-
-// Add a GET handler for connection testing
-export async function GET(request: NextRequest) {
-  return NextResponse.json({
-    success: true,
-    message: "Authentication endpoint ready",
-    timestamp: new Date().toISOString()
-  }, {
-    headers: getCorsHeaders()
+    headers: {
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400'
+    }
   });
 }

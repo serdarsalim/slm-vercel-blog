@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Auth Test</title>
+  <style>
+    body { font-family: system-ui; max-width: 800px; margin: 0 auto; padding: 20px; }
+    button { background: #0070f3; color: white; border: none; border-radius: 5px; padding: 8px 16px; cursor: pointer; }
+    pre { background: #f1f1f1; padding: 15px; border-radius: 5px; overflow-x: auto; }
+    input { width: 100%; padding: 8px; margin: 5px 0 15px; }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>Authentication Test Tool</h1>
+  
+  <div>
+    <label for="apiToken">API Token:</label>
+    <input id="apiToken" type="text" value="55a9855c032ca6bd7ee540cff62afb535e14598e664c31371c63d9d32ec2e2ac">
+  </div>
+  
+  <div>
+    <label for="handle">Handle (optional):</label>
+    <input id="handle" type="text" value="TBH">
+  </div>
+  
+  <div style="margin: 20px 0;">
+    <button id="testLocal">Test Local</button>
+    <button id="testProduction">Test Production</button>
+  </div>
+  
+  <h3>Response:</h3>
+  <div id="status"></div>
+  <pre id="result">Click a button to test...</pre>
+
+  <script>
+    const apiTokenInput = document.getElementById('apiToken');
+    const handleInput = document.getElementById('handle');
+    const statusDiv = document.getElementById('status');
+    const resultPre = document.getElementById('result');
+    
+    // Test against local development server
+    document.getElementById('testLocal').addEventListener('click', () => {
+      testAuth('http://localhost:3000');
+    });
+    
+    // Test against production Vercel deployment
+    document.getElementById('testProduction').addEventListener('click', () => {
+      testAuth('https://slm-vercel-blog-serdar-salims-projects.vercel.app');
+    });
+    
+    // The main testing function
+    async function testAuth(baseUrl) {
+      const apiToken = apiTokenInput.value.trim();
+      const handle = handleInput.value.trim();
+      
+      if (!apiToken) {
+        statusDiv.innerHTML = '<span class="error">Please enter an API token</span>';
+        return;
+      }
+      
+      statusDiv.innerHTML = 'Testing...';
+      resultPre.textContent = '';
+      
+      try {
+        console.log(`Testing auth against ${baseUrl}`);
+        
+        // Create payload with both parameters to test
+        const payload = { authorToken: apiToken };
+        if (handle) {
+          payload.handle = handle;
+        }
+        
+        console.log('Sending payload:', payload);
+        
+        // Make the API request
+        const response = await fetch(`${baseUrl}/api/author/authenticate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const responseText = await response.text();
+        console.log(`Response status: ${response.status}`);
+        console.log(`Raw response: ${responseText.substring(0, 200)}`);
+        
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (e) {
+          throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}`);
+        }
+        
+        // Display result
+        resultPre.textContent = JSON.stringify(data, null, 2);
+        
+        if (data.success) {
+          statusDiv.innerHTML = `<span class="success">✓ Authentication successful (${response.status})</span>`;
+        } else {
+          statusDiv.innerHTML = `<span class="error">✗ Authentication failed (${response.status})</span>`;
+        }
+      } catch (error) {
+        console.error('Test error:', error);
+        statusDiv.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+        resultPre.textContent = error.toString();
+      }
+    }
+  </script>
+</body>
+</html>
