@@ -1,40 +1,57 @@
-// src/app/api/author/authenticate/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAuthorToken } from "@/lib/author-utils";
+import { supabase } from "@/lib/supabase";
 
-// ONLY export the POST handler
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { authorToken, handle } = body;
+    const { handle, authorToken } = body;
     
-    if (!authorToken || !handle) {
+    if (!handle || !authorToken) {
       return NextResponse.json({ 
-        error: "Author token and handle are required" 
+        success: false, 
+        error: "Handle and author token are required" 
       }, { status: 400 });
     }
     
-    const { valid, author } = await verifyAuthorToken(authorToken, handle);
+    // Verify in Supabase
+    const { data, error } = await supabase
+      .from("authors")
+      .select("handle, name")
+      .eq("handle", handle)
+      .eq("api_token", authorToken)
+      .single();
     
-    if (!valid) {
+    if (error || !data) {
       return NextResponse.json({ 
-        error: "Invalid author credentials" 
+        success: false, 
+        error: "Invalid credentials" 
       }, { status: 401 });
     }
     
     return NextResponse.json({
       success: true,
-      message: "Authentication successful",
       author: {
-        handle: author.handle,
-        name: author.name
+        handle: data.handle,
+        name: data.name
       }
     });
   } catch (error) {
-    console.error("Error in author authentication:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
-    );
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || "Authentication failed" 
+    }, { status: 500 });
   }
+}
+
+// Optional: Add this to handle OPTIONS preflight requests
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
 }
