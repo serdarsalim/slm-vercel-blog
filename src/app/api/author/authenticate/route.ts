@@ -1,29 +1,8 @@
 // src/app/api/author/authenticate/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { verifyAuthorToken } from "@/lib/author-utils";
 
-// Utility function to verify author token - can be reused in other endpoints
-export async function verifyAuthorToken(token: string, handle: string) {
-  try {
-    const { data, error } = await supabase
-      .from("authors")
-      .select("handle, name, email")
-      .eq("handle", handle)
-      .eq("api_token", token)
-      .single();
-    
-    if (error || !data) {
-      return { valid: false, author: null };
-    }
-    
-    return { valid: true, author: data };
-  } catch (err) {
-    console.error("Error verifying author token:", err);
-    return { valid: false, author: null };
-  }
-}
-
-// Test endpoint for authors to verify their token
+// ONLY export the POST handler
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
