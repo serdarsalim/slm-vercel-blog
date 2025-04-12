@@ -72,27 +72,25 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // Accept both authorToken and api_token parameters for flexibility
-    const { handle, authorToken, api_token } = body;
-    const tokenToCheck = authorToken || api_token;
+    const { handle, authorToken } = body;
     
     // Validate required fields
-    if (!handle || !tokenToCheck) {
+    if (!handle || !authorToken) {
       logAuthAttempt(handle || 'unknown', false, ip, 'Missing credentials');
       return NextResponse.json({ 
         success: false, 
-        error: "Handle and token are required" 
+        error: "Handle and author token are required" 
       }, { status: 400 });
     }
     
-    console.log(`Token validation for handle: ${handle}`);
+    console.log(`Auth attempt for handle: ${handle}`);
     
-    // Check if token exists in database
+    // Verify in Supabase - get role too
     const { data, error } = await supabase
       .from("authors")
       .select("handle, name, role")
       .eq("handle", handle)
-      .eq("api_token", tokenToCheck)
+      .eq("api_token", authorToken)
       .single();
     
     if (error || !data) {
@@ -103,45 +101,46 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
     
-    // Token validation successful
+    // Authentication successful
     logAuthAttempt(handle, true, ip);
     return NextResponse.json({
       success: true,
       author: {
         handle: data.handle,
         name: data.name,
-        role: data.role || 'author'
+        role: data.role
       }
     }, {
       headers: {
-        // Cache control headers + CORS for CMS compatibility
+        // Cache control to prevent caching of auth responses
         'Cache-Control': 'no-store, max-age=0, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With'
       }
     });
   } catch (error) {
-    console.error("Token validation error:", error);
+    console.error("Auth error:", error);
     logAuthAttempt('error', false, ip, error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ 
       success: false, 
-      error: error instanceof Error ? error.message : "Token validation failed" 
+      error: error instanceof Error ? error.message : "Authentication failed" 
     }, { status: 500 });
   }
 }
 
-// Handle OPTIONS preflight requests for CORS
+// Handle OPTIONS preflight requests
 export async function OPTIONS(request: NextRequest) {
+  // Get origin for CORS
+  const origin = request.headers.get('origin') || '*';
+  
   return new NextResponse(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-      'Access-Control-Max-Age': '86400'
+      'Access-Control-Max-Age': '86400',
+      'Access-Control-Allow-Credentials': 'true'
     }
   });
 }
