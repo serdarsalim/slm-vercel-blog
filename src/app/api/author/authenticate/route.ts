@@ -1,11 +1,28 @@
+//app/api/author/authenticate/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
-// Add this to ensure Next.js properly handles this as a dynamic route
+// Force dynamic execution to prevent caching issues
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// Log authentication attempts (for security monitoring)
+// CORS headers optimized for Google Apps Script compatibility
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
+    'Access-Control-Max-Age': '86400',
+    'Access-Control-Allow-Credentials': 'true',
+    'Cache-Control': 'no-store, max-age=0, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'Content-Type': 'application/json'
+  };
+}
+
+// Simple logging for debugging
 function logAuthAttempt(handle: string, success: boolean, ip: string | null, error?: string) {
   console.log(JSON.stringify({
     timestamp: new Date().toISOString(),
@@ -17,80 +34,53 @@ function logAuthAttempt(handle: string, success: boolean, ip: string | null, err
   }));
 }
 
-// Rate limiting simple implementation
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 5; // 5 attempts per minute per IP
-const ipAttempts = new Map<string, {count: number, timestamp: number}>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const record = ipAttempts.get(ip);
-  
-  // Clean up old records
-  if (record && now - record.timestamp > RATE_LIMIT_WINDOW) {
-    ipAttempts.delete(ip);
-    return true;
-  }
-  
-  if (!record) {
-    ipAttempts.set(ip, { count: 1, timestamp: now });
-    return true;
-  }
-  
-  if (record.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
-  
-  record.count += 1;
-  return true;
-}
-
+// Main authentication handler
 export async function POST(request: NextRequest) {
-  // Get client IP for rate limiting and logging
+  // Get client IP for logging
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
   console.log(`Authentication attempt from IP: ${ip}`);
   
-  // Check rate limit
-  if (!checkRateLimit(ip as string)) {
-    logAuthAttempt('rate-limited', false, ip, 'Rate limit exceeded');
-    return NextResponse.json({ 
-      success: false, 
-      error: "Too many attempts. Please try again later."
-    }, { status: 429 });
-  }
-  
   try {
-    // Parse request body
+    // Parse request body with error handling
     let body;
     try {
       body = await request.json();
     } catch (e) {
+      console.error("Body parse error:", e);
       logAuthAttempt('parse-error', false, ip, 'Invalid JSON payload');
       return NextResponse.json({ 
         success: false, 
         error: "Invalid request format" 
-      }, { status: 400 });
+      }, { 
+        status: 400,
+        headers: getCorsHeaders() 
+      });
     }
     
-    const { handle, authorToken } = body;
+    // Support both parameter names for maximum compatibility
+    const { handle, authorToken, api_token } = body;
+    const token = authorToken || api_token;
     
     // Validate required fields
-    if (!handle || !authorToken) {
+    if (!handle || !token) {
       logAuthAttempt(handle || 'unknown', false, ip, 'Missing credentials');
       return NextResponse.json({ 
         success: false, 
         error: "Handle and author token are required" 
-      }, { status: 400 });
+      }, { 
+        status: 400,
+        headers: getCorsHeaders()
+      });
     }
     
     console.log(`Auth attempt for handle: ${handle}`);
     
-    // Verify in Supabase - get role too
+    // Verify credentials in Supabase
     const { data, error } = await supabase
       .from("authors")
       .select("handle, name, role")
       .eq("handle", handle)
-      .eq("api_token", authorToken)
+      .eq("api_token", token)
       .single();
     
     if (error || !data) {
@@ -98,7 +88,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         success: false, 
         error: "Invalid credentials" 
-      }, { status: 401 });
+      }, { 
+        status: 401,
+        headers: getCorsHeaders()
+      });
     }
     
     // Authentication successful
@@ -111,12 +104,7 @@ export async function POST(request: NextRequest) {
         role: data.role
       }
     }, {
-      headers: {
-        // Cache control to prevent caching of auth responses
-        'Cache-Control': 'no-store, max-age=0, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      }
+      headers: getCorsHeaders()
     });
   } catch (error) {
     console.error("Auth error:", error);
@@ -124,23 +112,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       success: false, 
       error: error instanceof Error ? error.message : "Authentication failed" 
-    }, { status: 500 });
+    }, { 
+      status: 500,
+      headers: getCorsHeaders()
+    });
   }
 }
 
-// Handle OPTIONS preflight requests
+// Handle OPTIONS requests (required for CORS)
 export async function OPTIONS(request: NextRequest) {
-  // Get origin for CORS
-  const origin = request.headers.get('origin') || '*';
-  
   return new NextResponse(null, {
     status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With',
-      'Access-Control-Max-Age': '86400',
-      'Access-Control-Allow-Credentials': 'true'
-    }
+    headers: getCorsHeaders()
+  });
+}
+
+// Add a GET handler for connection testing
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    success: true,
+    message: "Authentication endpoint ready",
+    timestamp: new Date().toISOString()
+  }, {
+    headers: getCorsHeaders()
   });
 }
