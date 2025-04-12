@@ -25,6 +25,7 @@ interface Author {
   bio?: string;
   website_url?: string;
   api_token: string;
+  role: "admin" | "author"; // Add this line
   created_at: string;
 }
 
@@ -39,7 +40,7 @@ interface AuthorDashboardProps {
 export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
   // State for tab management
   const [activeTab, setActiveTab] = useState<TabType>("requests");
-  
+
   // Data states
   const [requests, setRequests] = useState<AuthorRequest[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
@@ -56,6 +57,63 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
     checkJoinStatus();
   }, []);
 
+  // Add these functions to handle promotion/demotion
+  const promoteAuthor = async (handle: string) => {
+    setProcessingId(handle);
+    try {
+      const response = await fetch(`/api/admin/authors/${handle}/promote`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to promote author");
+      }
+      
+      // Get response data with updated author
+      const data = await response.json();
+      
+      // Update the specific author locally without refetching everything
+      setAuthors(prev => prev.map(author => 
+        author.handle === handle 
+          ? {...author, role: "admin"} 
+          : author
+      ));
+      
+      setSuccessMessage(`${handle} promoted to admin successfully`);
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Failed to promote author"
+      );
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const demoteAuthor = async (handle: string) => {
+    setProcessingId(handle);
+    try {
+      const response = await fetch(`/api/admin/authors/${handle}/demote`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to demote author");
+      }
+
+      // Refresh the data
+      await fetchAuthors();
+      setSuccessMessage(`${handle} demoted to regular author successfully`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   // Function to fetch author requests
   const fetchRequests = async () => {
     setLoading(true);
@@ -65,7 +123,7 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
       const response = await fetch("/api/admin/author-requests", {
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${adminToken}`
+          Authorization: `Bearer ${adminToken}`,
         },
       });
 
@@ -91,7 +149,7 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
       const response = await fetch("/api/admin/authors", {
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${adminToken}`
+          Authorization: `Bearer ${adminToken}`,
         },
       });
 
@@ -113,8 +171,8 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
     try {
       const response = await fetch("/api/admin/settings/join-status", {
         headers: {
-          "Authorization": `Bearer ${adminToken}`
-        }
+          Authorization: `Bearer ${adminToken}`,
+        },
       });
       const data = await response.json();
       setJoinEnabled(!data.disabled);
@@ -130,7 +188,7 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${adminToken}`
+          Authorization: `Bearer ${adminToken}`,
         },
         body: JSON.stringify({ enabled: !joinEnabled }),
       });
@@ -163,7 +221,7 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${adminToken}`
+            Authorization: `Bearer ${adminToken}`,
           },
         }
       );
@@ -174,7 +232,7 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
 
       // Refresh both data sets
       await Promise.all([fetchRequests(), fetchAuthors()]);
-      
+
       setSuccessMessage("Author request approved successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -184,47 +242,47 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
     }
   };
 
-
   // Add this helper function inside your component
-const copyToClipboard = (text: string) => {
-  try {
-    // Check if clipboard is available
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(text)
-        .then(() => {
-          setSuccessMessage("API token copied to clipboard");
-          setTimeout(() => setSuccessMessage(null), 3000);
-        })
-        .catch(err => {
-          setError(`Failed to copy: ${err.message}`);
-        });
-    } else {
-      // Fallback using document.execCommand (older browsers)
-      const textArea = document.createElement("textarea");
-      textArea.value = text;
-      textArea.style.position = "fixed";  // Avoid scrolling to bottom
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      try {
-        const successful = document.execCommand('copy');
-        if (successful) {
-          setSuccessMessage("API token copied to clipboard");
-        } else {
-          setError("Clipboard copy failed");
+  const copyToClipboard = (text: string) => {
+    try {
+      // Check if clipboard is available
+      if (typeof navigator !== "undefined" && navigator.clipboard) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            setSuccessMessage("API token copied to clipboard");
+            setTimeout(() => setSuccessMessage(null), 3000);
+          })
+          .catch((err) => {
+            setError(`Failed to copy: ${err.message}`);
+          });
+      } else {
+        // Fallback using document.execCommand (older browsers)
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed"; // Avoid scrolling to bottom
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          const successful = document.execCommand("copy");
+          if (successful) {
+            setSuccessMessage("API token copied to clipboard");
+          } else {
+            setError("Clipboard copy failed");
+          }
+        } catch (err) {
+          setError("Browser doesn't support clipboard access");
         }
-      } catch (err) {
-        setError("Browser doesn't support clipboard access");
+
+        document.body.removeChild(textArea);
+        setTimeout(() => setSuccessMessage(null), 3000);
       }
-      
-      document.body.removeChild(textArea);
-      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (err) {
+      setError("Unable to access clipboard");
     }
-  } catch (err) {
-    setError("Unable to access clipboard");
-  }
-};
+  };
 
   // Function to reject an author request
   const rejectRequest = async (requestId: string) => {
@@ -238,7 +296,7 @@ const copyToClipboard = (text: string) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${adminToken}`
+            Authorization: `Bearer ${adminToken}`,
           },
         }
       );
@@ -249,7 +307,7 @@ const copyToClipboard = (text: string) => {
 
       // Update local state and refresh requests
       await fetchRequests();
-      
+
       setSuccessMessage("Author request rejected successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -271,7 +329,7 @@ const copyToClipboard = (text: string) => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${adminToken}`
+            Authorization: `Bearer ${adminToken}`,
           },
         }
       );
@@ -282,7 +340,7 @@ const copyToClipboard = (text: string) => {
 
       // Refresh requests data
       await fetchRequests();
-      
+
       setSuccessMessage("Author request deleted successfully");
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -302,7 +360,7 @@ const copyToClipboard = (text: string) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${adminToken}`
+          Authorization: `Bearer ${adminToken}`,
         },
       });
 
@@ -312,7 +370,7 @@ const copyToClipboard = (text: string) => {
 
       // Refresh both datasets
       await Promise.all([fetchRequests(), fetchAuthors()]);
-      
+
       setSuccessMessage(`Author ${handle} has been revoked`);
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -323,7 +381,9 @@ const copyToClipboard = (text: string) => {
   };
 
   // Get pending requests count for badge
-  const pendingCount = requests.filter(req => req.status === "pending").length;
+  const pendingCount = requests.filter(
+    (req) => req.status === "pending"
+  ).length;
 
   return (
     <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden">
@@ -362,7 +422,7 @@ const copyToClipboard = (text: string) => {
               </span>
             )}
           </button>
-          
+
           <button
             onClick={() => setActiveTab("authors")}
             className={`py-3 px-6 text-sm font-medium ${
@@ -437,11 +497,14 @@ const copyToClipboard = (text: string) => {
               </thead>
               <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                 {requests.map((request) => (
-                  <tr key={request.id} className={
-                    request.status === "pending"
-                      ? "bg-amber-50 dark:bg-amber-900/10"
-                      : ""
-                  }>
+                  <tr
+                    key={request.id}
+                    className={
+                      request.status === "pending"
+                        ? "bg-amber-50 dark:bg-amber-900/10"
+                        : ""
+                    }
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
                         {request.name}
@@ -458,14 +521,16 @@ const copyToClipboard = (text: string) => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          request.status === "approved"
-                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                            : request.status === "rejected"
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                            : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                        }`}
+                    <span
+                        className={`
+                          inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            request.status === "pending"
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                              : request.status === "approved"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                              : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                          }
+                        `}
                       >
                         {request.status.charAt(0).toUpperCase() +
                           request.status.slice(1)}
@@ -534,7 +599,9 @@ const copyToClipboard = (text: string) => {
                         disabled={!!processingId}
                         className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                       >
-                        {processingId === request.id ? "Processing..." : "Delete"}
+                        {processingId === request.id
+                          ? "Processing..."
+                          : "Delete"}
                       </button>
                     </td>
                   </tr>
@@ -578,6 +645,9 @@ const copyToClipboard = (text: string) => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Date
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Role
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
@@ -585,7 +655,10 @@ const copyToClipboard = (text: string) => {
               </thead>
               <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                 {authors.map((author) => (
-                  <tr key={author.id} className="bg-green-50 dark:bg-green-900/10">
+                  <tr
+                    key={author.id}
+                    className="bg-green-50 dark:bg-green-900/10"
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
                         {author.name}
@@ -628,6 +701,33 @@ const copyToClipboard = (text: string) => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-700 dark:text-gray-300">
                         {new Date(author.created_at).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <span
+                          className={`
+                          inline-flex px-2 py-1 text-xs font-semibold rounded-full   ${  author.role === "admin"
+                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"  } `}
+                                        >
+                          {author.role === "admin" ? "Admin" : "Regular"}
+                        </span>
+                        <button
+                          onClick={() =>
+                            author.role === "admin"
+                              ? demoteAuthor(author.handle)
+                              : promoteAuthor(author.handle)
+                          }
+                          disabled={!!processingId}
+                          className="ml-2 text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                        >
+                          {processingId === author.handle
+                            ? "Processing..."
+                            : author.role === "admin"
+                            ? "Demote"
+                            : "Promote"}
+                        </button>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
