@@ -203,27 +203,37 @@ export async function POST(request: NextRequest) {
  * Handle GET requests for Google Apps Script compatibility
  */
 export async function GET(request: NextRequest) {
-  // Some Google services fall back to GET with params in query string
-  const params = request.nextUrl.searchParams;
-  const token = params.get('authorToken') || params.get('apiToken') || params.get('token');
-  const handle = params.get('handle') || params.get('author');
+  console.log("GET request received, likely from Google Apps Script");
   
-  if (token) {
-    // Create a mock request with the right body
+  // Extract query parameters
+  const searchParams = request.nextUrl.searchParams;
+  const authorToken = searchParams.get('authorToken') || searchParams.get('apiToken');
+  const handle = searchParams.get('handle');
+  
+  // Log the parameters with safe truncation for tokens
+  console.log(`Params: token=${authorToken ? authorToken.substring(0,5) + '...' : 'none'}, handle=${handle || 'none'}`);
+  
+  // If we have an authorToken, treat this as an auth request
+  if (authorToken) {
+    // Create a mock POST request to reuse our existing logic
+    const mockBody = JSON.stringify({ authorToken, handle });
     const mockRequest = new Request(request.url, {
       method: 'POST',
-      headers: request.headers,
-      body: JSON.stringify({ authorToken: token, handle })
+      headers: new Headers({
+        'Content-Type': 'application/json'
+      }),
+      body: mockBody
     });
     
-    // Process it like a POST
+    // Process it with our POST handler
     return POST(mockRequest as NextRequest);
   }
   
-  // Not a valid auth request
+  // Otherwise return a helpful message
   return NextResponse.json({
     success: false,
-    error: 'For authentication, please use POST method or provide token in query params'
+    error: 'For authentication, please provide authorToken and handle parameters',
+    supportedMethods: ['POST', 'GET with params']
   }, { 
     status: 400,
     headers: {
