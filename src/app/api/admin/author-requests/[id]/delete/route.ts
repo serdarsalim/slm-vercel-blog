@@ -61,10 +61,39 @@ export async function POST(
     if (!authorFetchError && authorData) {
       console.log(`Found matching author with handle ${handle}. Deleting...`);
       
+      // DELETE POSTS FIRST - Add this code
+      console.log(`Deleting posts for author ${handle}...`);
+      const { error: postsError } = await adminSupabase
+        .from('posts')
+        .delete()
+        .eq('author_handle', handle); // Notice author_handle here!
+        
+      if (postsError) {
+        console.error("Error deleting author posts:", postsError);
+        // Continue despite error - not critical
+      } else {
+        console.log("Author posts deleted successfully");
+      }
+      
+      // DELETE PREFERENCES - Add this code
+      console.log(`Deleting preferences for author ${handle}...`);
+      const { error: prefsError } = await adminSupabase
+        .from('author_preferences')
+        .delete()
+        .eq('author_handle', handle); // Notice author_handle here!
+        
+      if (prefsError) {
+        console.error("Error deleting author preferences:", prefsError);
+        // Continue despite error - not critical
+      } else {
+        console.log("Author preferences deleted successfully");
+      }
+      
+      // DELETE THE AUTHOR - This already exists
       const { error: deleteAuthorError } = await adminSupabase
         .from('authors')
         .delete()
-        .eq('handle', handle);
+        .eq('handle', handle); // Correct - using handle for authors table
         
       if (deleteAuthorError) {
         console.error("Error deleting author:", deleteAuthorError);

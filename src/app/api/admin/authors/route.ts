@@ -70,7 +70,7 @@ export async function DELETE(request: NextRequest) {
       const { error: postsError } = await supabase
         .from('posts')
         .delete()
-        .eq('handle', handle);
+        .eq('author_handle', handle)
         
       if (postsError) {
         console.error('Error deleting author posts:', postsError);
@@ -81,7 +81,7 @@ export async function DELETE(request: NextRequest) {
       const { error: prefsError } = await supabase
         .from('author_preferences')
         .delete()
-        .eq('handle', handle);
+        .eq('author_handle', handle)
         
       if (prefsError) {
         console.error('Error deleting author preferences:', prefsError);

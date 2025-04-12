@@ -57,7 +57,7 @@ export async function getAuthorPreferences(handle: string) {
     const { data, error } = await supabase
       .from('author_preferences')
       .select('*')
-      .eq('handle', handle)
+      .eq('author_handle', handle)
       .single();
     
     if (error) {
@@ -95,7 +95,7 @@ export async function getAuthorPosts(handle: string) {
     const { data, error } = await supabase
       .from('posts')
       .select('*')
-      .eq('handle', handle)
+      .eq('author_handle', handle)
       .order('position', { ascending: false })
       .order('date', { ascending: false });
     
@@ -120,7 +120,7 @@ export async function getAuthorFeaturedPosts(handle: string) {
     const { data, error } = await supabase
       .from('posts')
       .select('*')
-      .eq('handle', handle)
+      .eq('author_handle', handle)
       .eq('featured', true)
       .order('position', { ascending: false })
       .order('date', { ascending: false });
@@ -147,7 +147,7 @@ export async function getAuthorPostBySlug(handle: string, slug: string) {
     const { data, error } = await supabase
       .from('posts')
       .select('*')
-      .eq('handle', handle)
+      .eq('author_handle', handle)
       .eq('slug', slug)
       .single();
     

@@ -19,6 +19,7 @@ const FIELD_MAPPING: Record<string, string> = {
   socmed: "socmed",
   lastModified: "updated_at",
   position: "position",
+  handle: "author_handle",
 };
 
 /**

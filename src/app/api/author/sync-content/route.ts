@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     // Add handle to all posts
     const postsWithAuthor = posts.map(post => ({
       ...post,
-      handle: handle
+      author_handle: handle
     }));
 
     // Rest of your sync logic (same as your current implementation)
