@@ -21,11 +21,18 @@ export interface Author {
   id: string;
   handle: string;
   name: string;
-  email: string;
+  email?: string; // Make optional
   bio?: string;
+  avatar_url?: string; // Add this field
   website_url?: string;
-  api_token: string;
-  role: "admin" | "author";
+  social_links?: { // Add this field
+    twitter?: string;
+    github?: string;
+    linkedin?: string;
+    [key: string]: string | undefined;
+  };
+  api_token?: string; // Make optional
+  role?: "admin" | "author"; // Make optional
   created_at: string;
-  visibility: "visible" | "hidden"; 
+  visibility?: "visible" | "hidden"; // Make optional
 }
