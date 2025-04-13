@@ -27,6 +27,7 @@ interface Author {
   api_token: string;
   role: "admin" | "author"; // Add this line
   created_at: string;
+  visibility?: "visible" | "hidden"; 
 }
 
 // Tab options
@@ -113,6 +114,45 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
       setProcessingId(null);
     }
   };
+
+  // Function to toggle author visibility
+const toggleAuthorVisibility = async (handle: string, currentVisibility: string) => {
+  setProcessingId(handle);
+  setError(null);
+  
+  const newVisibility = currentVisibility === "visible" ? "hidden" : "visible";
+  
+  try {
+    const response = await fetch(`/api/admin/authors/${handle}/visibility`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ visibility: newVisibility }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update author visibility`);
+    }
+
+    // Update the specific author locally without refetching everything
+    setAuthors(prev => prev.map(author => 
+      author.handle === handle 
+        ? {...author, visibility: newVisibility} 
+        : author
+    ));
+    
+    setSuccessMessage(
+      `Author ${handle} is now ${newVisibility === "visible" ? "visible" : "hidden"} on the site`
+    );
+    setTimeout(() => setSuccessMessage(null), 3000);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Unknown error");
+  } finally {
+    setProcessingId(null);
+  }
+};
 
   // Function to fetch author requests
   const fetchRequests = async () => {
@@ -389,7 +429,7 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
     <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden">
       <div className="p-5 border-b border-gray-200 dark:border-slate-600 flex justify-between items-center">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-          Author Management
+         
         </h2>
 
         <button
@@ -470,31 +510,34 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
             </div>
           ) : (
             <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-              <thead className="bg-gray-50 dark:bg-slate-700">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Handle
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    API Token
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
+             <thead className="bg-gray-50 dark:bg-slate-700">
+  <tr>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+      Name
+    </th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+      Handle
+    </th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+      Email
+    </th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+      API Token
+    </th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+      Date
+    </th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+      Role
+    </th>
+    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+      Visibility
+    </th>
+    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+      Actions
+    </th>
+  </tr>
+</thead>
               <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                 {requests.map((request) => (
                   <tr
@@ -730,6 +773,32 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
                         </button>
                       </div>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <span
+                                  className={`
+                                    inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                    ${author.visibility === "hidden"
+                                      ? "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+                                      : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                    }
+                                  `}
+                                >
+                                  {author.visibility === "hidden" ? "Hidden" : "Visible"}
+                                </span>
+                                <button
+                                  onClick={() => toggleAuthorVisibility(author.handle, author.visibility || "visible")}
+                                  disabled={!!processingId}
+                                  className="ml-2 text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                                >
+                                  {processingId === author.handle
+                                    ? "Processing..."
+                                    : author.visibility === "hidden"
+                                    ? "Show"
+                                    : "Hide"}
+                                </button>
+                              </div>
+                            </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => revokeAuthor(author.handle)}

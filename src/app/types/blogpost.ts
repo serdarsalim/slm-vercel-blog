@@ -17,19 +17,15 @@ export interface BlogPost {
 
 
 // Add your Author interface
-export interface Author {
+interface Author {
   id: string;
   handle: string;
   name: string;
+  email: string;
   bio?: string;
-  avatar_url?: string;
   website_url?: string;
-  social_links?: {
-    twitter?: string;
-    github?: string;
-    linkedin?: string;
-    [key: string]: string | undefined;
-  };
+  api_token: string;
+  role: "admin" | "regular";
   created_at: string;
-  updated_at?: string;
+  visibility: "visible" | "hidden"; 
 }
