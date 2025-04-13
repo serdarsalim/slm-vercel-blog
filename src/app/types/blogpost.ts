@@ -17,7 +17,7 @@ export interface BlogPost {
 
 
 // Add your Author interface
-interface Author {
+export interface Author {
   id: string;
   handle: string;
   name: string;
