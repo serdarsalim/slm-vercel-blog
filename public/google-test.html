@@ -8,15 +8,19 @@
     h2 { color: #34a853; /* Google green */ }
     pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
     input, textarea { width: 100%; padding: 8px; margin: 5px 0 15px; border: 1px solid #ddd; border-radius: 4px; }
-    button { background: #4285f4; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; }
+    button { background: #4285f4; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; margin-right: 8px; }
     button:hover { background: #3367d6; }
     .success { color: #34a853; font-weight: bold; }
     .error { color: #ea4335; /* Google red */ font-weight: bold; }
+    .warning { color: #fbbc05; font-weight: bold; }
     .tabs { display: flex; margin-bottom: 10px; }
     .tab { padding: 8px 16px; cursor: pointer; background: #f1f1f1; margin-right: 5px; border-radius: 4px 4px 0 0; }
     .tab.active { background: #4285f4; color: white; }
     .tab-content { display: none; padding: 20px; border: 1px solid #ddd; border-radius: 0 4px 4px 4px; }
     .tab-content.active { display: block; }
+    .form-section { padding: 15px; background: #f8f9fa; border-radius: 4px; border-left: 4px solid #fbbc05; margin-bottom: 20px; }
+    .required { color: #ea4335; }
+    .hint { font-size: 12px; color: #666; margin-top: -10px; margin-bottom: 15px; }
   </style>
 </head>
 <body>
@@ -37,18 +41,33 @@
       <input id="apiEndpoint" type="text" value="/api/author/authenticate" placeholder="Path to your API (e.g., /api/author/authenticate)">
     </div>
     
-    <div>
-      <label for="handle">Author Handle:</label>
-      <input id="handle" type="text" value="TBH" placeholder="Enter author handle">
-    </div>
-    
-    <div>
-      <label for="authorToken">API Token:</label>
-      <input id="authorToken" type="text" value="55a9855c032ca6bd7ee540cff62afb535e14598e664c31371c63d9d32ec2e2ac" placeholder="Enter API token">
+    <!-- Combined Authentication Section -->
+    <div class="form-section">
+      <h3>Authentication Parameters</h3>
+      <p class="hint">Your endpoint requires BOTH the Vercel validation key AND author token</p>
+      
+      <div>
+        <label for="vercelToken">Vercel Validation Key: <span class="required">*</span></label>
+        <input id="vercelToken" type="text" placeholder="Enter your Vercel validation secret">
+        <div class="hint">This authenticates your API call (matches REVALIDATION_SECRET in env)</div>
+      </div>
+      
+      <div>
+        <label for="authorToken">Author API Token:</label>
+        <input id="authorToken" type="text" value="55a9855c032ca6bd7ee540cff62afb535e14598e664c31371c63d9d32ec2e2ac" placeholder="Enter author API token">
+        <div class="hint">The author token to validate against the database</div>
+      </div>
+      
+      <div>
+        <label for="handle">Author Handle:</label>
+        <input id="handle" type="text" value="TBH" placeholder="Enter author handle">
+        <div class="hint">Optional - used in some API versions for additional validation</div>
+      </div>
     </div>
     
     <div>
       <button onclick="testUrlFetchApp()">Test UrlFetchApp Simulation</button>
+      <button onclick="clearForm()" style="background-color: #9aa0a6;">Clear Form</button>
     </div>
     
     <h3>Response:</h3>
@@ -93,23 +112,49 @@
       });
     });
     
+    // Clear form fields
+    function clearForm() {
+      document.getElementById('handle').value = '';
+      document.getElementById('authorToken').value = '';
+      document.getElementById('vercelToken').value = '';
+      document.getElementById('gasFetchResult').textContent = 'Form cleared...';
+      document.getElementById('gasFetchStatus').innerHTML = '';
+    }
+    
     // Test UrlFetchApp simulation
     async function testUrlFetchApp() {
       const endpoint = document.getElementById('apiEndpoint').value;
-      const handle = document.getElementById('handle').value;
-      const authorToken = document.getElementById('authorToken').value;
       const statusDiv = document.getElementById('gasFetchStatus');
       const resultPre = document.getElementById('gasFetchResult');
       
-      statusDiv.innerHTML = '<span style="color: #fbbc05;">Testing...</span>';
+      const vercelToken = document.getElementById('vercelToken').value.trim();
+      const authorToken = document.getElementById('authorToken').value.trim();
+      const handle = document.getElementById('handle').value.trim();
+      
+      statusDiv.innerHTML = '<span class="warning">Testing...</span>';
       resultPre.textContent = '';
       
+      // Validation - The Vercel token is required
+      if (!vercelToken) {
+        statusDiv.innerHTML = '<span class="error">Vercel validation key is required ✗</span>';
+        return;
+      }
+      
       try {
-        // This simulates how Google Apps Script sends data
+        // Create the payload with all available parameters
         const payload = {
-          handle: handle,
-          authorToken: authorToken
+          secret: vercelToken
         };
+        
+        // Add authorToken if provided
+        if (authorToken) {
+          payload.authorToken = authorToken;
+        }
+        
+        // Add handle if provided
+        if (handle) {
+          payload.handle = handle;
+        }
         
         // Log what we're about to send
         console.log('Sending to:', window.location.origin + endpoint);
@@ -165,7 +210,7 @@
       const statusDiv = document.getElementById('corsStatus');
       const resultPre = document.getElementById('corsResult');
       
-      statusDiv.innerHTML = '<span style="color: #fbbc05;">Testing CORS...</span>';
+      statusDiv.innerHTML = '<span class="warning">Testing CORS...</span>';
       resultPre.textContent = '';
       
       try {
