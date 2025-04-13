@@ -25,7 +25,7 @@ interface Author {
   bio?: string;
   website_url?: string;
   api_token: string;
-  role: "admin" | "regular";
+  role: "admin" | "author";
   created_at: string;
   visibility: "visible" | "hidden"; 
 }
