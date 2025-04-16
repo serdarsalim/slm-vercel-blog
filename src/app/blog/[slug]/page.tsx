@@ -10,7 +10,13 @@ export const revalidate = 3600; // 1 hour
 // Generate static paths at build time
 export async function generateStaticParams() {
   const posts = await getAllPosts();
-  return posts.map(post => ({ slug: post.slug }));
+  
+  // Add explicit string conversion and filtering
+  return posts
+    .filter(post => post && post.slug) // Filter out any posts without slugs
+    .map((post) => ({
+      slug: String(post.slug) // Force conversion to string
+    }));
 }
 
 // Server component - statically generated with ISR

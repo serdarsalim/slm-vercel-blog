@@ -206,28 +206,28 @@ export default function BlogDisplay({
           {/* Navigation and share section */}
           <div className="mt-12 pt-8 border-t border-gray-100 dark:border-gray-800">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              {/* Back to Blog - Left side */}
-              <Link href="/" className="group mb-6 sm:mb-0">
-                <span className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-1">
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M7 16l-4-4m0 0l4-4m-4 4h18"
-                    />
-                  </svg>
-                  Back to Blog
-                </span>
-                <span className="text-lg font-medium group-hover:underline">
-                  View all articles
-                </span>
-              </Link>
+             {/* Back to Blog - Left side */}
+             <Link href={`/${post.author_handle}`} className="group mb-6 sm:mb-0">
+            <span className="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-1">
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M7 16l-4-4m0 0l4-4m-4 4h18"
+                />
+              </svg>
+              Back to Author
+            </span>
+            <span className="text-lg font-medium group-hover:underline">
+              View all content by {post.author_handle}
+            </span>
+          </Link>
 
               {/* Share buttons */}
               {post.socmed && <ShareButtons post={post} />}

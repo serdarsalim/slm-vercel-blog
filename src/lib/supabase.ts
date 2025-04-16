@@ -13,6 +13,7 @@ export type Post = {
   featured: boolean;
   author: string;
   featuredImage?: string;
+  author_handle: string; // Add this line to match your BlogPost interface
   comment: boolean;
   socmed: boolean;
   created_at: string;

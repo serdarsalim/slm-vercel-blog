@@ -7,7 +7,8 @@ export interface BlogPost {
   date: string;
   categories: string[];
   featured: boolean;
-  author: string;
+  author_handle: string; // Changed from author to author_handle
+  author: string;  // Add this for display name if needed
   featuredImage?: string;
   comment: boolean;
   socmed: boolean;
