@@ -25,7 +25,7 @@ interface Author {
   bio?: string;
   website_url?: string;
   api_token: string;
-  role: "admin" | "author"; // Add this line
+  role: "admin" | "member"; // Add this line
   created_at: string;
   listing_status: "listed" | "unlisted"; 
 }
@@ -51,6 +51,27 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Add the safeFetch utility function here
+  const safeFetch = async (url: string, options: RequestInit) => {
+    try {
+      const response = await fetch(url, options);
+      
+      // Check response type before parsing
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return { response, data: await response.json() };
+      } else {
+        // Handle non-JSON responses
+        const text = await response.text();
+        console.error('Received non-JSON response:', text.substring(0, 150) + '...');
+        throw new Error(`Expected JSON but received ${contentType || 'unknown content type'}`);
+      }
+    } catch (err) {
+      console.error(`Error fetching ${url}:`, err);
+      throw err;
+    }
+  };
+
   // Fetch data on component mount
   useEffect(() => {
     fetchRequests();
@@ -59,61 +80,107 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
   }, []);
 
   // Add these functions to handle promotion/demotion
-  const promoteAuthor = async (handle: string) => {
-    setProcessingId(handle);
-    try {
-      const response = await fetch(`/api/admin/authors/${handle}/promote`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-        },
-      });
+ // Update the promoteAuthor function with safe fetch handling
+const promoteAuthor = async (handle: string) => {
+  setProcessingId(handle);
+  setError(null);
   
-      if (!response.ok) {
-        throw new Error("Failed to promote author");
-      }
-      
-      // Get response data with updated author
-      const data = await response.json();
-      
-      // Update the specific author locally without refetching everything
-      setAuthors(prev => prev.map(author => 
-        author.handle === handle 
-          ? {...author, role: "admin"} 
-          : author
-      ));
-      
-      setSuccessMessage(`${handle} promoted to admin successfully`);
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "Failed to promote author"
-      );
-    } finally {
-      setProcessingId(null);
+  try {
+    console.log(`Promoting ${handle} to admin - adminToken: ${adminToken?.substring(0, 5)}...`);
+    
+    // First try to get the response without parsing JSON
+    const response = await fetch(`/api/admin/authors/${handle}/role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ role: "admin" })
+    });
+    
+    console.log("Response status:", response.status);
+    const contentType = response.headers.get('content-type');
+    console.log("Response content type:", contentType);
+    
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // Handle non-JSON response
+      const text = await response.text();
+      console.error("Non-JSON response:", text.substring(0, 200));
+      throw new Error("Expected JSON response but got HTML. Check your API route.");
     }
-  };
-
-  const demoteAuthor = async (handle: string) => {
-    setProcessingId(handle);
-    try {
-      const response = await fetch(`/api/admin/authors/${handle}/demote`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${adminToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to demote author");
-      }
-
-      // Refresh the data
-      await fetchAuthors();
-      setSuccessMessage(`${handle} demoted to regular author successfully`);
-    } finally {
-      setProcessingId(null);
+    
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to promote member");
     }
-  };
+
+    // Update state
+    setAuthors(prev => prev.map(author => 
+      author.handle === handle ? {...author, role: "admin"} : author
+    ));
+    
+    setSuccessMessage(`${handle} promoted to admin successfully`);
+    setTimeout(() => setSuccessMessage(null), 3000);
+  } catch (err) {
+    console.error("Error in promoteAuthor:", err);
+    setError(err instanceof Error ? err.message : "Unknown error");
+  } finally {
+    setProcessingId(null);
+  }
+};
+
+// Same update for demoteAuthor function
+const demoteAuthor = async (handle: string) => {
+  setProcessingId(handle);
+  setError(null);
+  
+  try {
+    console.log(`Demoting ${handle} to member - adminToken: ${adminToken?.substring(0, 5)}...`);
+    
+    // First try to get the response without parsing JSON
+    const response = await fetch(`/api/admin/authors/${handle}/role`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${adminToken}`,
+      },
+      body: JSON.stringify({ role: "member" }) // Send "author" but display as "member"
+    });
+    
+    console.log("Response status:", response.status);
+    const contentType = response.headers.get('content-type');
+    console.log("Response content type:", contentType);
+    
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // Handle non-JSON response
+      const text = await response.text();
+      console.error("Non-JSON response:", text.substring(0, 200));
+      throw new Error("Expected JSON response but got HTML. Check your API route.");
+    }
+    
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to demote admin");
+    }
+
+    // Update state
+    setAuthors(prev => prev.map(author => 
+      author.handle === handle ? {...author, role: "member"} : author
+    ));
+    
+    setSuccessMessage(`${handle} demoted to member successfully`);
+    setTimeout(() => setSuccessMessage(null), 3000);
+  } catch (err) {
+    console.error("Error in demoteAuthor:", err);
+    setError(err instanceof Error ? err.message : "Unknown error");
+  } finally {
+    setProcessingId(null);
+  }
+};
 
   // Function to toggle author visibility
 // Function to toggle author listing status
@@ -153,7 +220,7 @@ const toggleAuthorListingStatus = async (handle: string, currentStatus: string) 
   } finally {
     setProcessingId(null);
   }
-};;
+};
 
   // Function to fetch author requests
   const fetchRequests = async () => {
@@ -749,14 +816,12 @@ const toggleAuthorListingStatus = async (handle: string, currentStatus: string) 
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <span
-                          className={`
-                          inline-flex px-2 py-1 text-xs font-semibold rounded-full   ${  author.role === "admin"
-                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
-                          : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"  } `}
-                                        >
-                          {author.role === "admin" ? "Admin" : "Regular"}
-                        </span>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                      author.role === "admin"
+                                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                                        : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"  }`}>
+                                      {author.role === "admin" ? "Admin" : "Member"}
+                                    </span>
                         <button
                           onClick={() =>
                             author.role === "admin"
@@ -767,10 +832,10 @@ const toggleAuthorListingStatus = async (handle: string, currentStatus: string) 
                           className="ml-2 text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                         >
                           {processingId === author.handle
-                            ? "Processing..."
-                            : author.role === "admin"
-                            ? "Demote"
-                            : "Promote"}
+                                          ? "Processing..."
+                                          : author.role === "admin"
+                                          ? "Demote"
+                                          : "Promote"}
                         </button>
                       </div>
                     </td>

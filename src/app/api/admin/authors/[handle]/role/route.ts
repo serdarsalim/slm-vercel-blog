@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from "next/cache";
 
@@ -8,7 +7,7 @@ export async function POST(
   { params }: { params: { handle: string } }
 ) {
   try {
-    // Get admin token from Authorization header
+    // 1. Get admin token from request
     const authHeader = request.headers.get('Authorization');
     const adminToken = authHeader ? authHeader.replace('Bearer ', '') : null;
     const validAdminToken = process.env.ADMIN_API_TOKEN;
@@ -19,21 +18,21 @@ export async function POST(
     
     const { handle } = params;
     
-    // Get the new listing status from request body
+    // 2. Get role from request body
     const body = await request.json();
-    const { listing_status } = body;
+    const { role } = body;
     
-    if (!listing_status || !["listed", "unlisted"].includes(listing_status)) {
-      return NextResponse.json({ error: 'Invalid listing status value' }, { status: 400 });
+    if (!role || !["admin", "author"].includes(role)) {
+      return NextResponse.json({ error: 'Invalid role value' }, { status: 400 });
     }
     
-    // Create admin client with service role key to bypass RLS
+    // 3. Create service role client to bypass RLS
     const adminSupabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
       process.env.SUPABASE_SERVICE_ROLE_KEY || ''
     );
     
-    // First check if author exists
+    // 4. Check if author exists
     const { data: authorExists, error: checkError } = await adminSupabase
       .from('authors')
       .select('handle')
@@ -44,32 +43,37 @@ export async function POST(
       return NextResponse.json({ error: `Author with handle ${handle} not found` }, { status: 404 });
     }
     
-    // Update author listing_status using admin client
+    // 5. Update author role
     const { error } = await adminSupabase
       .from('authors')
-      .update({ listing_status })
+      .update({ role })
       .eq('handle', handle);
     
     if (error) {
+      console.error(`Error updating author role to ${role}:`, error);
       return NextResponse.json({ 
-        error: 'Failed to update author listing status', 
-        details: error 
+        error: `Failed to update author role to ${role}`,
+        details: error
       }, { status: 500 });
     }
     
-    // Revalidate the relevant paths
+    // 6. Revalidate paths
     revalidatePath(`/${handle}`, 'page');
     revalidatePath(`/${handle}/blog`, 'page');
     revalidatePath('/authors', 'page'); 
-    revalidatePath('/', 'page');
+    revalidatePath('/admin/authors', 'page');
+    
+    // 7. Return success response
+    const actionName = role === 'admin' ? 'promoted to admin' : 'demoted to member';
     
     return NextResponse.json({
       success: true,
-      message: `Author ${handle} listing status updated to ${listing_status}`
+      message: `Author ${handle} ${actionName} successfully`
     });
   } catch (error) {
+    console.error('API route error:', error);
     return NextResponse.json({ 
-      error: 'Failed to update author listing status', 
+      error: 'Failed to update author role', 
       details: error instanceof Error ? error.message : String(error)
     }, { status: 500 });
   }
