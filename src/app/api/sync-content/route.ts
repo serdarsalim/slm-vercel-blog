@@ -539,24 +539,48 @@ for (let i = 0; i < uniqueIdsToDelete.length; i += BATCH_SIZE) {
     }
 
     // Revalidate paths after database changes
-    if (updated > 0 || inserted > 0 || deleted > 0) {
-      console.log(`[${requestId}] Changes detected, revalidating cache...`);
-      revalidateTag("posts");
-      revalidatePath("/", "page");
-      revalidatePath("/blog", "page");
-
-      // Revalidate all specific post pages based on our known slugs
-      const allSlugs = new Set([
-        ...Array.from(incomingSlugs.values()),
-        ...Array.from(existingSlugsById.values()),
-      ]);
-
-      for (const slug of allSlugs) {
-        if (slug) {
-          revalidatePath(`/blog/${slug}`, "page");
-        }
+    // Revalidate paths after database changes
+if (updated > 0 || inserted > 0 || deleted > 0) {
+  console.log(`[${requestId}] Changes detected, revalidating cache...`);
+  
+  // Always revalidate global tags and pages
+  revalidateTag("posts");
+  revalidatePath("/", "page");
+  
+  // Collect author-slug pairs for specific page revalidation
+  const slugToAuthorMap = new Map<string, string>();
+  
+  // Map incoming posts' slugs to their author handles
+  filteredPosts.forEach(post => {
+    if (post.slug && post.author_handle) {
+      slugToAuthorMap.set(post.slug, post.author_handle);
+    }
+  });
+  
+  // Get all slugs that need revalidation
+  const allSlugs = new Set([
+    ...Array.from(incomingSlugs.values()),
+    ...Array.from(existingSlugsById.values()),
+  ]);
+  
+  // Revalidate each slug with its author handle
+  for (const slug of allSlugs) {
+    if (slug) {
+      // Get the author handle for this slug, or use a fallback
+      const authorHandle = slugToAuthorMap.get(slug);
+      
+      if (authorHandle) {
+        // If we know the author, revalidate the specific path
+        console.log(`[${requestId}] Revalidating specific path: /${authorHandle}/${slug}`);
+        revalidatePath(`/${authorHandle}/${slug}`, "page");
+      } else {
+        // If we don't know the author, revalidate by tag instead
+        console.log(`[${requestId}] Revalidating with tag for slug: ${slug}`);
+        revalidateTag(`post-${slug}`);
       }
     }
+  }
+}
 
     const endTime = Date.now();
     const duration = (endTime - startTime) / 1000; // in seconds

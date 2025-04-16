@@ -1,7 +1,7 @@
 // src/app/api/author/revalidate/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
-import { revalidatePath, revalidateTag } from "next/cache"; // Add this import
+import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +39,8 @@ export async function POST(request: NextRequest) {
     }
     
     if (slug) {
-      revalidatePath(`/${handle}/blog/${slug}`, "page");
+
+      revalidatePath(`/${handle}/${slug}`, "page");
     }
 
     return NextResponse.json({

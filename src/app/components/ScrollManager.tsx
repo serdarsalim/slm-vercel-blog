@@ -53,7 +53,7 @@ export default function ScrollManager() {
       if (!target) return;
       
       // Only save position for clicks on blog post links
-      if (pathname === '/' && target.pathname?.startsWith('/blog/')) {
+      if (pathname === '/' && target.pathname && target.pathname !== '/') {
         // Save current scroll position
         sessionStorage.setItem('homeScrollPosition', window.scrollY.toString());
       }

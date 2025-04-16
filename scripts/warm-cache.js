@@ -1,6 +1,6 @@
 // scripts/warm-cache.js
 const fetch = require('node-fetch');
-require('dotenv').config({ path: '.env.local' }); // Add this line to load environment variables
+require('dotenv').config({ path: '.env.local' });
 
 // Configuration
 const IS_DEV = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
@@ -8,9 +8,6 @@ const BASE_URL = process.env.SITE_URL || (IS_DEV ? 'http://localhost:3000' : 'ht
 const API_URL = `${BASE_URL}/api/posts`;
 const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET || 'your_default_secret';
 const CONCURRENT_REQUESTS = 3; // Adjust based on your server capacity
-
-//console.log(`🔧 Environment: ${IS_DEV ? 'Development' : 'Production'}`);
-//console.log(`🔧 Using base URL: ${BASE_URL}`);
 
 // Utility function to wait between requests
 const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -135,9 +132,14 @@ async function warmCache() {
   // Prepare URLs to warm
   const urlsToWarm = [
     `${BASE_URL}`, // Home page
-    `${BASE_URL}/blog`, // Blog index page
-    // Individual post pages
-    ...posts.map(post => `${BASE_URL}/blog/${post.slug}`)
+    // Individual post pages - using the new URL structure
+    ...posts.map(post => {
+      // Make sure each post has author_handle, fallback to 'author' if needed
+      const authorHandle = post.author_handle || 
+                          (post.author && typeof post.author === 'string' ? post.author.toLowerCase().replace(/\s+/g, '-') : 'unknown');
+      
+      return `${BASE_URL}/${authorHandle}/${post.slug}`;
+    })
   ];
   
   console.log(`📋 Prepared ${urlsToWarm.length} URLs to warm`);

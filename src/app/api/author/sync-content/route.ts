@@ -492,7 +492,7 @@ export async function POST(request: NextRequest) {
       ]);
       for (const slug of allSlugs) {
         if (slug) {
-          revalidatePath(`/blog/${slug}`, "page");
+          revalidatePath(`/${slug}`, "page");
         }
       }
     }
