@@ -109,27 +109,61 @@ export default function Navbar() {
           </div>
         </motion.button>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center space-x-1">
-          {["Home", "About"].map((item) => (
-            <Link
-              key={item}
-              href={item === "Home" ? "/" : `/${item.toLowerCase()}`}
-              className="group px-3 py-1.5 relative overflow-hidden"
-            >
-              <span className="relative z-10 text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {item}
-              </span>
+    
+{/* Desktop Navigation */}
+<div className="hidden md:flex items-center space-x-1">
+  {["Home", "About", "Join"].map((item) => (
+    <Link
+      key={item}
+      href={item === "Home" ? "/" : `/${item.toLowerCase()}`}
+      className="group px-3 py-1.5 relative overflow-hidden"
+    >
+      <span className="relative z-10 text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        {item}
+      </span>
 
-              {/* Click effect */}
-              <motion.div
-                initial={{ scale: 0, opacity: 0.8 }}
-                whileTap={{ scale: 1.5, opacity: 0 }}
-                transition={{ duration: 0.5 }}
-                className="absolute inset-0 rounded-full bg-blue-400/20 dark:bg-blue-500/20 z-0"
-              />
-            </Link>
-          ))}
+      {/* Click effect */}
+      <motion.div
+        initial={{ scale: 0, opacity: 0.8 }}
+        whileTap={{ scale: 1.5, opacity: 0 }}
+        transition={{ duration: 0.5 }}
+        className="absolute inset-0 rounded-full bg-blue-400/20 dark:bg-blue-500/20 z-0"
+      />
+    </Link>
+  ))}
+
+  {/* WriteAway CMS Link */}
+  <a
+    href="https://script.google.com/macros/s/AKfycbztPt8_juaUchCJZoyQ8syeHQpC6GEh48cTqRz2knSyHtjnb-CyHils68SywO1zUima/exec"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="group px-3 py-1.5 relative overflow-hidden"
+  >
+    <span className="relative z-10 flex items-center text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+       Editor
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        className="ml-1 w-4 h-4"
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" 
+        />
+      </svg>
+    </span>
+    <motion.div
+      initial={{ scale: 0, opacity: 0.8 }}
+      whileTap={{ scale: 1.5, opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="absolute inset-0 rounded-full bg-blue-400/20 dark:bg-blue-500/20 z-0"
+    />
+  </a>
+
 
           {/* Dark Mode Toggle */}
           <motion.button
@@ -202,22 +236,52 @@ export default function Navbar() {
             transition={{ duration: 0.3 }}
           >
             <div className="py-3 px-4 space-y-3">
-              {/* Mobile nav links */}
-              {["Home", "About"].map((item) => (
-                <motion.div
-                  key={item}
-                  initial={{ opacity: 1, x: 0 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  <Link
-                    href={item === "Home" ? "/" : `/${item.toLowerCase()}`}
-                    className="block py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {item}
-                  </Link>
-                </motion.div>
-              ))}
+  {/* Mobile nav links */}
+  {["Home", "About", "Join"].map((item) => (
+    <motion.div
+      key={item}
+      initial={{ opacity: 1, x: 0 }}
+      animate={{ opacity: 1, x: 0 }}
+    >
+      <Link
+        href={item === "Home" ? "/" : `/${item.toLowerCase()}`}
+        className="block py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+        onClick={() => setIsMenuOpen(false)}
+      >
+        {item}
+      </Link>
+    </motion.div>
+  ))}
+  
+  {/* WriteAway CMS Link */}
+  <motion.div
+    initial={{ opacity: 1, x: 0 }}
+    animate={{ opacity: 1, x: 0 }}
+  >
+    <a
+      href="https://script.google.com/macros/s/AKfycbztPt8_juaUchCJZoyQ8syeHQpC6GEh48cTqRz2knSyHtjnb-CyHils68SywO1zUima/exec"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+      onClick={() => setIsMenuOpen(false)}
+    >
+      <span>Editor</span>
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        className="ml-1 w-4 h-4"
+      >
+        <path 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" 
+        />
+      </svg>
+    </a>
+  </motion.div>
               
               {/* Mobile dark mode toggle */}
               <motion.div
