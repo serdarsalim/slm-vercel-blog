@@ -1,5 +1,5 @@
 
-// src/app/blog/\[slug\]/components/ShareButtons.tsx
+// src/app/components/blog/ShareButtons.tsx
 
 "use client";
 

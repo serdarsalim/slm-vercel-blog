@@ -117,7 +117,7 @@ export default async function LandingPage() {
             <h2 className="text-3xl font-bold mb-12 text-center">Recent Posts</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {latestPosts.map(post => (
-                <Link href={`/${post.author_handle}/blog/${post.slug}`} key={post.id}>
+                <Link href={`/${post.author_handle}/${post.slug}`} key={post.id}>
                   <div className="bg-gray-50 dark:bg-slate-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                     {post.featuredImage && (
                       <div className="h-40 relative">

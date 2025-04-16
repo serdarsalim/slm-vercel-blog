@@ -1,4 +1,4 @@
-//  src/app/blog/\[slug\]/components/CommentSection.tsx
+//  src/app/blog/components/CommentSection.tsx
 "use client";
 
 import { motion } from "framer-motion";

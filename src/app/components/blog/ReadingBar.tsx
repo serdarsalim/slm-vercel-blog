@@ -1,4 +1,4 @@
-//"src/app/blog/[slug]/components/ReadingBar.tsx"
+//"src/app/blog/components/ReadingBar.tsx"
 
 "use client";
 

@@ -1,7 +1,7 @@
 // src/app/blog/[slug]/page.tsx
 import { getPostBySlug, getAllPosts } from '@/lib/data';
 import { notFound } from 'next/navigation';
-import BlogDisplay from './BlogDisplay';
+import BlogDisplay from '../../components/BlogDisplay';
 import { processContent, extractTableOfContents, calculateReadingTime } from '@/lib/contentProcessor';
 
 // Enable ISR with a reasonable cache time

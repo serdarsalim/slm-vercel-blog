@@ -1,16 +1,16 @@
-// src/app/blog/\[slug\]/BlogDisplay.tsx
+// src/app/components/BlogDisplay.tsx
 
 "use client";
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import ReadingBar from './components/ReadingBar';
-import CommentSection from './components/CommentSection';
-import ShareButtons from './components/ShareButtons';
+import ReadingBar from './blog/ReadingBar';
+import CommentSection from './blog/CommentSection';
+import ShareButtons from './blog/ShareButtons';
 import { getCategoryArray } from '@/app/utils/categoryHelpers';
-import type { BlogPost } from '@/app/types/blogpost';
-import TableOfContents from './components/TableOfContents';
+import type { BlogPost } from '@/app/types/blogpost'
+import TableOfContents from './blog/TableOfContents';
 
 type TocItem = {
   id: string;

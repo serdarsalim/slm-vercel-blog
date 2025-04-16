@@ -1,3 +1,4 @@
+//src/app/components/blog/TableOfContents.tsx
 "use client";
 
 import { useState } from 'react';
