@@ -88,6 +88,7 @@ export async function loadBlogPostsServer(): Promise<BlogPost[]> {
     categories: post.categories || [],
     featured: post.featured || false,
     author: post.author || 'Anonymous',
+    author_handle: post.author_handle, // Add this line
     featuredImage: post.featuredImage || '',
     comment: post.comment !== undefined ? post.comment : true,
     socmed: post.socmed !== undefined ? post.socmed : true,
@@ -164,6 +165,7 @@ export async function getPostBySlugServer(slug: string): Promise<BlogPost | null
     categories: post.categories || [],
     featured: post.featured || false,
     author: post.author || 'Anonymous',
+    author_handle: post.author_handle, // Add this line
     featuredImage: post.featuredImage || '',
     comment: post.comment !== undefined ? post.comment : true,
     socmed: post.socmed !== undefined ? post.socmed : true,

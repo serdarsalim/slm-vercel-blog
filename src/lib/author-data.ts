@@ -183,6 +183,8 @@ export function convertToLegacyBlogPost(post: any): BlogPost {
     categories: post.categories || [],
     featured: post.featured || false,
     author: post.author || 'Anonymous',
+    // Add the author_handle field directly from the post
+    author_handle: post.author_handle, // Do NOT fall back to author field
     featuredImage: post.featuredImage || '',
     comment: post.comment !== undefined ? post.comment : true,
     socmed: post.socmed !== undefined ? post.socmed : true,
