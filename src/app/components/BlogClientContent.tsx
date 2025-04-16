@@ -363,7 +363,7 @@ const filteredPosts = useMemo(() => {
           </div>
 
           {/* Search bar */}
-          <div className="relative w-full mb-6">
+          <div className="relative w-full mb-2">
             <input
               type="text"
               placeholder="Search posts..."

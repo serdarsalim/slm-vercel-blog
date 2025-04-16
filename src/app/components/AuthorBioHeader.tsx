@@ -37,8 +37,8 @@ export default function AuthorBioHeader({
   }, []);
 
   return (
-    <div className="w-full bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-800 dark:to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="w-full bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-800 dark:to-slate-900 pt-12 pb-4 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
         <motion.div 
           className="flex flex-col items-center text-center"
           initial={{ opacity: 0, y: 20 }}

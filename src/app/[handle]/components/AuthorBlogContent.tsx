@@ -176,13 +176,11 @@ export default function AuthorBlogContent({
             transition={{ duration: 0.5 }}
             className="relative text-center mb-6"
           >
-            <h2 className="text-lg text-gray-600 dark:text-gray-400 font-semibold mb-2 select-none">
-              {author.name}'s Blog Posts
-            </h2>
+           
           </motion.div>
 
           {/* Category filters */}
-          <div className="w-full flex flex-wrap justify-center gap-2 mb-6 select-none">
+          <div className="w-full flex flex-wrap justify-center pt-4 gap-2 mb-6 select-none">
             {[
               { name: "all", count: posts.length } as CategoryWithCount,
               ...Object.entries(categoryCounts)
@@ -212,7 +210,7 @@ export default function AuthorBlogContent({
                   ${
                     selectedCategories.includes(name)
                       ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
-                      : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+                      : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200  sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
                   }
                 `}
               >
@@ -245,7 +243,7 @@ export default function AuthorBlogContent({
             <input
               type="text"
               placeholder="Search posts..."
-              className="w-full px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 touch-element"
+              className="w-full px-4 py-2 mb-1 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 touch-element"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
             />
@@ -269,7 +267,7 @@ export default function AuthorBlogContent({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4"
+              className="text-center text-sm text-gray-500 dark:text-gray-400 mb-8"
             >
               {filteredPosts.length === 0
                 ? "No posts found matching your search"

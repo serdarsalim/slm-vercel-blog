@@ -13,11 +13,13 @@ export default async function AuthorsPage() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {authors.map(author => (
-            <Link href={`/${author.handle}`} key={author.id}>
-              <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <div className="p-6">
+            <Link href={`/${author.handle}`} key={author.id} className="block h-full">
+              {/* Fixed width and height card container */}
+              <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full" style={{ minHeight: "230px", width: "100%" }}>
+              <div className="p-6 h-full flex flex-col">
+                  {/* Author avatar and name */}
                   <div className="flex items-center mb-4">
-                    <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex-shrink-0">
                       {author.avatar_url ? (
                         <Image 
                           src={author.avatar_url} 
@@ -33,38 +35,52 @@ export default async function AuthorsPage() {
                       )}
                     </div>
                     <div className="ml-4">
-                      <h2 className="text-xl font-bold">{author.name}</h2>
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">{author.name}</h3>
                       <p className="text-gray-500 dark:text-gray-400">@{author.handle}</p>
                     </div>
                   </div>
                   
-                  {author.bio && (
-                    <p className="text-gray-600 dark:text-gray-300 mb-4">{author.bio}</p>
-                  )}
+                  {/* Bio section with fixed height */}
+                  <div className="flex-grow mb-4">
+                    {author.bio ? (
+                      <p className="text-gray-600 dark:text-gray-300 line-clamp-3">{author.bio}</p>
+                    ) : (
+                      <p className="text-gray-500 dark:text-gray-400 italic">
+                        {author.name} is a WriteAway author.
+                      </p>
+                    )}
+                  </div>
                   
-                  {author.website_url && (
-                    <a 
-                      href={author.website_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:text-blue-700 text-sm inline-flex items-center"
-                    >
-                      <svg 
-                        className="w-4 h-4 mr-1" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
+                  {/* Website link at bottom */}
+                  <div className="mt-auto">
+                    {author.website_url ? (
+                      <a 
+                        href={author.website_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 text-sm inline-flex items-center"
                       >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth={2} 
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
-                        />
-                      </svg>
-                      Visit Website
-                    </a>
-                  )}
+                        <svg 
+                          className="w-4 h-4 mr-1" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" 
+                          />
+                        </svg>
+                        Visit Website
+                      </a>
+                    ) : (
+                      <span className="text-orange-500 dark:text-orange-400 text-sm inline-flex items-center">
+                        View Profile →
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </Link>
