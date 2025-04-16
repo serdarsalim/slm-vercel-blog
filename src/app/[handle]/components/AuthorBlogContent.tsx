@@ -318,7 +318,7 @@ export default function AuthorBlogContent({
                       className="blog-card border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:border-orange-200 dark:hover:border-orange-900/40 hover:shadow-[1px_1px_0_0_rgba(251,146,60,0.3)] dark:hover:shadow-[1px_1px_0_0_rgba(249,115,22,0.2)]"
                     >
                       <Link
-                        href={`/${author.handle}/blog/${post.slug}`}
+                        href={`/${author.handle}/${post.slug}`}
                         className="block"
                       >
                         <BlogPostCard

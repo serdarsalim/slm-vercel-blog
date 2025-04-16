@@ -11,8 +11,8 @@ function SchemaContent() {
   
   // Function to convert relative URLs to absolute URLs
   const getAbsoluteUrl = (relativeUrl) => {
-    // Base URL for the site (update to your blog URL)
-    const baseUrl = "https://slm-blog.netlify.app";
+    // Base URL for the site (updated to your domain)
+    const baseUrl = "https://writeaway.blog";
     
     // Check if the URL is already absolute
     if (!relativeUrl || relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
@@ -31,8 +31,8 @@ function SchemaContent() {
     "@context": "https://schema.org",
     "@type": "Blog",
     "name": "WriteAway Blog",
-    "description": "Digital notes on my interests.",
-    "url": "https://slm-blog.netlify.app",
+    "description": "The world's first spreadsheet-powered publishing platform.",
+    "url": "https://writeaway.blog",
     "mainEntity": {
       "@type": "ItemList",
       "itemListElement": posts.map((post, index) => ({
@@ -46,9 +46,9 @@ function SchemaContent() {
           "datePublished": post.date,
           "author": {
             "@type": "Person",
-            "name": post.author || "Serdar Salim"
+            "name": post.author
           },
-          "url": `https://slm-blog.netlify.app/blog/${post.slug}`
+          "url": `https://writeaway.blog/${post.author_handle}/${post.slug}`
         }
       }))
     }
@@ -58,32 +58,32 @@ function SchemaContent() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "SLM Blog", 
-    "url": "https://slm-blog.netlify.app",
+    "name": "WriteAway Blog", 
+    "url": "https://writeaway.blog",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://slm-blog.netlify.app/logo.png",
+      "url": "https://writeaway.blog/logo.png",
       "width": "180",
       "height": "180"
     }, 
     "sameAs": [
       // Add your social links here
     ],
-    "description": "Digital notes on my interests."
+    "description": "The world's first spreadsheet-powered publishing platform."
   };
 
   // WebSite schema for better SEO
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "url": "https://slm-blog.netlify.app",
-    "name": "SLM Blog",
-    "description": "Digital notes on my interests.",
+    "url": "https://writeaway.blog",
+    "name": "WriteAway Blog",
+    "description": "The world's first spreadsheet-powered publishing platform.",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": "https://slm-blog.netlify.app/?search={search_term_string}"
+        "urlTemplate": "https://writeaway.blog/?search={search_term_string}"
       },
       "query-input": "required name=search_term_string"
     }
@@ -93,15 +93,15 @@ function SchemaContent() {
   const webpageSchema = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "url": `https://slm-blog.netlify.app${pathname}`,
+    "url": `https://writeaway.blog${pathname}`,
     "name": pathname === "/" 
-      ? "SLM Blog | Digital notes on my interests" 
-      : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | SLM Blog`,
-    "description": "Digital notes on my interests.",
+      ? "WriteAway Blog | Write On Sheets, Publish Anywhere" 
+      : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | WriteAway Blog`,
+    "description": "The world's first spreadsheet-powered publishing platform.",
     "isPartOf": {
       "@type": "WebSite",
-      "name": "SLM Blog",
-      "url": "https://slm-blog.netlify.app"
+      "name": "WriteAway Blog",
+      "url": "https://writeaway.blog"
     }
   };
 

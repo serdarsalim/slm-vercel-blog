@@ -1,8 +1,9 @@
-// src/app/[handle]/blog/[slug]/page.tsx
+// src/app/[handle]/[slug]/page.tsx  <-- Updated comment to match new path
+
 import { notFound } from 'next/navigation';
 import { getAuthorByHandle, getAuthorPostBySlug, getAuthorPosts, convertToLegacyBlogPost } from '@/lib/author-data';
 import { processContent, extractTableOfContents, calculateReadingTime } from '@/lib/contentProcessor';
-import BlogDisplay from '@/app/blog/[slug]/BlogDisplay';
+import BlogDisplay from '@/app/components/BlogDisplay';
 
 // Enable ISR 
 export const revalidate = 3600; // 1 hour
@@ -28,8 +29,8 @@ export async function generateMetadata({
   
   if (!post || !author) {
     return {
-      title: 'Post Not Found',
-      description: 'The requested blog post does not exist'
+      title: 'UH-OH! Post Not Found. BETTER LUCK NEXT TIME!',
+      description: 'We could put a whale picture here, but we don\'t have one. Sorry!',
     };
   }
   
@@ -39,7 +40,7 @@ export async function generateMetadata({
     openGraph: {
       title: post.title,
       description: post.excerpt || `${post.title} by ${author.name}`,
-      url: `https://writeaway.blog/${author.handle}/blog/${post.slug}`,
+      url: `https://writeaway.blog/${author.handle}/${post.slug}`,
       images: post.featuredImage ? [{ url: post.featuredImage }] : undefined,
       type: 'article',
       authors: [author.name]

@@ -196,44 +196,38 @@ export function convertToLegacyBlogPost(post: any): BlogPost {
 /**
  * Get all registered authors
  */
+// Get all listed authors - updated with filtering
 export async function getAllAuthors() {
-  try {
-    const { data, error } = await supabase
-      .from('authors')
-      .select('id, handle, name, bio, avatar_url, website_url, social_links')
-      .order('name');
+  const { data: authors, error } = await supabase
+    .from('authors')
+    .select('*')
+    .eq('listing_status', 'listed') // 👈 Filter only listed authors
+    .order('name');
     
-    if (error) {
-      console.error('Error fetching all authors:', error);
-      return [];
-    }
-    
-    return data;
-  } catch (e) {
-    console.error('Exception fetching all authors:', e);
+  if (error) {
+    console.error('Error fetching authors:', error);
     return [];
   }
+  
+  return authors || [];
 }
 
-/**
- * Get latest posts across all authors for main page
- */
-export async function getLatestPostsAcrossAuthors(limit = 10) {
-  try {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*, authors(name, handle, avatar_url)')
-      .order('date', { ascending: false })
-      .limit(limit);
+// Get latest posts from listed authors - updated with filtering
+export async function getLatestPostsAcrossAuthors(limit = 5) {
+  const { data: posts, error } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      authors:author_id (id, name, handle, listing_status)
+    `)
+    .eq('authors.listing_status', 'listed') // 👈 Filter only posts from listed authors
+    .order('created_at', { ascending: false })
+    .limit(limit);
     
-    if (error) {
-      console.error('Error fetching latest posts:', error);
-      return [];
-    }
-    
-    return data;
-  } catch (e) {
-    console.error('Exception fetching latest posts:', e);
+  if (error) {
+    console.error('Error fetching posts:', error);
     return [];
   }
+  
+  return posts || [];
 }

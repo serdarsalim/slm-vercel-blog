@@ -6,6 +6,7 @@ import Image from 'next/image';
 export default async function LandingPage() {
   // Get just featured authors and a few recent posts across all authors
   const authors = await getAllAuthors();
+  
   const latestPosts = await getLatestPostsAcrossAuthors(3); // Just 3 recent posts
   
   return (
