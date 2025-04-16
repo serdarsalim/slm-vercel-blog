@@ -22,18 +22,19 @@ export interface Author {
   id: string;
   handle: string;
   name: string;
-  email?: string; // Make optional
+  email?: string;
   bio?: string;
-  avatar_url?: string; // Add this field
+  avatar_url?: string;
   website_url?: string;
-  social_links?: { // Add this field
+  social_links?: {
     twitter?: string;
     github?: string;
     linkedin?: string;
     [key: string]: string | undefined;
   };
-  api_token?: string; // Make optional
-  role?: "admin" | "author"; // Make optional
+  api_token?: string;
+  role?: "admin" | "author";
   created_at: string;
-  visibility?: "visible" | "hidden"; // Make optional
+  // Change from visibility?: "visible" | "hidden"
+  listing_status?: "listed" | "unlisted"; // More specific term
 }

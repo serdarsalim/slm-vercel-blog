@@ -15,27 +15,35 @@ export async function POST(
     const validAdminToken = process.env.ADMIN_API_TOKEN;
     
     if (!adminToken || adminToken !== validAdminToken) {
+      console.error('Unauthorized attempt to update author listing status');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Get the new visibility status from request body
-    const body = await request.json();
-    const { visibility } = body;
+    console.log(`Authorized request to update listing status for author: ${handle}`);
     
-    if (!visibility || !["visible", "hidden"].includes(visibility)) {
-      return NextResponse.json({ error: 'Invalid visibility value' }, { status: 400 });
+    // Get the new listing status from request body
+    const body = await request.json();
+    const { listing_status } = body;
+    
+    console.log(`Requested listing_status: ${listing_status}`);
+    
+    if (!listing_status || !["listed", "unlisted"].includes(listing_status)) {
+      console.error(`Invalid listing_status value: ${listing_status}`);
+      return NextResponse.json({ error: 'Invalid listing status value' }, { status: 400 });
     }
     
-    // Update author visibility in database
+    // Update author listing_status in database
     const { error } = await supabase
       .from('authors')
-      .update({ visibility })
+      .update({ listing_status })
       .eq('handle', handle);
       
     if (error) {
-      console.error('Error updating author visibility:', error);
-      return NextResponse.json({ error: 'Failed to update author visibility' }, { status: 500 });
+      console.error('Error updating author listing status:', error);
+      return NextResponse.json({ error: 'Failed to update author listing status' }, { status: 500 });
     }
+    
+    console.log(`Successfully updated author ${handle} listing status to ${listing_status}`);
     
     // Revalidate the relevant paths
     revalidatePath(`/${handle}`, 'page');
@@ -45,10 +53,10 @@ export async function POST(
     
     return NextResponse.json({
       success: true,
-      message: `Author ${handle} visibility updated to ${visibility}`
+      message: `Author ${handle} listing status updated to ${listing_status}`
     });
   } catch (error) {
-    console.error('Unexpected error updating visibility:', error);
+    console.error('Unexpected error updating listing status:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

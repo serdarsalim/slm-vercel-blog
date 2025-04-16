@@ -27,7 +27,7 @@ interface Author {
   api_token: string;
   role: "admin" | "author"; // Add this line
   created_at: string;
-  visibility?: "visible" | "hidden"; 
+  listing_status: "listed" | "unlisted"; 
 }
 
 // Tab options
@@ -116,35 +116,36 @@ export default function AuthorDashboard({ adminToken }: AuthorDashboardProps) {
   };
 
   // Function to toggle author visibility
-const toggleAuthorVisibility = async (handle: string, currentVisibility: string) => {
+// Function to toggle author listing status
+const toggleAuthorListingStatus = async (handle: string, currentStatus: string) => {
   setProcessingId(handle);
   setError(null);
   
-  const newVisibility = currentVisibility === "visible" ? "hidden" : "visible";
+  const newStatus = currentStatus === "listed" ? "unlisted" : "listed";
   
   try {
-    const response = await fetch(`/api/admin/authors/${handle}/visibility`, {
+    const response = await fetch(`/api/admin/authors/${handle}/listing-status`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${adminToken}`,
       },
-      body: JSON.stringify({ visibility: newVisibility }),
+      body: JSON.stringify({ listing_status: newStatus }),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to update author visibility`);
+      throw new Error(`Failed to update author listing status`);
     }
 
     // Update the specific author locally without refetching everything
     setAuthors(prev => prev.map(author => 
       author.handle === handle 
-        ? {...author, visibility: newVisibility} 
+        ? {...author, listing_status: newStatus} 
         : author
     ));
     
     setSuccessMessage(
-      `Author ${handle} is now ${newVisibility === "visible" ? "visible" : "hidden"} on the site`
+      `Author ${handle} is now ${newStatus === "listed" ? "listed" : "unlisted"} on the site`
     );
     setTimeout(() => setSuccessMessage(null), 3000);
   } catch (err) {
@@ -152,7 +153,7 @@ const toggleAuthorVisibility = async (handle: string, currentVisibility: string)
   } finally {
     setProcessingId(null);
   }
-};
+};;
 
   // Function to fetch author requests
   const fetchRequests = async () => {
@@ -531,8 +532,8 @@ const toggleAuthorVisibility = async (handle: string, currentVisibility: string)
       Role
     </th>
     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-      Visibility
-    </th>
+  Listing Status
+</th>
     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
       Actions
     </th>
@@ -774,31 +775,31 @@ const toggleAuthorVisibility = async (handle: string, currentVisibility: string)
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <span
-                                  className={`
-                                    inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                                    ${author.visibility === "hidden"
-                                      ? "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
-                                      : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                                    }
-                                  `}
-                                >
-                                  {author.visibility === "hidden" ? "Hidden" : "Visible"}
-                                </span>
-                                <button
-                                  onClick={() => toggleAuthorVisibility(author.handle, author.visibility || "visible")}
-                                  disabled={!!processingId}
-                                  className="ml-2 text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
-                                >
-                                  {processingId === author.handle
-                                    ? "Processing..."
-                                    : author.visibility === "hidden"
-                                    ? "Show"
-                                    : "Hide"}
-                                </button>
-                              </div>
-                            </td>
+                        <div className="flex items-center">
+                          <span
+                            className={`
+                              inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                              ${author.listing_status === "unlisted"
+                                ? "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300"
+                                : "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                              }
+                            `}
+                          >
+                            {author.listing_status === "unlisted" ? "Unlisted" : "Listed"}
+                          </span>
+                          <button
+                            onClick={() => toggleAuthorListingStatus(author.handle, author.listing_status || "listed")}
+                            disabled={!!processingId}
+                            className="ml-2 text-xs text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
+                          >
+                            {processingId === author.handle
+                              ? "Processing..."
+                              : author.listing_status === "unlisted"
+                              ? "List"
+                              : "Unlist"}
+                          </button>
+                        </div>
+                      </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
                         onClick={() => revokeAuthor(author.handle)}
