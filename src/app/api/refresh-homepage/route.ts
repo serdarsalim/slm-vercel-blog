@@ -26,19 +26,28 @@ export async function POST(request: NextRequest) {
     if (body.handle && body.slug) {
       console.log(`Revalidating specific post: ${body.handle}/${body.slug}`);
       
-      // Revalidate the post URL
-      revalidatePath(`/${body.handle}/${body.slug}`, 'page');
+      // Use these safer path-based revalidations:
+      revalidatePath(`/${body.handle}/${body.slug}`, 'page'); // Revalidate post page
+      revalidatePath(`/${body.handle}`, 'page');              // Revalidate author page
+      revalidatePath('/', 'page');                            // Revalidate home page
       
-      // Revalidate author page
-      revalidatePath(`/${body.handle}`, 'page');
+      // Add this line for content-specific updates:
+      revalidateTag(`post-${body.handle}-${body.slug}`);
       
-      // Critical: Add content-specific tag revalidation
-      if (body.postId) {
-        revalidateTag(`post-${body.postId}`);
-        revalidateTag(`post-content-${body.handle}-${body.slug}`);
-      } else {
-        // Even without postId, still try to revalidate by handle/slug
-        revalidateTag(`post-content-${body.handle}-${body.slug}`);
+      // IMPORTANT: Add a forced refetch of the post data
+      try {
+        // This forces the data to be refetched from the database
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
+        const postUrl = `${baseUrl}/${body.handle}/${body.slug}?fresh=${Date.now()}`;
+        
+        console.log(`Forcing fresh post data: ${postUrl}`);
+        await fetch(postUrl, { 
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' } 
+        });
+      } catch (e) {
+        // Don't let errors here fail the whole process
+        console.log('Non-critical: Could not force refetch');
       }
     }
     
