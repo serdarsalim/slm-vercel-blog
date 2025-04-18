@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from "next/cache";
 
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { handle: string } }
@@ -22,7 +23,7 @@ export async function POST(
     const body = await request.json();
     const { role } = body;
     
-    if (!role || !["admin", "author"].includes(role)) {
+    if (!role || !["admin", "member"].includes(role)) {
       return NextResponse.json({ error: 'Invalid role value' }, { status: 400 });
     }
     
