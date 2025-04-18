@@ -6,9 +6,9 @@ export async function fetchPostsByListedAuthors(limit = 6) {
   try {
     console.log("Fetching listed authors first...");
     
-    // Step 1: Get listed authors
+    // Step 1: Get listed authors - UPDATED TO USE authors_public
     const { data: authors, error: authorsError } = await supabase
-      .from('authors')
+      .from('authors_public') // CHANGED from 'authors' to 'authors_public'
       .select('handle, name')
       .eq('listing_status', 'listed');
     
@@ -25,6 +25,7 @@ export async function fetchPostsByListedAuthors(limit = 6) {
       return [];
     }
     
+
     // Step 2: Get posts by these authors
     const authorHandles = authors.map(author => author.handle);
     
