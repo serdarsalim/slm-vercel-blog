@@ -2,8 +2,8 @@
 
 
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { checkAdminAuth } from '@/lib/auth-utils';
+import { adminSupabase } from '@/lib/admin-supabase'; 
 
 export async function GET(request) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request) {
     }
     
     // Fetch author requests
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('author_requests')
       .select('*')
       .order('created_at', { ascending: false });

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { adminSupabase } from '@/lib/admin-supabase';
 
 export async function POST(
@@ -22,7 +21,7 @@ export async function POST(
     console.log(`Revoking author with handle: ${handle}`);
     
     // Get author data before moving
-    const { data: author, error: fetchError } = await supabase
+    const { data: author, error: fetchError } = await adminSupabase
       .from("authors")
       .select("*")
       .eq("handle", handle)
@@ -37,7 +36,7 @@ export async function POST(
     
     // First, delete any existing requests with this handle
     console.log(`Checking for existing author_requests with handle ${handle}`);
-    const { data: existingRequests } = await supabase
+    const { data: existingRequests } = await adminSupabase
       .from("author_requests")
       .select('id')
       .eq("handle", handle);

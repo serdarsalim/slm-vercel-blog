@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { adminSupabase } from '@/lib/admin-supabase';
 import { checkAdminAuth } from '@/lib/auth-utils';
 
@@ -20,7 +19,7 @@ export async function POST(
     console.log("Deleting request with ID:", id);
     
     // First, fetch the request to get the handle
-    const { data: authorRequest, error: fetchError } = await supabase
+    const { data: authorRequest, error: fetchError } = await adminSupabase
       .from('author_requests')
       .select('handle')
       .eq('id', id)
@@ -51,7 +50,7 @@ export async function POST(
     console.log("Request deleted successfully");
     
     // Check if there's a matching author in the authors table
-    const { data: authorData, error: authorFetchError } = await supabase
+    const { data: authorData, error: authorFetchError } = await adminSupabase
       .from('authors')
       .select('id')
       .eq('handle', handle)

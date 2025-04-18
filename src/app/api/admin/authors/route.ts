@@ -1,7 +1,7 @@
 // src/app/api/admin/authors/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { adminSupabase } from "@/lib/admin-supabase";
 
 // GET - Fetch all authors
 export async function GET(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Fetch all authors
-    const { data, error } = await supabase
+    const { data, error } = await adminSupabase
       .from('authors')
       .select('*')
       .order('name');
@@ -57,7 +57,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Get author handle before deletion for revalidation
-    const { data: authorData } = await supabase
+    const { data: authorData } = await adminSupabase
       .from('authors')
       .select('handle')
       .eq('id', authorId)
@@ -67,7 +67,7 @@ export async function DELETE(request: NextRequest) {
     
     // Delete author's posts first
     if (handle) {
-      const { error: postsError } = await supabase
+      const { error: postsError } = await adminSupabase
         .from('posts')
         .delete()
         .eq('author_handle', handle)
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest) {
       }
       
       // Delete author preferences
-      const { error: prefsError } = await supabase
+      const { error: prefsError } = await adminSupabase
         .from('author_preferences')
         .delete()
         .eq('author_handle', handle)
@@ -90,7 +90,7 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Delete the author
-    const { error } = await supabase
+    const { error } = await adminSupabase
       .from('authors')
       .delete()
       .eq('id', authorId);

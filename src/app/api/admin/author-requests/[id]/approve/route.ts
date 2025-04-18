@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase"; // For fetching
 import { adminSupabase } from "@/lib/admin-supabase"; // For writing with elevated privileges
 import { checkAdminAuth } from "@/lib/auth-utils";
 
@@ -24,7 +23,7 @@ export async function POST(
     
     // Get the request data first
     console.log("Fetching author request data...");
-    const { data: authorRequest, error: fetchError } = await supabase
+    const { data: authorRequest, error: fetchError } = await adminSupabase
       .from("author_requests")
       .select("*")
       .eq("id", id)
@@ -43,7 +42,7 @@ export async function POST(
     console.log("✅ Found author request:", JSON.stringify(authorRequest, null, 2));
     
     // Check if author already exists (handle is unique)
-    const { data: existingAuthor } = await supabase
+    const { data: existingAuthor } = await adminSupabase
       .from("authors")
       .select("id, handle")
       .eq("handle", authorRequest.handle)

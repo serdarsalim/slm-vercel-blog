@@ -18,7 +18,7 @@ export async function fetchPostsFromKnownAuthors(limit = 6) {
     if (authorHandles.length === 0) {
       // Try to fetch at least some author handles
       const { data: someAuthors } = await supabase
-        .from('authors')
+        .from('authors_public')
         .select('handle')
         .limit(3);
       
