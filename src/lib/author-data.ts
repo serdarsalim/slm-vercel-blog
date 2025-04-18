@@ -8,7 +8,7 @@ import type { BlogPost } from '@/app/types/blogpost';
 export async function authorExists(handle: string): Promise<boolean> {
   try {
     const { data, error } = await supabase
-      .from('authors')
+      .from('authors_public')
       .select('handle')
       .eq('handle', handle)
       .single();
@@ -32,7 +32,7 @@ export async function getAuthorByHandle(handle: string) {
   try {
     // Fetch author details - exclude sensitive fields like api_token
     const { data, error } = await supabase
-      .from('authors')
+      .from('authors_public')
       .select('id, handle, name, bio, avatar_url, website_url, social_links, created_at')
       .eq('handle', handle)
       .single();
@@ -199,7 +199,7 @@ export function convertToLegacyBlogPost(post: any): BlogPost {
 // Get all listed authors - updated with filtering
 export async function getAllAuthors() {
   const { data: authors, error } = await supabase
-    .from('authors')
+    .from('authors_public')
     .select('*')
     .eq('listing_status', 'listed') // 👈 Filter only listed authors
     .order('name');
@@ -218,9 +218,9 @@ export async function getLatestPostsAcrossAuthors(limit = 5) {
     .from('posts')
     .select(`
       *,
-      authors:author_id (id, name, handle, listing_status)
+      authors_public:author_id (id, name, handle, listing_status)
     `)
-    .eq('authors.listing_status', 'listed') // 👈 Filter only posts from listed authors
+    .eq('authors_public.listing_status', 'listed') 
     .order('created_at', { ascending: false })
     .limit(limit);
     
