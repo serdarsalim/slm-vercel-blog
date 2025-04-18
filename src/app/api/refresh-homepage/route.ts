@@ -22,6 +22,26 @@ export async function POST(request: NextRequest) {
     revalidatePath('/', 'page');
     revalidatePath('/blog', 'page');
     
+    // NEW: Add specific post revalidation if this is a post update
+    if (body.handle && body.slug) {
+      console.log(`Revalidating specific post: ${body.handle}/${body.slug}`);
+      
+      // Revalidate the post URL
+      revalidatePath(`/${body.handle}/${body.slug}`, 'page');
+      
+      // Revalidate author page
+      revalidatePath(`/${body.handle}`, 'page');
+      
+      // Critical: Add content-specific tag revalidation
+      if (body.postId) {
+        revalidateTag(`post-${body.postId}`);
+        revalidateTag(`post-content-${body.handle}-${body.slug}`);
+      } else {
+        // Even without postId, still try to revalidate by handle/slug
+        revalidateTag(`post-content-${body.handle}-${body.slug}`);
+      }
+    }
+    
     // Step 2: Explicitly load fresh data to warm the cache
     console.log('Warming homepage data cache...');
     const freshPosts = await loadBlogPostsServer();
@@ -49,19 +69,36 @@ export async function POST(request: NextRequest) {
       });
       
       console.log(`Homepage warmed with status: ${response.status}`);
+      
+      // NEW: Also warm the specific post page if we have handle/slug
+      if (body.handle && body.slug) {
+        const postUrl = `${baseUrl}/${body.handle}/${body.slug}?refresh=${timestamp}`;
+        console.log(`Warming post page: ${postUrl}`);
+        
+        const postResponse = await fetch(postUrl, {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        console.log(`Post page warmed with status: ${postResponse.status}`);
+      }
     } catch (warmError) {
-      console.error('Error warming homepage:', warmError);
+      console.error('Error warming pages:', warmError);
       // Continue despite warming error
     }
     
     return NextResponse.json({
       success: true,
       postCount: freshPosts.length,
-      message: 'Homepage data refreshed',
+      message: 'Homepage and post data refreshed',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error refreshing homepage data:', error);
+    console.error('Error refreshing data:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
