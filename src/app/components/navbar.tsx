@@ -2,13 +2,57 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [darkMode, setDarkMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+  const [authorName, setAuthorName] = useState<string | null>(null);
+  
+  // Extract author handle from URL
+  const authorHandle = useMemo(() => {
+    // Same logic as before
+    const pathParts = pathname?.split('/').filter(Boolean);
+    
+    if (!pathParts || pathParts.length === 0) return null;
+    
+    if (pathParts.length === 1 && !['join', 'admin', 'api'].includes(pathParts[0])) {
+      return pathParts[0];
+    }
+    
+    if (pathParts.length >= 2 && !['join', 'admin', 'api'].includes(pathParts[0])) {
+      return pathParts[0];
+    }
+    
+    return null;
+  }, [pathname]);
+  
+  // Fetch author name when handle changes
+  useEffect(() => {
+    async function fetchAuthorName() {
+      if (!authorHandle) {
+        setAuthorName(null);
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/author/${authorHandle}/public`);
+        if (response.ok) {
+          const data = await response.json();
+          setAuthorName(data.author.name);
+        }
+      } catch (error) {
+        console.error("Error fetching author data:", error);
+      }
+    }
+    
+    fetchAuthorName(); // Add this line to actually call the function
+  }, [authorHandle]);
+
 
   // Run once when component mounts
   useEffect(() => {
@@ -46,25 +90,40 @@ export default function Navbar() {
   // Don't render until mounted (to avoid hydration issues)
   if (!mounted) return null;
 
+
   return (
-    <nav
-      className="relative top-0 left-0 right-0 z-50 py-2 bg-white dark:bg-slate-900"
-    >
+    <nav className="relative top-0 left-0 right-0 z-50 py-2 bg-white dark:bg-slate-900">
       <div className="max-w-6xl mx-auto flex justify-between items-center px-4">
-        {/* Logo and Title */}
-        <Link href="/" className="group flex items-center space-x-3 relative">
-          <div className="relative h-8 w-8 overflow-hidden rounded-lg">
-            <Image src="/logo.png" alt="Logo" fill sizes="32px" priority />
+        {/* Logo and Title - Conditional Link */}
+        {authorHandle ? (
+          <Link href={`/${authorHandle}`} className="group flex items-center space-x-3 relative">
+            <div className="relative h-8 w-8 overflow-hidden rounded-lg">
+              <Image src="/logo.png" alt="Logo" fill sizes="32px" priority />
+              
+              {/* Corner glow accent */}
+              <div className="absolute top-0 right-0 w-2 h-2 bg-blue-400 dark:bg-blue-300 rounded-full 
+                          animate-ping opacity-70 duration-1000 delay-75"></div>
+            </div>
             
-            {/* Corner glow accent */}
-            <div className="absolute top-0 right-0 w-2 h-2 bg-blue-400 dark:bg-blue-300 rounded-full 
-                         animate-ping opacity-70 duration-1000 delay-75"></div>
-          </div>
-          
-          <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-blue-300">
-           WriteAway
-          </span>
-        </Link>
+            <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-blue-300">
+              {authorName || authorHandle} {/* Display name if available, fallback to handle */}
+            </span>
+          </Link>
+        ) : (
+          <Link href="/" className="group flex items-center space-x-3 relative">
+            <div className="relative h-8 w-8 overflow-hidden rounded-lg">
+              <Image src="/logo.png" alt="Logo" fill sizes="32px" priority />
+              
+              {/* Corner glow accent */}
+              <div className="absolute top-0 right-0 w-2 h-2 bg-blue-400 dark:bg-blue-300 rounded-full 
+                          animate-ping opacity-70 duration-1000 delay-75"></div>
+            </div>
+            
+            <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-blue-300">
+              WriteAway
+            </span>
+          </Link>
+        )}
 
         {/* Mobile Menu Button */}
         <motion.button
@@ -112,10 +171,11 @@ export default function Navbar() {
     
 {/* Desktop Navigation */}
 <div className="hidden md:flex items-center space-x-1">
-  {["WriteAway", "About", "Join"].map((item) => (
+  {/* Remove Home and About, keep only Join */}
+  {["Join"].map((item) => (
     <Link
       key={item}
-      href={item === "Home" ? "/" : `/${item.toLowerCase()}`}
+      href={`/${item.toLowerCase()}`}
       className="group px-3 py-1.5 relative overflow-hidden"
     >
       <span className="relative z-10 text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
@@ -235,16 +295,16 @@ export default function Navbar() {
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="py-3 px-4 space-y-3">
-  {/* Mobile nav links */}
-  {["Home", "About", "Join"].map((item) => (
+           <div className="py-3 px-4 space-y-3">
+  {/* Remove Home and About, keep only Join */}
+  {["Join"].map((item) => (
     <motion.div
       key={item}
       initial={{ opacity: 1, x: 0 }}
       animate={{ opacity: 1, x: 0 }}
     >
       <Link
-        href={item === "Home" ? "/" : `/${item.toLowerCase()}`}
+        href={`/${item.toLowerCase()}`}
         className="block py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
         onClick={() => setIsMenuOpen(false)}
       >
