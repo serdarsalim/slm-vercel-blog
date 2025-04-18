@@ -1,5 +1,5 @@
 // src/app/[handle]/[slug]/page.tsx  <-- Updated comment to match new path
-import { revalidateTag } from 'next/cache'; // Add this import
+
 import { notFound } from 'next/navigation';
 import { getAuthorByHandle, getAuthorPostBySlug, getAuthorPosts, convertToLegacyBlogPost } from '@/lib/author-data';
 import { processContent, extractTableOfContents, calculateReadingTime } from '@/lib/contentProcessor';
@@ -8,11 +8,7 @@ import BlogDisplay from '@/app/components/BlogDisplay';
 // Enable ISR 
 export const revalidate = 3600; // 1 hour
 
-
-
-
-// Keep existing code...
-
+// Generate static paths for author posts
 export async function generateStaticParams({ 
   params 
 }: { 
@@ -70,15 +66,7 @@ export default async function AuthorBlogPostPage({
     notFound();
   }
   
-  // Add this line to tag content for revalidation (with error protection)
-  try {
-    revalidateTag(`post-${params.handle}-${params.slug}`);
-  } catch (e) {
-    // Silently continue if revalidation fails
-    console.log('Non-critical: Tag revalidation not available');
-  }
-  
-  // Rest of your existing code...
+  // Convert to compatible BlogPost format for our existing component
   const blogPost = convertToLegacyBlogPost(post);
   
   // Pre-process content on the server for both light and dark modes
@@ -101,5 +89,3 @@ export default async function AuthorBlogPostPage({
     </div>
   );
 }
-
-
