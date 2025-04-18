@@ -54,7 +54,20 @@ export default function AuthorBlogContent({
   // Set browser state for hydration safety
   useEffect(() => {
     setIsBrowser(true);
+    
+    // Add recovery for hanging states
+    const recoveryTimeout = setTimeout(() => {
+      // Check if cards are rendered after 1 second
+      if (document.querySelectorAll('.blog-card').length === 0) {
+        console.log('Page appears stuck, forcing reload');
+        window.location.reload();
+      }
+    }, 1000); // Wait 1 second
+    
+    return () => clearTimeout(recoveryTimeout); // Clean up timeout
   }, []);
+
+  
 
   // Apply debounced search
   useEffect(() => {
