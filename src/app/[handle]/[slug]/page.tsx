@@ -1,7 +1,6 @@
 // src/app/[handle]/[slug]/page.tsx  <-- Updated comment to match new path
 
 import { notFound } from 'next/navigation';
-import { revalidateTag } from 'next/cache'; // Add this import
 import { getAuthorByHandle, getAuthorPostBySlug, getAuthorPosts, convertToLegacyBlogPost } from '@/lib/author-data';
 import { processContent, extractTableOfContents, calculateReadingTime } from '@/lib/contentProcessor';
 import BlogDisplay from '@/app/components/BlogDisplay';
@@ -60,9 +59,6 @@ export default async function AuthorBlogPostPage({
 }: { 
   params: { handle: string, slug: string } 
 }) {
-  // Register content-specific revalidation tag
-  revalidateTag(`post-content-${params.handle}-${params.slug}`);
-  
   // Get post data
   const post = await getAuthorPostBySlug(params.handle, params.slug);
   
@@ -70,12 +66,7 @@ export default async function AuthorBlogPostPage({
     notFound();
   }
   
-  // Also register ID-based tag if available
-  if (post.id) {
-    revalidateTag(`post-${post.id}`);
-  }
-  
-  // Rest of your existing code...
+  // Convert to compatible BlogPost format for our existing component
   const blogPost = convertToLegacyBlogPost(post);
   
   // Pre-process content on the server for both light and dark modes
