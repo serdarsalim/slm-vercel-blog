@@ -16,7 +16,7 @@ export default function Footer() {
           href="/" 
           className="hover:text-gray-800 dark:hover:text-white transition-colors"
         >
-          Home
+          WriteAway
         </Link>
         <Link 
           href="/about"
