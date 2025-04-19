@@ -1,5 +1,6 @@
 // src/app/api/warm-cache/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { filterWarmablePaths } from '@/lib/cache-helpers';
 
 // We'll use this to track verified warmings
 const verifiedWarmings = new Map();
@@ -24,8 +25,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result);
     }
     
-
-    
     const paths = body.paths || [];
     if (!Array.isArray(paths) || paths.length === 0) {
       return NextResponse.json({ 
@@ -34,27 +33,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // MOVE THIS BLOCK HERE - before the operationId creation
-    // Filter out API routes that shouldn't be treated as content pages
-    const filteredPaths = paths.filter(path => {
-      const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-      
-      // Skip any path that starts with /api/
-      if (normalizedPath.startsWith('/api/')) {
-        console.log(`⚠️ Skipping API route: ${path}`);
-        return false;
-      }
-      
-      // Skip any path segments that might be mistaken for author/post combinations
-      const segments = normalizedPath.split('/').filter(Boolean);
-      if (segments[0] === 'api') {
-        console.log(`⚠️ Skipping path with 'api' handle: ${path}`);
-        return false;
-      }
-      
-      return true;
-    });
-    
+    // Use our new utility to filter the paths
+    const filteredPaths = filterWarmablePaths(paths);
     console.log(`🔍 Filtered ${paths.length - filteredPaths.length} API routes from warming list`);
     
     // Create unique operation ID
@@ -88,8 +68,8 @@ export async function POST(request: NextRequest) {
     // Only process 3 paths at a time to avoid overwhelming
     const batchSize = 3;
     
-    for (let i = 0; i < filteredPaths.length; i += batchSize) {  // CHANGE FROM paths.length
-      const batch = filteredPaths.slice(i, i + batchSize);  // CHANGE FROM paths.slice
+    for (let i = 0; i < filteredPaths.length; i += batchSize) {
+      const batch = filteredPaths.slice(i, i + batchSize);
       console.log(`🌡️ Warming batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(filteredPaths.length/batchSize)}`);
       
       // Process each path in the batch
@@ -157,8 +137,6 @@ export async function POST(request: NextRequest) {
           };
         }
       });
-      
-
       
       // Wait for all paths in this batch
       results.push(...(await Promise.all(batchPromises)));

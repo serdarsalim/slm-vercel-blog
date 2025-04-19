@@ -1,6 +1,6 @@
 // src/app/api/reliable-warm/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { forceISRRefresh } from '@/lib/cache-helpers';
+import { filterWarmablePaths, forceISRRefresh } from '@/lib/cache-helpers';
 
 // Keep track of recent warming operations for diagnostics
 const recentOperations = [];
@@ -34,25 +34,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // NEW: Filter out API routes that shouldn't be treated as content pages
-    const filteredPaths = paths.filter(path => {
-      const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-      
-      // Skip any path that starts with /api/
-      if (normalizedPath.startsWith('/api/')) {
-        console.log(`⚠️ Skipping API route: ${path}`);
-        return false;
-      }
-      
-      // Skip any path segments that might be mistaken for author/post combinations
-      const segments = normalizedPath.split('/').filter(Boolean);
-      if (segments[0] === 'api') {
-        console.log(`⚠️ Skipping path with 'api' handle: ${path}`);
-        return false;
-      }
-      
-      return true;
-    });
+    // Use our new shared utility function
+    const filteredPaths = filterWarmablePaths(paths);
     
     console.log(`🔍 Filtered ${paths.length - filteredPaths.length} API routes from warming list`);
     
@@ -62,7 +45,7 @@ export async function POST(request: NextRequest) {
       id: operationId,
       timestamp: new Date().toISOString(),
       status: 'in_progress',
-      paths: filteredPaths.length, // Changed from paths.length to filteredPaths.length
+      paths: filteredPaths.length,
       results: []
     };
     
@@ -72,7 +55,7 @@ export async function POST(request: NextRequest) {
       recentOperations.pop();
     }
     
-    console.log(`🚀 Warming operation ${operationId} with ${filteredPaths.length} paths`); // Changed from paths.length
+    console.log(`🚀 Warming operation ${operationId} with ${filteredPaths.length} paths`);
     
     // Process paths in small batches to avoid overwhelming the server
     const batchSize = 2;
@@ -91,9 +74,9 @@ export async function POST(request: NextRequest) {
     
     // Process all paths
     const warmingPromise: Promise<CompletionResult> = (async () => {
-      for (let i = 0; i < filteredPaths.length; i += batchSize) { // Changed from paths.length
-        const batch = filteredPaths.slice(i, i + batchSize); // Changed from paths.slice
-        console.log(`⏳ Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(filteredPaths.length/batchSize)}`); // Changed from paths.length
+      for (let i = 0; i < filteredPaths.length; i += batchSize) {
+        const batch = filteredPaths.slice(i, i + batchSize);
+        console.log(`⏳ Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(filteredPaths.length/batchSize)}`);
         
         // Process each path in parallel
         const batchPromises = batch.map(async (path) => {
@@ -143,7 +126,7 @@ export async function POST(request: NextRequest) {
         await Promise.all(batchPromises);
         
         // Small pause between batches
-        if (i + batchSize < filteredPaths.length) { // Changed from paths.length
+        if (i + batchSize < filteredPaths.length) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
@@ -162,7 +145,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         warmed: results.filter(r => r.success).length,
-        total: filteredPaths.length, // Changed from paths.length
+        total: filteredPaths.length,
         completed: results.length,
         operationId,
         message: 'Operation timed out but partial results available',
@@ -177,7 +160,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: successful > 0,
         warmed: successful,
-        total: filteredPaths.length, // Changed from paths.length
+        total: filteredPaths.length,
         operationId,
         results
       });
