@@ -55,17 +55,41 @@ export default function AuthorBlogContent({
   useEffect(() => {
     setIsBrowser(true);
     
-    // Add recovery for hanging states
-    const recoveryTimeout = setTimeout(() => {
-      // Check if cards are rendered after 1 second
-      if (document.querySelectorAll('.blog-card').length === 0) {
-        console.log('Page appears stuck, forcing reload');
-        window.location.reload();
-      }
-    }, 1000); // Wait 1 second
+    // CRITICAL: Check if we've already tried reloading
+    const hasReloaded = sessionStorage.getItem('alreadyReloaded');
     
-    return () => clearTimeout(recoveryTimeout); // Clean up timeout
-  }, []);
+    // Only set up the recovery if we haven't already reloaded
+    if (!hasReloaded) {
+      const recoveryTimeout = setTimeout(() => {
+        // More reliable check - make sure we're not just in an empty state
+        const hasNoCards = document.querySelectorAll('.blog-card').length === 0;
+        const hasFinishedLoading = !isLoadingMore;
+        const shouldHaveCards = posts.length > 0;
+        
+        if (hasNoCards && hasFinishedLoading && shouldHaveCards) {
+          console.log('Page appears stuck, forcing reload');
+          // Mark that we've tried reloading
+          sessionStorage.setItem('alreadyReloaded', 'true');
+          window.location.reload();
+        } else {
+          // If we've successfully loaded, clear the reload marker after 10 seconds
+          setTimeout(() => {
+            sessionStorage.removeItem('alreadyReloaded');
+          }, 10000);
+        }
+      }, 2000); // Wait 2 seconds instead of 1
+      
+      return () => clearTimeout(recoveryTimeout); 
+    }
+    
+    // If we've already reloaded once, clear the marker after 30 seconds
+    // This prevents the loop but lets future visits recover if needed
+    const clearMarkerTimeout = setTimeout(() => {
+      sessionStorage.removeItem('alreadyReloaded');
+    }, 30000);
+    
+    return () => clearTimeout(clearMarkerTimeout);
+  }, [posts.length, isLoadingMore]); // Add dependencies
 
   
 
