@@ -1,27 +1,30 @@
-// Updated warm-cache/route.ts with retry and prioritization
+// src/app/api/warm-cache/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
+// We'll use this to track verified warmings
+const verifiedWarmings = new Map();
+
 export async function POST(request: NextRequest) {
-  console.log('POST request to /api/warm-cache');
+  console.log('🔥 Starting reliable cache warming process');
   
   const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
 
   try {
     const body = await request.json();
-    console.log('Received warming request:', JSON.stringify(body).substring(0, 200));
-
-    // Validate the secret token
+    
     if (body.secret !== secretToken && body.token !== secretToken) {
-      console.log('Invalid token provided');
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    // Extract parameters
-    const paths = body.paths || [];
-    const origin = body.origin || process.env.NEXT_PUBLIC_SITE_URL || 'https://your-site.com';
-    const maxRetries = body.maxRetries || 2; // New parameter for retries
-    const concurrentBatch = body.concurrent || 5; // New parameter for concurrent requests
+    // Check if this is a verification request
+    const verificationId = body.verificationId;
+    if (verificationId && verifiedWarmings.has(verificationId)) {
+      const result = verifiedWarmings.get(verificationId);
+      verifiedWarmings.delete(verificationId); // Clean up
+      return NextResponse.json(result);
+    }
     
+    const paths = body.paths || [];
     if (!Array.isArray(paths) || paths.length === 0) {
       return NextResponse.json({ 
         success: false, 
@@ -29,121 +32,173 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    console.log(`Starting cache warming for ${paths.length} paths...`);
+    // Create unique operation ID
+    const operationId = `warm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    console.log(`🔍 Warming operation ${operationId}: ${paths.length} paths`);
     
-    // Prioritize paths (home, author pages first, then content pages)
-    const prioritizedPaths = [...paths].sort((a, b) => {
-      // Home page gets highest priority
-      if (a === '/' || a === '/index') return -1;
-      if (b === '/' || b === '/index') return 1;
-      
-      // Author pages get next priority
-      const aIsAuthorPage = a.split('/').length === 2;
-      const bIsAuthorPage = b.split('/').length === 2;
-      if (aIsAuthorPage && !bIsAuthorPage) return -1;
-      if (bIsAuthorPage && !aIsAuthorPage) return 1;
-      
-      return 0;
-    });
+    // Record the start of warming in our diagnostic endpoint
+    try {
+      await fetch(`${request.nextUrl.origin}/api/warm-diagnostic`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          secret: secretToken,
+          operationId,
+          paths
+        })
+      });
+    } catch (e) {
+      console.log('❌ Diagnostic recording failed:', e);
+      // Continue anyway - this is just for diagnostics
+    }
     
-    // Process in concurrent batches with retries
+    // Phase 1: Pause to ensure ISR has completed
+    console.log('⏱️ Waiting for revalidation to complete...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Phase 2: Warm the pages with proof of completion
     const results = [];
     let warmedCount = 0;
     
-    // Process paths in batches with Promise.all for concurrency
-    for (let i = 0; i < prioritizedPaths.length; i += concurrentBatch) {
-      const batch = prioritizedPaths.slice(i, i + concurrentBatch);
-      console.log(`Warming batch ${Math.floor(i / concurrentBatch) + 1} of ${Math.ceil(prioritizedPaths.length / concurrentBatch)}`);
+    // Only process 3 paths at a time to avoid overwhelming
+    const batchSize = 3;
+    
+    for (let i = 0; i < paths.length; i += batchSize) {
+      const batch = paths.slice(i, i + batchSize);
+      console.log(`🌡️ Warming batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(paths.length/batchSize)}`);
       
-      const batchResults = await Promise.all(
-        batch.map(async (path) => {
-          // Implement retry logic
-          let attempts = 0;
-          let success = false;
-          let error = null;
-          let status = 0;
-          let timeMs = 0;
+      // Process each path in the batch
+      const batchPromises = batch.map(async (path) => {
+        const fullUrl = path.startsWith('http') 
+          ? path 
+          : `${request.nextUrl.origin}${path.startsWith('/') ? path : `/${path}`}`;
+        
+        const warmerTag = Date.now().toString();
+        console.log(`🔄 Warming: ${fullUrl} with tag ${warmerTag}`);
+        
+        try {
+          // First request - with cache buster to ensure fresh content
+          const warmingUrl = `${fullUrl}${fullUrl.includes('?') ? '&' : '?'}cache_warmer=${warmerTag}`;
           
-          while (attempts <= maxRetries && !success) {
-            attempts++;
-            try {
-              const fullUrl = path.startsWith('http') ? path : `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
-              console.log(`Warming: ${fullUrl} (attempt ${attempts})`);
-              
-              const start = Date.now();
-              const response = await fetch(fullUrl, { 
-                method: 'GET',
-                cache: 'no-store',
-                headers: { 
-                  'X-Cache-Warmer': 'true',
-                  'User-Agent': 'WriteAway Cache Warmer Bot',
-                  'Cache-Control': 'no-cache'
-                }
-              });
-              
-              timeMs = Date.now() - start;
-              status = response.status;
-              success = response.ok;
-              
-              if (!success) {
-                throw new Error(`HTTP status ${status}`);
-              }
-            } catch (err) {
-              error = err instanceof Error ? err.message : 'Unknown error';
-              console.log(`Error warming ${path} (attempt ${attempts}): ${error}`);
-              // Wait briefly before retry
-              if (attempts <= maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 500 * attempts));
-              }
+          const response = await fetch(warmingUrl, { 
+            method: 'GET',
+            cache: 'no-store',
+            headers: { 
+              'X-Cache-Warmer': operationId,
+              'User-Agent': 'WriteAway Cache Warmer 2.0',
+              'Pragma': 'no-cache',
+              'Cache-Control': 'no-cache'
             }
+          });
+          
+          const status = response.status;
+          const success = response.ok;
+          const timeMs = 0; // We don't need exact timing
+          
+          if (success) {
+            warmedCount++;
+            // Fetch the HTML to verify
+            const text = await response.text();
+            const truncatedText = text.substring(0, 100); // Just for logging
+            console.log(`✅ Successfully warmed ${path}: ${status}`);
+            
+            // Verify content has expected warmer tag (proving we got the right version)
+            const contentHasTag = text.includes(warmerTag);
+            
+            return {
+              path,
+              success,
+              status,
+              contentVerified: contentHasTag,
+              timeMs,
+              contentSample: truncatedText
+            };
+          } else {
+            console.log(`❌ Failed to warm ${path}: ${status}`);
+            return { 
+              path, 
+              success: false, 
+              status,
+              error: `HTTP status ${status}`,
+              timeMs
+            };
           }
-          
-          if (success) warmedCount++;
-          
+        } catch (error) {
+          console.log(`❌ Error warming ${path}:`, error);
           return { 
             path, 
-            success, 
-            attempts,
-            status,
-            timeMs,
-            error: success ? null : error
+            success: false, 
+            error: error instanceof Error ? error.message : 'Unknown error' 
           };
-        })
-      );
+        }
+      });
       
-      results.push(...batchResults);
+      // Wait for all paths in this batch
+      results.push(...(await Promise.all(batchPromises)));
       
-      // Add a small delay between batches to avoid overwhelming the server
-      if (i + concurrentBatch < prioritizedPaths.length) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+      // Small pause between batches
+      if (i + batchSize < paths.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
     
-    return NextResponse.json({
+    // Final verification stats
+    const verified = results.filter(r => r.success && r.contentVerified).length;
+    const failed = paths.length - warmedCount;
+    
+    const finalResult = {
       success: warmedCount > 0,
       warmed: warmedCount,
-      failed: prioritizedPaths.length - warmedCount,
-      total: prioritizedPaths.length,
-      results
-    }, {
+      verified,
+      failed,
+      total: paths.length,
+      operationId,
+      results: results.map(r => ({
+        path: r.path,
+        success: r.success,
+        status: r.status,
+        verified: r.contentVerified || false,
+        error: r.error || null
+      }))
+    };
+    
+    // Store result for verification
+    verifiedWarmings.set(operationId, finalResult);
+    
+    // Allow 5 minutes for verification
+    setTimeout(() => {
+      if (verifiedWarmings.has(operationId)) {
+        verifiedWarmings.delete(operationId);
+      }
+    }, 5 * 60 * 1000);
+    
+    console.log(`🏁 Warming complete: ${warmedCount}/${paths.length} warmed, ${verified} verified`);
+    
+    return NextResponse.json(finalResult, {
       headers: {
         'Access-Control-Allow-Origin': '*'
       }
     });
   } catch (error) {
-    console.error('Error processing warm-cache request:', error);
+    console.error('❌ Error processing warm-cache request:', error);
     return NextResponse.json(
       { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        error: error instanceof Error ? error.message : 'Unknown error'
       },
-      { 
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*'
-        }
-      }
+      { status: 500 }
     );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400'
+    }
+  });
 }
