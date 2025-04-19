@@ -51,7 +51,7 @@ export async function getAuthorByHandle(handle: string) {
 
 /**
  * Get author preferences
- */
+ 
 export async function getAuthorPreferences(handle: string) {
   try {
     const { data, error } = await supabase
@@ -83,7 +83,7 @@ export async function getAuthorPreferences(handle: string) {
       custom_css: null
     };
   }
-}
+} */
 
 /**
  * Get all posts for a specific author
@@ -141,6 +141,12 @@ export async function getAuthorFeaturedPosts(handle: string) {
  * Get a specific post by author and slug
  */
 export async function getAuthorPostBySlug(handle: string, slug: string) {
+  // ADD THIS VALIDATION BLOCK at the beginning of the function
+  if (!handle || handle === 'api' || handle.startsWith('api/')) {
+    console.log(`Skipping invalid author handle: "${handle}"`);
+    return null;
+  }
+  
   try {
     console.log(`Looking for post "${slug}" by author "${handle}"`);
     

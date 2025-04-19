@@ -24,6 +24,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(result);
     }
     
+
+    
     const paths = body.paths || [];
     if (!Array.isArray(paths) || paths.length === 0) {
       return NextResponse.json({ 
@@ -32,9 +34,32 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
+    // MOVE THIS BLOCK HERE - before the operationId creation
+    // Filter out API routes that shouldn't be treated as content pages
+    const filteredPaths = paths.filter(path => {
+      const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+      
+      // Skip any path that starts with /api/
+      if (normalizedPath.startsWith('/api/')) {
+        console.log(`⚠️ Skipping API route: ${path}`);
+        return false;
+      }
+      
+      // Skip any path segments that might be mistaken for author/post combinations
+      const segments = normalizedPath.split('/').filter(Boolean);
+      if (segments[0] === 'api') {
+        console.log(`⚠️ Skipping path with 'api' handle: ${path}`);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`🔍 Filtered ${paths.length - filteredPaths.length} API routes from warming list`);
+    
     // Create unique operation ID
     const operationId = `warm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-    console.log(`🔍 Warming operation ${operationId}: ${paths.length} paths`);
+    console.log(`🔍 Warming operation ${operationId}: ${filteredPaths.length} paths`);
     
     // Record the start of warming in our diagnostic endpoint
     try {
@@ -44,7 +69,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           secret: secretToken,
           operationId,
-          paths
+          paths: filteredPaths  
         })
       });
     } catch (e) {
@@ -63,9 +88,9 @@ export async function POST(request: NextRequest) {
     // Only process 3 paths at a time to avoid overwhelming
     const batchSize = 3;
     
-    for (let i = 0; i < paths.length; i += batchSize) {
-      const batch = paths.slice(i, i + batchSize);
-      console.log(`🌡️ Warming batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(paths.length/batchSize)}`);
+    for (let i = 0; i < filteredPaths.length; i += batchSize) {  // CHANGE FROM paths.length
+      const batch = filteredPaths.slice(i, i + batchSize);  // CHANGE FROM paths.slice
+      console.log(`🌡️ Warming batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(filteredPaths.length/batchSize)}`);
       
       // Process each path in the batch
       const batchPromises = batch.map(async (path) => {
@@ -133,25 +158,27 @@ export async function POST(request: NextRequest) {
         }
       });
       
+
+      
       // Wait for all paths in this batch
       results.push(...(await Promise.all(batchPromises)));
       
       // Small pause between batches
-      if (i + batchSize < paths.length) {
+      if (i + batchSize < filteredPaths.length) {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
     
     // Final verification stats
     const verified = results.filter(r => r.success && r.contentVerified).length;
-    const failed = paths.length - warmedCount;
+    const failed = filteredPaths.length - warmedCount;
     
     const finalResult = {
       success: warmedCount > 0,
       warmed: warmedCount,
       verified,
       failed,
-      total: paths.length,
+      total: filteredPaths.length,
       operationId,
       results: results.map(r => ({
         path: r.path,
@@ -172,7 +199,7 @@ export async function POST(request: NextRequest) {
       }
     }, 5 * 60 * 1000);
     
-    console.log(`🏁 Warming complete: ${warmedCount}/${paths.length} warmed, ${verified} verified`);
+    console.log(`🏁 Warming complete: ${warmedCount}/${filteredPaths.length} warmed, ${verified} verified`);
     
     return NextResponse.json(finalResult, {
       headers: {

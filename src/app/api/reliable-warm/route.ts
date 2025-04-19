@@ -34,13 +34,35 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
+    // NEW: Filter out API routes that shouldn't be treated as content pages
+    const filteredPaths = paths.filter(path => {
+      const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+      
+      // Skip any path that starts with /api/
+      if (normalizedPath.startsWith('/api/')) {
+        console.log(`⚠️ Skipping API route: ${path}`);
+        return false;
+      }
+      
+      // Skip any path segments that might be mistaken for author/post combinations
+      const segments = normalizedPath.split('/').filter(Boolean);
+      if (segments[0] === 'api') {
+        console.log(`⚠️ Skipping path with 'api' handle: ${path}`);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`🔍 Filtered ${paths.length - filteredPaths.length} API routes from warming list`);
+    
     // Create operation record
     const operationId = `warm-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
     const operation = {
       id: operationId,
       timestamp: new Date().toISOString(),
       status: 'in_progress',
-      paths: paths.length,
+      paths: filteredPaths.length, // Changed from paths.length to filteredPaths.length
       results: []
     };
     
@@ -50,7 +72,7 @@ export async function POST(request: NextRequest) {
       recentOperations.pop();
     }
     
-    console.log(`🚀 Warming operation ${operationId} with ${paths.length} paths`);
+    console.log(`🚀 Warming operation ${operationId} with ${filteredPaths.length} paths`); // Changed from paths.length
     
     // Process paths in small batches to avoid overwhelming the server
     const batchSize = 2;
@@ -69,9 +91,9 @@ export async function POST(request: NextRequest) {
     
     // Process all paths
     const warmingPromise: Promise<CompletionResult> = (async () => {
-      for (let i = 0; i < paths.length; i += batchSize) {
-        const batch = paths.slice(i, i + batchSize);
-        console.log(`⏳ Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(paths.length/batchSize)}`);
+      for (let i = 0; i < filteredPaths.length; i += batchSize) { // Changed from paths.length
+        const batch = filteredPaths.slice(i, i + batchSize); // Changed from paths.slice
+        console.log(`⏳ Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(filteredPaths.length/batchSize)}`); // Changed from paths.length
         
         // Process each path in parallel
         const batchPromises = batch.map(async (path) => {
@@ -81,17 +103,16 @@ export async function POST(request: NextRequest) {
             ? path 
             : `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
           
+          // Parse path for author and post details
+          const pathParts = path.split('/').filter(Boolean);
+          const authorHandle = pathParts.length > 0 ? pathParts[0] : 'unknown';
+          const postSlug = pathParts.length > 1 ? pathParts[1] : 'homepage';
+          
+          // Enhanced logging with author/tenant information
+          console.log(`🔄 Warming: [${authorHandle}] ${path}${postSlug !== 'homepage' ? ` (post: ${postSlug})` : ''}`);
+          
           // Step 1: Force ISR refresh
           const startTime = Date.now();
-
-          // ADD THIS CODE
-            // Parse path for author and post details
-            const pathParts = path.split('/').filter(Boolean);
-            const authorHandle = pathParts.length > 0 ? pathParts[0] : 'unknown';
-            const postSlug = pathParts.length > 1 ? pathParts[1] : 'homepage';
-
-            // Enhanced logging with author/tenant information
-            console.log(`🔄 Warming: [${authorHandle}] ${path}${postSlug !== 'homepage' ? ` (post: ${postSlug})` : ''}`);
 
           try {
             const refreshed = await forceISRRefresh(fullUrl, 1);
@@ -122,7 +143,7 @@ export async function POST(request: NextRequest) {
         await Promise.all(batchPromises);
         
         // Small pause between batches
-        if (i + batchSize < paths.length) {
+        if (i + batchSize < filteredPaths.length) { // Changed from paths.length
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
@@ -141,7 +162,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         warmed: results.filter(r => r.success).length,
-        total: paths.length,
+        total: filteredPaths.length, // Changed from paths.length
         completed: results.length,
         operationId,
         message: 'Operation timed out but partial results available',
@@ -156,7 +177,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: successful > 0,
         warmed: successful,
-        total: paths.length,
+        total: filteredPaths.length, // Changed from paths.length
         operationId,
         results
       });
