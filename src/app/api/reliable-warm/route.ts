@@ -83,6 +83,16 @@ export async function POST(request: NextRequest) {
           
           // Step 1: Force ISR refresh
           const startTime = Date.now();
+
+          // ADD THIS CODE
+            // Parse path for author and post details
+            const pathParts = path.split('/').filter(Boolean);
+            const authorHandle = pathParts.length > 0 ? pathParts[0] : 'unknown';
+            const postSlug = pathParts.length > 1 ? pathParts[1] : 'homepage';
+
+            // Enhanced logging with author/tenant information
+            console.log(`🔄 Warming: [${authorHandle}] ${path}${postSlug !== 'homepage' ? ` (post: ${postSlug})` : ''}`);
+
           try {
             const refreshed = await forceISRRefresh(fullUrl, 1);
             
