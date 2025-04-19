@@ -1,17 +1,20 @@
 // app/api/reliable-warm/route.js
 import { NextResponse } from 'next/server';
 
-// Environment variable for your token (set this in Vercel)
-const REVALIDATION_TOKEN = process.env.REVALIDATION_TOKEN;
-
 export async function POST(request) {
-  console.log('🔥 Cache warming request received');
+  console.log('==== 🔥 CACHE WARMING REQUEST RECEIVED ====');
+  console.log(`⏱️ Timestamp: ${new Date().toISOString()}`);
   
   // Parse the incoming JSON request
   let payload;
   try {
     payload = await request.json();
-    console.log(`📦 Payload received: ${payload.paths?.length} paths to warm`);
+    console.log(`📦 PAYLOAD SUMMARY: ${payload.paths?.length || 0} paths to warm`);
+    
+    // Log author info if present
+    if (payload.authorHandle) {
+      console.log(`👤 AUTHOR: ${payload.authorHandle}`);
+    }
   } catch (error) {
     console.error('❌ Failed to parse request body:', error);
     return NextResponse.json({ 
@@ -21,9 +24,8 @@ export async function POST(request) {
   }
 
   // Verify the secret token
-  const { token, paths, nocache } = payload;
-
-  if (!token || token !== REVALIDATION_TOKEN) {
+  const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
+  if (payload.token !== secretToken) {
     console.error('🚫 Invalid warming token');
     return NextResponse.json({ 
       success: false, 
@@ -32,34 +34,37 @@ export async function POST(request) {
   }
 
   try {
+    const { paths, nocache, authorHandle, operation } = payload;
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const warmedPaths = [];
-    const failedPaths = [];
     
-    console.log(`==== 🔥 CACHE WARMING STARTED ====`);
-    console.log(`⏱️ Time: ${new Date().toISOString()}`);
+    // Log operation details
+    if (operation) {
+      console.log(`🔄 OPERATION TYPE: ${operation}`);
+    }
+    
+    console.log(`==== 🔥 WARMING PATHS ====`);
     console.log(`🌐 Base URL: ${siteUrl}`);
     console.log(`🔄 No-cache: ${nocache === 'true' ? 'Enabled' : 'Disabled'}`);
+    
+    const warmedPaths = [];
+    const failedPaths = [];
 
     // Warm each path by fetching it
     if (Array.isArray(paths) && paths.length > 0) {
-      // Use Promise.allSettled to process all paths in parallel
-      const fetchPromises = paths.map(async (path) => {
-        if (typeof path !== 'string') return { path: String(path), success: false, error: 'Invalid path' };
+      for (let i = 0; i < paths.length; i++) {
+        const path = paths[i];
+        if (typeof path !== 'string') continue;
         
-        // Construct the full URL
         const fullUrl = new URL(path, siteUrl).toString();
-        console.log(`🔄 Warming: ${fullUrl}`);
+        console.log(`  ${i + 1}. 🔄 Warming: ${fullUrl}`);
         
         try {
-          // Set up cache-busting headers if nocache is true
           const headers = {};
           if (nocache === 'true') {
             headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
             headers['Pragma'] = 'no-cache';
           }
           
-          // Fetch the URL
           const response = await fetch(fullUrl, { 
             method: 'GET',
             headers,
@@ -67,52 +72,45 @@ export async function POST(request) {
           });
           
           if (response.ok) {
-            console.log(`✅ Warmed: ${path}`);
+            console.log(`    ✅ Successfully warmed: ${path}`);
             warmedPaths.push(path);
-            return { path, success: true };
           } else {
-            console.error(`❌ Failed to warm ${path}: ${response.status} ${response.statusText}`);
+            console.error(`    ❌ Failed to warm ${path}: ${response.status} ${response.statusText}`);
             failedPaths.push(path);
-            return { path, success: false, status: response.status };
           }
         } catch (error) {
-          console.error(`❌ Error warming ${path}:`, error.message);
+          console.error(`    ❌ Error warming ${path}: ${error.message}`);
           failedPaths.push(path);
-          return { path, success: false, error: error.message };
         }
-      });
-      
-      // Wait for all fetches to complete
-      const results = await Promise.allSettled(fetchPromises);
-      
-      // Summarize results
-      const successResults = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-      const failedResults = results.filter(r => r.status === 'fulfilled' && !r.value.success).length;
-      const errors = results.filter(r => r.status === 'rejected').length;
-      
-      console.log(`==== ✅ CACHE WARMING COMPLETE ====`);
-      console.log(`✅ Successfully warmed: ${successResults}`);
-      console.log(`❌ Failed to warm: ${failedResults}`);
-      console.log(`❌ Errors: ${errors}`);
+      }
     } else {
-      console.log(`⚠️ No paths provided for warming`);
+      console.log(`⚠️ NO PATHS PROVIDED FOR WARMING`);
     }
+    
+    // Summary log
+    console.log(`==== ✅ CACHE WARMING COMPLETE ====`);
+    console.log(`👤 Author: ${authorHandle || 'None provided'}`);
+    console.log(`🔄 Operation: ${operation || 'Not specified'}`);
+    console.log(`✅ Successfully warmed: ${warmedPaths.length}`);
+    console.log(`❌ Failed to warm: ${failedPaths.length}`);
+    console.log(`⏱️ Completed: ${new Date().toISOString()}`);
+    console.log(`=======================================`);
 
     // Return success response with details
     return NextResponse.json({
       success: true,
       warmed: warmedPaths.length,
       failed: failedPaths.length,
-      warmedPaths,
-      failedPaths
+      authorHandle,
+      operation,
+      timestamp: new Date().toISOString()
     }, { status: 200 });
 
   } catch (error) {
-    console.error('❌ Cache warming error:', error);
-    
+    console.error('❌ CACHE WARMING ERROR:', error);
     return NextResponse.json({ 
       success: false, 
-      error: error.message || 'Cache warming failed',
+      error: error.message
     }, { status: 500 });
   }
 }
