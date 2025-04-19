@@ -14,22 +14,28 @@ export default function Navbar() {
   const [authorName, setAuthorName] = useState<string | null>(null);
   
   // Extract author handle from URL
-  const authorHandle = useMemo(() => {
-    // Same logic as before
-    const pathParts = pathname?.split('/').filter(Boolean);
-    
-    if (!pathParts || pathParts.length === 0) return null;
-    
-    if (pathParts.length === 1 && !['join', 'admin', 'api'].includes(pathParts[0])) {
-      return pathParts[0];
-    }
-    
-    if (pathParts.length >= 2 && !['join', 'admin', 'api'].includes(pathParts[0])) {
-      return pathParts[0];
-    }
-    
-    return null;
-  }, [pathname]);
+ // Extract author handle from URL
+const authorHandle = useMemo(() => {
+  // Immediately exclude any API path
+  if (pathname?.startsWith('/api')) return null;
+  
+  const pathParts = pathname?.split('/').filter(Boolean);
+  
+  if (!pathParts || pathParts.length === 0) return null;
+  
+  // Explicitly exclude these prefixes
+  const excludedPrefixes = ['join', 'admin', 'api', 'blog', 'about', 'terms', 'privacy'];
+  
+  if (pathParts.length === 1 && !excludedPrefixes.includes(pathParts[0])) {
+    return pathParts[0];
+  }
+  
+  if (pathParts.length >= 2 && !excludedPrefixes.includes(pathParts[0])) {
+    return pathParts[0];
+  }
+  
+  return null;
+}, [pathname]);
   
   // Fetch author name when handle changes
   useEffect(() => {
