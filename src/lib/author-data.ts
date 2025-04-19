@@ -49,41 +49,19 @@ export async function getAuthorByHandle(handle: string) {
   }
 }
 
-/**
- * Get author preferences
+
+//  Get author preferences without any server call
  
 export async function getAuthorPreferences(handle: string) {
-  try {
-    const { data, error } = await supabase
-      .from('author_preferences')
-      .select('*')
-      .eq('author_handle', handle)
-      .single();
-    
-    if (error) {
-      console.error(`Error fetching preferences for author ${handle}:`, error);
-      // Return default preferences
-      return { 
-        font_style: 'serif', 
-        theme_colors: {},
-        featured_posts: [],
-        sidebar_widgets: [],
-        custom_css: null
-      };
-    }
-    
-    return data;
-  } catch (e) {
-    console.error(`Exception fetching preferences for author ${handle}:`, e);
-    return { 
-      font_style: 'serif', 
-      theme_colors: {},
-      featured_posts: [],
-      sidebar_widgets: [],
-      custom_css: null
-    };
-  }
-} */
+  // Return default preferences without any database call
+  return { 
+    font_style: 'serif', 
+    theme_colors: {},
+    featured_posts: [],
+    sidebar_widgets: [],
+    custom_css: null
+  };
+}
 
 /**
  * Get all posts for a specific author
