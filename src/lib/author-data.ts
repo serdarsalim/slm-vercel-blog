@@ -2,10 +2,17 @@
 import { supabase } from './supabase';
 import type { BlogPost } from '@/app/types/blogpost';
 
+
 /**
  * Check if an author exists by handle
  */
 export async function authorExists(handle: string): Promise<boolean> {
+  // ADD THIS VALIDATION
+  if (!handle || handle === 'api' || handle.startsWith('api/')) {
+    console.log(`Skipping invalid author handle check: "${handle}"`);
+    return false;
+  }
+  
   try {
     const { data, error } = await supabase
       .from('authors_public')
@@ -29,6 +36,12 @@ export async function authorExists(handle: string): Promise<boolean> {
  * Get author details by handle
  */
 export async function getAuthorByHandle(handle: string) {
+  // ADD THIS VALIDATION BLOCK at the beginning of the function
+  if (!handle || handle === 'api' || handle.startsWith('api/')) {
+    console.log(`Skipping invalid author handle in getAuthorByHandle: "${handle}"`);
+    return null;
+  }
+  
   try {
     // Fetch author details - exclude sensitive fields like api_token
     const { data, error } = await supabase
@@ -36,6 +49,8 @@ export async function getAuthorByHandle(handle: string) {
       .select('id, handle, name, bio, avatar_url, website_url, social_links, created_at')
       .eq('handle', handle)
       .single();
+    
+    // Rest of function unchanged...
     
     if (error) {
       console.error(`Error fetching author ${handle}:`, error);
@@ -67,6 +82,12 @@ export async function getAuthorPreferences(handle: string) {
  * Get all posts for a specific author
  */
 export async function getAuthorPosts(handle: string) {
+  // ADD THIS VALIDATION
+  if (!handle || handle === 'api' || handle.startsWith('api/')) {
+    console.log(`Skipping invalid author handle in getAuthorPosts: "${handle}"`);
+    return [];
+  }
+  
   try {
     console.log(`Fetching posts for author: ${handle}`);
     
@@ -94,6 +115,12 @@ export async function getAuthorPosts(handle: string) {
  * Get featured posts for a specific author
  */
 export async function getAuthorFeaturedPosts(handle: string) {
+  // ADD THIS VALIDATION
+  if (!handle || handle === 'api' || handle.startsWith('api/')) {
+    console.log(`Skipping invalid author handle in getAuthorFeaturedPosts: "${handle}"`);
+    return [];
+  }
+  
   try {
     const { data, error } = await supabase
       .from('posts')
