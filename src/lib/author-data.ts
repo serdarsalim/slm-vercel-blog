@@ -33,7 +33,7 @@ export async function authorExists(handle: string): Promise<boolean> {
 }
 
 /**
- * Get author details by handle
+ * Get author details by handle forget about git.
  */
 export async function getAuthorByHandle(handle: string) {
   // ADD THIS VALIDATION BLOCK at the beginning of the function
