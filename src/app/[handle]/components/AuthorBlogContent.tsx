@@ -1,8 +1,7 @@
-// src/app/[handle]/components/AuthorBlogContent.tsx
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Fuse from "fuse.js";
 import { useAuthor } from "../AuthorContext";
@@ -14,6 +13,7 @@ interface AuthorBlogContentProps {
   initialPosts: any[];
   initialFeaturedPosts: any[];
 }
+
 // Add a proper type for your category data
 interface CategoryWithCount {
   name: string;
@@ -44,12 +44,14 @@ export default function AuthorBlogContent({
 
   const [renderedCount, setRenderedCount] = useState(8);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearchTerm = useDebounce(searchInput, 300);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [posts, setPosts] = useState<any[]>(initialPosts);
   const [isBrowser, setIsBrowser] = useState(false);
+  const loadAttempts = useRef(0);
 
   // Set browser state for hydration safety
   useEffect(() => {
@@ -91,12 +93,11 @@ export default function AuthorBlogContent({
     return () => clearTimeout(clearMarkerTimeout);
   }, [posts.length, isLoadingMore]); // Add dependencies
 
-  
-
   // Apply debounced search
   useEffect(() => {
     setSearchTerm(debouncedSearchTerm);
     setRenderedCount(8);
+    loadAttempts.current = 0; // Reset load attempts when search changes
   }, [debouncedSearchTerm]);
 
   // Create optimized Fuse instance for search
@@ -120,6 +121,7 @@ export default function AuthorBlogContent({
   const handleCategoryClick = (cat: string) => {
     setSelectedCategories([cat]);
     setRenderedCount(8);
+    loadAttempts.current = 0; // Reset load attempts when category changes
   };
 
   // Apply filters and search
@@ -156,18 +158,32 @@ export default function AuthorBlogContent({
   // Check if there are more posts to load
   const hasMorePosts = renderedCount < sortedPosts.length;
 
-  // Function to load more posts
-  const loadMorePosts = () => {
+  // Function to load more posts - wrapped in useCallback to prevent circular dependency
+  const loadMorePosts = useCallback(() => {
     if (!hasMorePosts || isLoadingMore) return;
-
+    
+    // Track loading state
     setIsLoadingMore(true);
-
+    setLoadingError(null);
+    
+    // Simulate a delay for smooth loading experience
     setTimeout(() => {
-      const newCount = Math.min(renderedCount + 10, sortedPosts.length);
-      setRenderedCount(newCount);
-      setIsLoadingMore(false);
+      try {
+        const MAX_POSTS_PER_LOAD = 10;
+        const newCount = Math.min(renderedCount + MAX_POSTS_PER_LOAD, sortedPosts.length);
+        setRenderedCount(newCount);
+        // Reset load attempts on successful load
+        loadAttempts.current = 0;
+      } catch (error) {
+        console.error('Error loading more posts:', error);
+        setLoadingError('Failed to load more posts. Please try again.');
+        // Increment load attempts for potential retry backoff
+        loadAttempts.current += 1;
+      } finally {
+        setIsLoadingMore(false);
+      }
     }, 600);
-  };
+  }, [hasMorePosts, isLoadingMore, renderedCount, sortedPosts.length]); // Dependencies
 
   // Get category counts for filter buttons
   const categoryCounts = useMemo(() => {
@@ -201,6 +217,41 @@ export default function AuthorBlogContent({
       transition: { duration: 0.2, ease: "easeOut" },
     },
   };
+
+  // Setup the intersection observer for infinite scroll
+  const observerTarget = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && !isLoadingMore && hasMorePosts) {
+          // Calculate exponential backoff if there have been errors
+          const backoffTime = Math.min(2000, Math.pow(2, loadAttempts.current) * 500);
+          setTimeout(() => {
+            loadMorePosts();
+          }, loadAttempts.current > 0 ? backoffTime : 0);
+        }
+      },
+      {
+        rootMargin: '100px', // Start loading before the element is fully visible
+        threshold: 0.1, // Trigger when at least 10% of the target is visible
+      }
+    );
+    
+    const currentTarget = observerTarget.current;
+    
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+    
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+      observer.disconnect();
+    };
+  }, [isLoadingMore, hasMorePosts, loadMorePosts]);
 
   return (
     <>
@@ -247,7 +298,7 @@ export default function AuthorBlogContent({
                   ${
                     selectedCategories.includes(name)
                       ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
-                      : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200  sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+                      : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
                   }
                 `}
               >
@@ -369,6 +420,7 @@ export default function AuthorBlogContent({
                             categories: post.categories || [],
                             featured: post.featured || false,
                             author: post.author || author.name,
+                            author_handle: post.author_handle || author.handle,
                             featuredImage: post.featuredImage || "",
                             comment:
                               post.comment !== undefined ? post.comment : true,
@@ -387,56 +439,77 @@ export default function AuthorBlogContent({
                 </>
               )}
 
-              {/* Load more button */}
-              {hasMorePosts && (
-                <div className="flex justify-center mt-8">
-                  <button
-                    onClick={loadMorePosts}
-                    disabled={isLoadingMore}
-                    className="px-6 py-2 bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-200 dark:hover:bg-orange-900/30 transition-colors disabled:opacity-50"
-                  >
-                    {isLoadingMore ? (
-                      <span className="flex items-center">
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-orange-500 dark:text-orange-300"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Loading...
-                      </span>
-                    ) : (
-                      "Load More Posts"
-                    )}
-                  </button>
-                </div>
-              )}
+              {/* Infinite scroll loading trigger and indicator */}
+              <div
+                ref={observerTarget}
+                className="py-8 flex justify-center items-center min-h-[100px]"
+                aria-hidden="true"
+              >
+                <AnimatePresence mode="wait">
+                  {isLoadingMore && hasMorePosts && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className="flex flex-col items-center"
+                    >
+                      <svg
+                        className="animate-spin h-8 w-8 text-orange-500 dark:text-orange-300 mb-2"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Loading more posts...</span>
+                    </motion.div>
+                  )}
 
-              {/* End message - only shown when no more posts */}
-              {!hasMorePosts && sortedPosts.length > 10 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                  className="text-center py-6 text-sm text-gray-400 dark:text-gray-500"
-                >
-                  You've seen all posts
-                </motion.div>
-              )}
+                  {loadingError && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="text-center text-red-500 dark:text-red-400 py-2"
+                    >
+                      <p>{loadingError}</p>
+                      <button
+                        onClick={() => {
+                          setLoadingError(null);
+                          loadMorePosts();
+                        }}
+                        className="mt-2 px-4 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-md text-sm hover:bg-orange-200 dark:hover:bg-orange-800/40 transition-colors"
+                      >
+                        Try Again
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* End of content message */}
+                {!hasMorePosts && sortedPosts.length > 8 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6 }}
+                    className="text-center py-4 text-sm text-gray-400 dark:text-gray-500"
+                  >
+                    You've reached the end
+                  </motion.div>
+                )}
+              </div>
             </motion.div>
           )}
         </div>
