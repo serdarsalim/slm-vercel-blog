@@ -126,6 +126,22 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
+
+    async redirect({ url, baseUrl }) {
+        // Check if this is a new user sign-in (you could pass a flag from signIn)
+        const isNewUser = url.includes('new=true');
+        
+        // If it's a sign-in and a new user, redirect to profile
+        if (url.startsWith(baseUrl) && isNewUser) {
+          return `${baseUrl}/profile`;
+        }
+        
+        // Default NextAuth behavior
+        if (url.startsWith('/')) return `${baseUrl}${url}`;
+        else if (new URL(url).origin === baseUrl) return url;
+        return baseUrl;
+      },
+
     async session({ session, token }) {
       // Add user's status to session
       if (session.user?.email) {

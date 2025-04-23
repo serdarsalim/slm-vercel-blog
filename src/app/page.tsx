@@ -48,9 +48,9 @@ export default async function LandingPage() {
       {authors && authors.length > 0 && (
         <section className="py-16 bg-white dark:bg-slate-900">
           <div className="max-w-6xl mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-6 text-center">Discover new accounts </h2>
+            <h2 className="text-3xl font-bold mb-6 text-center">How does it look? </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto text-center mb-10">
-              No distractions - just great content. One account at a time.
+              Below some of the accounts that are already using WriteAway.
             </p>
             
             {/* Use client component with next/dynamic - increased container height */}
@@ -74,7 +74,7 @@ export default async function LandingPage() {
                 href="/authors"
                 className="inline-flex items-center text-orange-500 hover:text-orange-600 font-medium"
               >
-                <span>More users</span>
+                <span>More accounts</span>
                 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>

@@ -23,50 +23,62 @@ export default function OnboardingPage() {
   const [isPending, setIsPending] = useState(false);
 
   // Check auth status and load profile data
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push('/login');
-      return;
+ // Modify this useEffect in your pending page:
+
+// Check auth status and load profile data
+useEffect(() => {
+  if (status === "unauthenticated") {
+    router.push('/login');
+    return;
+  }
+  
+  if (status === "authenticated" && session?.user?.email) {
+    // Pre-fill name from session if available
+    if (session.user.name) {
+      setName(session.user.name);
     }
     
-    if (status === "authenticated" && session?.user?.email) {
-      // Pre-fill name from session if available
-      if (session.user.name) {
-        setName(session.user.name);
-      }
-      
-      // Check if user has an author profile or pending request
-      fetch('/api/profile')
-        .then(res => res.json())
-        .then(data => {
-          if (data.profile) {
-            const userStatus = data.profile.status;
+    // Check if user has an author profile or pending request
+    fetch('/api/profile')
+      .then(res => res.json())
+      .then(data => {
+        if (data.profile) {
+          const userStatus = data.profile.status;
 
-            if (userStatus === 'active') {
-              // Existing author - redirect to dashboard
-              router.push('/dashboard');
-            } else if (userStatus === 'pending') {
-              // Pending request - redirect to waiting page
-              setIsPending(true);
-setIsLoading(false);
-            } else {
-              // Incomplete profile - pre-fill data
+          if (userStatus === 'active') {
+            // Existing author - redirect to dashboard
+            router.push('/dashboard');
+          } else if (userStatus === 'pending') {
+            // Check if the profile has any bio or website info
+            // If not, it's likely a new user who hasn't completed their profile
+            if (!data.profile.bio && !data.profile.website_url) {
+              // New user - show profile form
               setName(data.profile.name || session.user.name || '');
               setHandle(data.profile.handle || '');
-              setBio(data.profile.bio || '');
-              setWebsite(data.profile.website_url || '');
+              setIsLoading(false);
+            } else {
+              // Existing pending request - show waiting message
+              setIsPending(true);
               setIsLoading(false);
             }
           } else {
+            // Incomplete profile - pre-fill data
+            setName(data.profile.name || session.user.name || '');
+            setHandle(data.profile.handle || '');
+            setBio(data.profile.bio || '');
+            setWebsite(data.profile.website_url || '');
             setIsLoading(false);
           }
-        })
-        .catch(err => {
-          console.error("Error checking profile:", err);
+        } else {
           setIsLoading(false);
-        });
-    }
-  }, [status, session, router]);
+        }
+      })
+      .catch(err => {
+        console.error("Error checking profile:", err);
+        setIsLoading(false);
+      });
+  }
+}, [status, session, router]);
 
   // Auto-generate handle - keep this from your original code
   useEffect(() => {

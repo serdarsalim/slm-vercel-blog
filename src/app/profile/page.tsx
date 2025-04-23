@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import AvatarUpload from "../components/AvatarUpload";
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -12,6 +13,7 @@ export default function ProfilePage() {
   const [handle, setHandle] = useState("");
   const [bio, setBio] = useState("");
   const [website, setWebsite] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -36,6 +38,7 @@ export default function ProfilePage() {
             setHandle(data.profile.handle || "");
             setBio(data.profile.bio || "");
             setWebsite(data.profile.website_url || "");
+            setAvatarUrl(data.profile.avatar_url || "");
           }
         })
         .catch((err) => {
@@ -51,7 +54,12 @@ export default function ProfilePage() {
     }
   }, [session]);
 
-  const handleSubmit = async (e) => {
+  // Handler for avatar changes
+  const handleAvatarChange = (url: string) => {
+    setAvatarUrl(url);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     setMessage({ type: "", text: "" });
@@ -67,6 +75,7 @@ export default function ProfilePage() {
           handle,
           bio,
           website_url: website,
+          avatar_url: avatarUrl,
         }),
       });
 
@@ -129,6 +138,15 @@ export default function ProfilePage() {
         
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
+            {/* Avatar Upload Component */}
+            <div className="mb-6">
+              
+              <AvatarUpload
+                currentAvatar={avatarUrl}
+                onAvatarChange={handleAvatarChange}
+              />
+            </div>
+            
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Email (cannot be changed)

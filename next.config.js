@@ -21,6 +21,22 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "ubcyqbscoojgpzxawwjb.supabase.co",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com", // Google profile images
+        pathname: "/**",
+      },
+      {
+        protocol: "https", 
+        hostname: "avatars.githubusercontent.com", // GitHub profile images
+        pathname: "/**",
+      },
+
+      {
+        protocol: "https",
         hostname: "source.unsplash.com",
         pathname: "/**",
       },

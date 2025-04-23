@@ -55,18 +55,7 @@ export default async function AuthorsPage() {
                     )}
                   </div>
                   
-                  {/* Website link at bottom */}
-                  <div className="mt-auto">
-                    {author.website_url ? (
-                      <div className="relative z-20">
-                       <WebsiteLink url={author.website_url} />
-                      </div>
-                    ) : (
-                      <span className="text-orange-500 dark:text-orange-400 text-sm inline-flex items-center">
-                        View Profile →
-                      </span>
-                    )}
-                  </div>
+                 
                 </div>
               </div>
             </div>
