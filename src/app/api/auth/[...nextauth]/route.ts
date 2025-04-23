@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabase";
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Create service role client for privileged operations
 const serviceRoleClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!, 
@@ -12,7 +11,7 @@ const serviceRoleClient = createClient(
 );
 
 
-export const authOptions = {
+ const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
