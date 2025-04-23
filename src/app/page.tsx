@@ -44,7 +44,7 @@ export default async function LandingPage() {
      
 
 
-      {/* Author Carousel Section - NOW AFTER CONTENT */}xf
+      {/* Author Carousel Section - NOW AFTER CONTENT */}
       {authors && authors.length > 0 && (
         <section className="py-16 bg-white dark:bg-slate-900">
           <div className="max-w-6xl mx-auto px-4">
