@@ -29,7 +29,7 @@ const authorHandle = useMemo(() => {
   
   // Explicitly exclude these prefixes
   const excludedPrefixes = [
-    'join', 'admin', 'api', 'blog', 'about', 'terms', 'privacy',
+    'join', 'pending','admin', 'api', 'blog', 'about', 'terms', 'privacy',
     'login', 'profile', 'auth', 'signin', 'signout' // Add these auth-related paths
   ];
   

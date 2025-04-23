@@ -13,7 +13,7 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get("callbackUrl") || "/profile"; 
   
   // Check if this is a join flow or sign in flow
-  const isJoining = callbackUrl.includes("/join");
+  const isJoining = callbackUrl.includes("/pending");
   
   // Redirect if already logged in
   useEffect(() => {

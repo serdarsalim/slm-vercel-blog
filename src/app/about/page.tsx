@@ -157,9 +157,12 @@ function AboutContent() {
         </div>
         
         <div className="text-center mt-12">
-          <Link href="/join" className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-lg font-medium transition-colors">
-            Start Your Blog Today
-          </Link>
+        <Link 
+  href="/api/auth/signin/google?callbackUrl=/pending"
+  className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-lg transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-1 duration-200"
+>
+  Join WriteAway
+</Link>
         </div>
       </motion.section>
 
@@ -239,11 +242,11 @@ function AboutContent() {
           </p>
           
           <Link 
-            href="/join" 
-            className="inline-block bg-orange-500 hover:bg-orange-600 text-white px-8 py-4 rounded-lg font-medium text-lg transition-colors"
-          >
-            Start Your Journey Today
-          </Link>
+  href="/api/auth/signin/google?callbackUrl=/pending"
+  className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-lg transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-1 duration-200"
+>
+  Join WriteAway
+</Link>
           
           <div className="mt-10 pt-10 border-t border-gray-200 dark:border-gray-700">
             <p className="text-gray-600 dark:text-gray-300 mb-3">

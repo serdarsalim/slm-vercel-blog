@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-import { supabase } from "@/lib/supabase";
-import { createClient } from '@supabase/supabase-js';
-
-// Create service role client for privileged operations
-const serviceRoleClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!, 
-  { auth: { persistSession: false } }
-);
+import { authOptions, getServiceRoleClient } from "@/lib/auth-config";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +12,9 @@ export async function GET(request: NextRequest) {
 
     console.log("Looking up profile for email:", session.user.email);
     
-    // Use serviceRoleClient instead of supabase client
+    // Get client at runtime
+    const serviceRoleClient = getServiceRoleClient();
+    
     const { data: author } = await serviceRoleClient
       .from("authors")
       .select("*")
@@ -34,7 +27,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ profile: author });
     }
 
-    // Also use serviceRoleClient here
     const { data: request } = await serviceRoleClient
       .from("author_requests")
       .select("*")
@@ -60,7 +52,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-
+    const serviceRoleClient = getServiceRoleClient();
+    
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

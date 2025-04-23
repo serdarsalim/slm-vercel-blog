@@ -6,7 +6,7 @@ const STATIC_ROUTES = [
   '/home',
   '/about',
   '/blog',
-  '/join',
+  '/pending',
   '/terms',
   '/privacy',
   '/authors',

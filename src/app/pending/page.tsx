@@ -20,7 +20,8 @@ export default function OnboardingPage() {
   const [success, setSuccess] = useState(false);
   const [handleValid, setHandleValid] = useState(true);
   const [handleError, setHandleError] = useState<string | null>(null);
-  
+  const [isPending, setIsPending] = useState(false);
+
   // Check auth status and load profile data
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -40,13 +41,14 @@ export default function OnboardingPage() {
         .then(data => {
           if (data.profile) {
             const userStatus = data.profile.status;
-            
+
             if (userStatus === 'active') {
               // Existing author - redirect to dashboard
               router.push('/dashboard');
             } else if (userStatus === 'pending') {
               // Pending request - redirect to waiting page
-              router.push('/pending');
+              setIsPending(true);
+setIsLoading(false);
             } else {
               // Incomplete profile - pre-fill data
               setName(data.profile.name || session.user.name || '');
@@ -158,6 +160,30 @@ export default function OnboardingPage() {
     );
   }
   
+  // After your existing isLoading check
+if (isPending) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8"
+      >
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Request Pending</h1>
+          <p className="text-orange-600 dark:text-orange-400 mb-4">Your request is being reviewed</p>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">
+            We'll review your submission and contact you when your account is approved.
+          </p>
+          <Link href="/" className="text-orange-500 hover:text-orange-600 font-medium">
+            Return to homepage
+          </Link>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
   // Success state - keep your existing UI
   if (success) {
     return (

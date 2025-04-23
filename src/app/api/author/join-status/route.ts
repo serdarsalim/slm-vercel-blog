@@ -7,12 +7,11 @@ import { checkAdminAuth } from '@/lib/auth-utils';
 // Add this GET handler above the existing POST handler
 export async function GET(request: NextRequest) {
   try {
-    // For GET requests, we just need to return the current status
-    // No need for admin authentication for this public setting
+    // Update this query to use the same key as your toggle API
     const { data, error } = await supabase
       .from('settings')
       .select('value')
-      .eq('key', 'join_requests_enabled')
+      .eq('key', 'join_disabled')  // Changed to 'join_disabled'
       .single();
       
     if (error) {
@@ -22,7 +21,7 @@ export async function GET(request: NextRequest) {
     }
     
     return NextResponse.json({
-      enabled: data?.value === true || data?.value === 'true'
+      enabled: !(data?.value === true || data?.value === 'true')  // INVERT the logic
     });
   } catch (error) {
     console.error('Error checking join status:', error);
