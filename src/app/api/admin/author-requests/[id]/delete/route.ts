@@ -18,10 +18,10 @@ export async function POST(
     const { id } = params;
     console.log("Deleting request with ID:", id);
     
-    // First, fetch the request to get the handle
+    // First, fetch the request to get the handle and avatar_url
     const { data: authorRequest, error: fetchError } = await adminSupabase
       .from('author_requests')
-      .select('handle')
+      .select('handle, avatar_url') // Added avatar_url
       .eq('id', id)
       .single();
       
@@ -35,6 +35,25 @@ export async function POST(
     // Save the handle for potential author deletion
     const handle = authorRequest.handle;
     console.log(`Request has handle: ${handle}. Checking for matching author...`);
+    
+    // Delete avatar for request if exists
+    if (authorRequest.avatar_url) {
+      console.log(`Deleting avatar for request: ${authorRequest.avatar_url}`);
+      const avatarPath = getStoragePathFromUrl(authorRequest.avatar_url);
+      if (avatarPath) {
+        const { error: avatarDeleteError } = await adminSupabase
+          .storage
+          .from('avatars')
+          .remove([avatarPath]);
+          
+        if (avatarDeleteError) {
+          console.error("Error deleting request avatar:", avatarDeleteError);
+          // Continue despite error - not critical
+        } else {
+          console.log("Request avatar deleted successfully");
+        }
+      }
+    }
     
     // Delete the request
     const { error: deleteRequestError } = await adminSupabase
@@ -52,7 +71,7 @@ export async function POST(
     // Check if there's a matching author in the authors table
     const { data: authorData, error: authorFetchError } = await adminSupabase
       .from('authors')
-      .select('id')
+      .select('id, avatar_url') // Added avatar_url
       .eq('handle', handle)
       .single();
     
@@ -60,12 +79,31 @@ export async function POST(
     if (!authorFetchError && authorData) {
       console.log(`Found matching author with handle ${handle}. Deleting...`);
       
-      // DELETE POSTS FIRST - Add this code
+      // Delete avatar for author if exists
+      if (authorData.avatar_url) {
+        console.log(`Deleting avatar for author: ${authorData.avatar_url}`);
+        const avatarPath = getStoragePathFromUrl(authorData.avatar_url);
+        if (avatarPath) {
+          const { error: avatarDeleteError } = await adminSupabase
+            .storage
+            .from('avatars')
+            .remove([avatarPath]);
+            
+          if (avatarDeleteError) {
+            console.error("Error deleting author avatar:", avatarDeleteError);
+            // Continue despite error - not critical
+          } else {
+            console.log("Author avatar deleted successfully");
+          }
+        }
+      }
+      
+      // DELETE POSTS FIRST
       console.log(`Deleting posts for author ${handle}...`);
       const { error: postsError } = await adminSupabase
         .from('posts')
         .delete()
-        .eq('author_handle', handle); // Notice author_handle here!
+        .eq('author_handle', handle);
         
       if (postsError) {
         console.error("Error deleting author posts:", postsError);
@@ -74,12 +112,12 @@ export async function POST(
         console.log("Author posts deleted successfully");
       }
       
-      // DELETE PREFERENCES - Add this code
+      // DELETE PREFERENCES
       console.log(`Deleting preferences for author ${handle}...`);
       const { error: prefsError } = await adminSupabase
         .from('author_preferences')
         .delete()
-        .eq('author_handle', handle); // Notice author_handle here!
+        .eq('author_handle', handle);
         
       if (prefsError) {
         console.error("Error deleting author preferences:", prefsError);
@@ -88,11 +126,11 @@ export async function POST(
         console.log("Author preferences deleted successfully");
       }
       
-      // DELETE THE AUTHOR - This already exists
+      // DELETE THE AUTHOR
       const { error: deleteAuthorError } = await adminSupabase
         .from('authors')
         .delete()
-        .eq('handle', handle); // Correct - using handle for authors table
+        .eq('handle', handle);
         
       if (deleteAuthorError) {
         console.error("Error deleting author:", deleteAuthorError);
@@ -124,5 +162,35 @@ export async function POST(
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : 'Unknown error' 
     }, { status: 500 });
+  }
+}
+
+// Helper function to extract storage path from a full URL
+function getStoragePathFromUrl(url: string): string | null {
+  try {
+    if (!url) return null;
+    
+    console.log("Extracting path from URL:", url);
+    
+    // Handle different URL formats
+    const storagePathMatch = url.match(/\/storage\/v1\/object\/(?:public|sign)\/avatars\/(.+?)(?:\?.*)?$/);
+    
+    if (storagePathMatch && storagePathMatch[1]) {
+      console.log("Found path:", storagePathMatch[1]);
+      return storagePathMatch[1];
+    }
+    
+    // Fallback pattern
+    const altMatch = url.match(/avatars\/(.+?)(?:\?.*)?$/);
+    if (altMatch && altMatch[1]) {
+      console.log("Found path (alt):", altMatch[1]);
+      return altMatch[1];
+    }
+    
+    console.log("Could not extract path from URL");
+    return null;
+  } catch (error) {
+    console.error("Failed to parse storage path from URL:", error);
+    return null;
   }
 }

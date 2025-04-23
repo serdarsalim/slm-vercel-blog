@@ -18,15 +18,35 @@ export async function DELETE(
     
     const { handle } = params;
     
-    // 2. Check if author exists
+    // 2. Check if author exists and get avatar_url
     const { data: authorExists, error: checkError } = await adminSupabase
       .from('authors')
-      .select('handle, id')
+      .select('handle, id, avatar_url') // Added avatar_url
       .eq('handle', handle)
       .maybeSingle();
       
     if (checkError || !authorExists) {
       return NextResponse.json({ error: `Author with handle ${handle} not found` }, { status: 404 });
+    }
+    
+    // NEW: Delete author's avatar if it exists
+    if (authorExists.avatar_url) {
+      console.log(`Deleting avatar for author: ${authorExists.avatar_url}`);
+      const avatarPath = getStoragePathFromUrl(authorExists.avatar_url);
+      
+      if (avatarPath) {
+        const { error: avatarDeleteError } = await adminSupabase
+          .storage
+          .from('avatars')
+          .remove([avatarPath]);
+          
+        if (avatarDeleteError) {
+          console.error("Error deleting author avatar:", avatarDeleteError);
+          // Continue despite error - not critical
+        } else {
+          console.log("Author avatar deleted successfully");
+        }
+      }
     }
     
     // 3. Delete author's posts - FIXED COLUMN NAMES
@@ -78,5 +98,35 @@ export async function DELETE(
     return NextResponse.json({ 
       error: error instanceof Error ? error.message : 'Unknown error' 
     }, { status: 500 });
+  }
+}
+
+// Helper function to extract storage path from a full URL
+function getStoragePathFromUrl(url: string): string | null {
+  try {
+    if (!url) return null;
+    
+    console.log("Extracting path from URL:", url);
+    
+    // Handle different URL formats
+    const storagePathMatch = url.match(/\/storage\/v1\/object\/(?:public|sign)\/avatars\/(.+?)(?:\?.*)?$/);
+    
+    if (storagePathMatch && storagePathMatch[1]) {
+      console.log("Found path:", storagePathMatch[1]);
+      return storagePathMatch[1];
+    }
+    
+    // Fallback pattern
+    const altMatch = url.match(/avatars\/(.+?)(?:\?.*)?$/);
+    if (altMatch && altMatch[1]) {
+      console.log("Found path (alt):", altMatch[1]);
+      return altMatch[1];
+    }
+    
+    console.log("Could not extract path from URL");
+    return null;
+  } catch (error) {
+    console.error("Failed to parse storage path from URL:", error);
+    return null;
   }
 }

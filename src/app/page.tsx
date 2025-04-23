@@ -5,6 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic';
+import JoinButton from './components/JoinButton';
+
 
 // Import the carousel component with dynamic import to avoid hydration issues
 const AuthorCarousel = dynamic(() => import('./components/AuthorCarousel'), { 
@@ -31,12 +33,7 @@ export default async function LandingPage() {
             
             </h1>
          
-            <Link 
-  href="/api/auth/signin/google?callbackUrl=/pending"
-  className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-lg transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-1 duration-200"
->
-  Join WriteAway
-</Link>
+            <JoinButton />
           </div>
         </div>
       </section>

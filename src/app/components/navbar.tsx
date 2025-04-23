@@ -6,8 +6,12 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
 import SignInButton from "./SignInButton";
+import { useSession } from "next-auth/react"; // Add this import
 
 export default function Navbar() {
+  // Add this session hook
+  const { data: session } = useSession();
+  
   const [darkMode, setDarkMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -153,8 +157,7 @@ export default function Navbar() {
 
         {/* Desktop Navigation - Plain Elements */}
         <div className="hidden md:flex items-center space-x-1">
-          {/* Desktop SignInButton */}
-          <SignInButton />
+         
 
           {/* Editor Link */}
           <a
@@ -189,6 +192,20 @@ export default function Navbar() {
           >
             All Accounts
           </Link>
+
+          {/* My Account Link - Only show when logged in */}
+{session?.user?.handle && (
+            <Link
+              href={`/${session.user.handle}`}
+              className="px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            >
+              My Account
+            </Link>
+          )}
+            {/* Desktop SignInButton */}
+            <SignInButton />
+
+
 
           {/* Dark Mode Toggle */}
           <button
@@ -225,8 +242,7 @@ export default function Navbar() {
       {isMenuOpen && (
         <div className="md:hidden border-t border-gray-200 dark:border-gray-700/50">
           <div className="py-3 px-4 flex flex-col space-y-2">
-            {/* Mobile SignInButton */}
-            <SignInButton isMobile={true} onNavigate={() => setIsMenuOpen(false)} />
+    
             
             {/* Editor Link */}
             <a
@@ -263,6 +279,20 @@ export default function Navbar() {
             >
               All Accounts
             </Link>
+
+                 {/* My Account Link - Mobile version */}
+                 {session?.user?.handle && (
+              <Link
+                href={`/${session.user.handle}`}
+                className="py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                My Account
+              </Link>
+            )}
+
+        {/* Mobile SignInButton */}
+        <SignInButton isMobile={true} onNavigate={() => setIsMenuOpen(false)} />
 
             {/* Dark Mode Toggle */}
             <button
