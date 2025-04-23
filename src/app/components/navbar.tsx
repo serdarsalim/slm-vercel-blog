@@ -5,6 +5,10 @@ import Image from "next/image";
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
+import SignInButton from "./SignInButton";
+
+
+
 
 export default function Navbar() {
   const [darkMode, setDarkMode] = useState(false);
@@ -24,7 +28,10 @@ const authorHandle = useMemo(() => {
   if (!pathParts || pathParts.length === 0) return null;
   
   // Explicitly exclude these prefixes
-  const excludedPrefixes = ['join', 'admin', 'api', 'blog', 'about', 'terms', 'privacy'];
+  const excludedPrefixes = [
+    'join', 'admin', 'api', 'blog', 'about', 'terms', 'privacy',
+    'login', 'profile', 'auth', 'signin', 'signout' // Add these auth-related paths
+  ];
   
   if (pathParts.length === 1 && !excludedPrefixes.includes(pathParts[0])) {
     return pathParts[0];
@@ -177,26 +184,8 @@ const authorHandle = useMemo(() => {
     
 {/* Desktop Navigation */}
 <div className="hidden md:flex items-center space-x-1">
-  {/* Remove Home and About, keep only Join */}
-  {["Join"].map((item) => (
-    <Link
-      key={item}
-      href={`/${item.toLowerCase()}`}
-      className="group px-3 py-1.5 relative overflow-hidden"
-    >
-      <span className="relative z-10 text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-        {item}
-      </span>
-
-      {/* Click effect */}
-      <motion.div
-        initial={{ scale: 0, opacity: 0.8 }}
-        whileTap={{ scale: 1.5, opacity: 0 }}
-        transition={{ duration: 0.5 }}
-        className="absolute inset-0 rounded-full bg-blue-400/20 dark:bg-blue-500/20 z-0"
-      />
-    </Link>
-  ))}
+  {/* SignInButton instead of Join */}
+  <SignInButton />
 
   {/* WriteAway CMS Link */}
   <a
@@ -301,23 +290,16 @@ const authorHandle = useMemo(() => {
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
           >
-           <div className="py-3 px-4 space-y-3">
-  {/* Remove Home and About, keep only Join */}
-  {["Join"].map((item) => (
-    <motion.div
-      key={item}
-      initial={{ opacity: 1, x: 0 }}
-      animate={{ opacity: 1, x: 0 }}
-    >
-      <Link
-        href={`/${item.toLowerCase()}`}
-        className="block py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-        onClick={() => setIsMenuOpen(false)}
-      >
-        {item}
-      </Link>
-    </motion.div>
-  ))}
+          <div className="py-3 px-4 space-y-3">
+  {/* SignInButton instead of Join */}
+  <motion.div
+    initial={{ opacity: 1, x: 0 }}
+    animate={{ opacity: 1, x: 0 }}
+  >
+    <div onClick={() => setIsMenuOpen(false)}>
+      <SignInButton isMobile={true} />
+    </div>
+  </motion.div>
   
   {/* WriteAway CMS Link */}
   <motion.div

@@ -8,6 +8,8 @@ import GoogleTagManager from "./components/GoogleTagManager";
 import Analytics from "./components/analytics";
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import ScrollManager from "./components/ScrollManager";
+import { Providers } from "./providers";
+
 
 // Keep your existing Inter font
 const inter = Inter({
@@ -44,6 +46,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${merriweather.variable} ${robotoMono.variable} antialiased`}>
+      <Providers>
         <GoogleTagManager gtmId={GTM_ID} />
         <Analytics />
         <ScrollManager />
@@ -52,8 +55,8 @@ export default function RootLayout({
           {children}
           <SpeedInsights />
           <Footer />
-    
         </BlogProvider>
+        </Providers>
       </body>
     </html>
   );

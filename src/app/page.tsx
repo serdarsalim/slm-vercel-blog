@@ -32,11 +32,11 @@ export default async function LandingPage() {
             </h1>
          
             <Link 
-              href="/join"
-              className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-lg transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-1 duration-200"
-            >
-              Join WriteAway
-            </Link>
+  href="/api/auth/signin/google?callbackUrl=/join"
+  className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-lg transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-1 duration-200"
+>
+  Join WriteAway
+</Link>
           </div>
         </div>
       </section>
@@ -44,7 +44,7 @@ export default async function LandingPage() {
      
 
 
-      {/* Author Carousel Section - NOW AFTER CONTENT */}
+      {/* Author Carousel Section - NOW AFTER CONTENT */}xf
       {authors && authors.length > 0 && (
         <section className="py-16 bg-white dark:bg-slate-900">
           <div className="max-w-6xl mx-auto px-4">
@@ -134,21 +134,7 @@ export default async function LandingPage() {
       </section>
 
       
-      {/* Final CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-orange-50 to-white dark:from-slate-800 dark:to-slate-900">
-        <div className="max-w-3xl mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Start Publishing Today</h2>
-          <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
-            From spreadsheet to published in minutes
-          </p>
-          <Link 
-            href="/join"
-            className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-lg transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-1 duration-200 inline-block"
-          >
-            Join WriteAway
-          </Link>
-        </div>
-      </section>
+
     </div>
   );
 }

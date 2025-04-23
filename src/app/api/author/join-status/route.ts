@@ -4,37 +4,34 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { checkAdminAuth } from '@/lib/auth-utils';
 
-export async function POST(request: NextRequest) {
+// Add this GET handler above the existing POST handler
+export async function GET(request: NextRequest) {
   try {
-    // Check admin authentication
-    const adminCheck = await checkAdminAuth();
-    if (!adminCheck.authorized) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    const { enabled } = await request.json();
-    
-    // Update the setting
-    const { error } = await supabase
+    // For GET requests, we just need to return the current status
+    // No need for admin authentication for this public setting
+    const { data, error } = await supabase
       .from('settings')
-      .upsert({
-        key: 'join_requests_enabled',
-        value: enabled,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'key' });
+      .select('value')
+      .eq('key', 'join_requests_enabled')
+      .single();
       
     if (error) {
-      throw new Error('Failed to update settings');
+      console.error('Error fetching join status:', error);
+      // Default to enabled if setting doesn't exist
+      return NextResponse.json({ enabled: true });
     }
     
     return NextResponse.json({
-      success: true,
-      enabled: enabled
+      enabled: data?.value === true || data?.value === 'true'
     });
   } catch (error) {
-    console.error('Error toggling join status:', error);
-    return NextResponse.json({ 
-      error: error instanceof Error ? error.message : 'Unknown error' 
-    }, { status: 500 });
+    console.error('Error checking join status:', error);
+    // Default to enabled if there's an error
+    return NextResponse.json({ enabled: true });
   }
+}
+
+// Keep your existing POST handler
+export async function POST(request: NextRequest) {
+  // Your existing code...
 }

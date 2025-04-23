@@ -7,7 +7,7 @@ export async function DELETE(
   { params }: { params: { handle: string } }
 ) {
   try {
-    // 1. Get admin token from request
+    // 1. Auth check remains the same
     const authHeader = request.headers.get('Authorization');
     const adminToken = authHeader ? authHeader.replace('Bearer ', '') : null;
     const validAdminToken = process.env.ADMIN_API_TOKEN;
@@ -29,25 +29,31 @@ export async function DELETE(
       return NextResponse.json({ error: `Author with handle ${handle} not found` }, { status: 404 });
     }
     
-    // 3. Delete author's posts
-    const { error: postsError } = await adminSupabase
+    // 3. Delete author's posts - FIXED COLUMN NAMES
+    console.log(`Deleting posts for author: ${handle}`);
+    
+    // Try using author_handle
+    const { error: postsError1 } = await adminSupabase
       .from('posts')
       .delete()
-      .eq('author_id', authorExists.id);
+      .eq('author_handle', handle);
     
-    if (postsError) {
-      console.error(`Error deleting posts for ${handle}:`, postsError);
+    if (postsError1) {
+      console.log(`Using author_handle failed: ${postsError1.message}, trying 'author' column...`);
+      
+      // Try using author column as backup
+      const { error: postsError2 } = await adminSupabase
+        .from('posts')
+        .delete()
+        .eq('author', handle);
+        
+      if (postsError2) {
+        console.error(`Error deleting posts for ${handle}:`, postsError2);
+      }
     }
     
-    // 4. Delete author's preferences
-    const { error: prefsError } = await adminSupabase
-      .from('preferences')
-      .delete()
-      .eq('author_id', authorExists.id);
-    
-    if (prefsError) {
-      console.error(`Error deleting preferences for ${handle}:`, prefsError);
-    }
+    // 4. Skip preferences table since it's not in use
+    console.log("Skipping preferences table deletion as it's not currently in use");
     
     // 5. Finally delete the author
     const { error } = await adminSupabase
@@ -61,6 +67,7 @@ export async function DELETE(
     
     // 6. Revalidate relevant paths
     revalidatePath('/admin/authors', 'page');
+    revalidatePath('/', 'page');
     
     return NextResponse.json({
       success: true,

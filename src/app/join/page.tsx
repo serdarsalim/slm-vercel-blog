@@ -4,76 +4,107 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
-export default function JoinPage() {
+export default function OnboardingPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
   
+  // Form state
   const [name, setName] = useState('');
   const [handle, setHandle] = useState('');
-  const [email, setEmail] = useState('');
   const [bio, setBio] = useState('');
   const [website, setWebsite] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [joinDisabled, setJoinDisabled] = useState(false);
-  const [emailExists, setEmailExists] = useState(false);
-  const [emailCheckLoading, setEmailCheckLoading] = useState(false);
   const [handleValid, setHandleValid] = useState(true);
   const [handleError, setHandleError] = useState<string | null>(null);
   
-  // Check if join page is disabled
+  // Check auth status and load profile data
   useEffect(() => {
-    async function checkJoinStatus() {
-      try {
-        const response = await fetch('/api/author/join-status');
-        const data = await response.json();
-        
-        if (data.disabled) {
-          setJoinDisabled(true);
-          setError(data.message || 'Join requests are currently disabled');
-        }
-      } catch (err) {
-        console.error('Failed to check join status:', err);
-      }
+    if (status === "unauthenticated") {
+      router.push('/login');
+      return;
     }
     
-    checkJoinStatus();
-  }, []);
-
-  // Check if email is already used (with debounce)
-  useEffect(() => {
-    if (!email || email.length < 5 || !email.includes('@')) return;
-    
-    const timer = setTimeout(async () => {
-      setEmailCheckLoading(true);
-      try {
-        const response = await fetch(`/api/author/check-email?email=${encodeURIComponent(email)}`);
-        const data = await response.json();
-        
-        setEmailExists(data.exists);
-        if (data.exists) {
-          setError('This email is already registered');
-        } else {
-          setError(null);
-        }
-      } catch (err) {
-        console.error('Failed to check email:', err);
-      } finally {
-        setEmailCheckLoading(false);
+    if (status === "authenticated" && session?.user?.email) {
+      // Pre-fill name from session if available
+      if (session.user.name) {
+        setName(session.user.name);
       }
-    }, 500);
+      
+      // Check if user has an author profile or pending request
+      fetch('/api/profile')
+        .then(res => res.json())
+        .then(data => {
+          if (data.profile) {
+            const userStatus = data.profile.status;
+            
+            if (userStatus === 'active') {
+              // Existing author - redirect to dashboard
+              router.push('/dashboard');
+            } else if (userStatus === 'pending') {
+              // Pending request - redirect to waiting page
+              router.push('/pending');
+            } else {
+              // Incomplete profile - pre-fill data
+              setName(data.profile.name || session.user.name || '');
+              setHandle(data.profile.handle || '');
+              setBio(data.profile.bio || '');
+              setWebsite(data.profile.website_url || '');
+              setIsLoading(false);
+            }
+          } else {
+            setIsLoading(false);
+          }
+        })
+        .catch(err => {
+          console.error("Error checking profile:", err);
+          setIsLoading(false);
+        });
+    }
+  }, [status, session, router]);
+
+  // Auto-generate handle - keep this from your original code
+  useEffect(() => {
+    if (name && handle === '') {
+      const generatedHandle = name
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '_')
+        .replace(/_{2,}/g, '_');
+      setHandle(generatedHandle);
+    }
+  }, [name]);
+
+  // Handle validation - keep your existing code
+  const handleHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setHandle(value);
     
-    return () => clearTimeout(timer);
-  }, [email]);
+    // Your existing validation logic
+    const validPattern = /^[a-zA-Z0-9_]*$/;
+    const isValidChars = validPattern.test(value);
+    
+    if (!isValidChars && value !== '') {
+      setHandleError('Only letters, numbers, and underscores allowed');
+      setHandleValid(false);
+    } else if (value.length > 0 && value.length < 4) {
+      setHandleError('Username must be at least 4 characters');
+      setHandleValid(false);
+    } else {
+      setHandleError(null);
+      setHandleValid(true);
+    }
+  };
   
-  // Handle form submission
+  // Handle form submission - modified to update profile
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate form
-    if (!name || !handle || !email) {
-      setError('Name, handle, and email are required');
+    if (!name || !handle) {
+      setError('Name and handle are required');
       return;
     }
     
@@ -83,17 +114,11 @@ export default function JoinPage() {
       return;
     }
     
-    // Check if email already exists
-    if (emailExists) {
-      setError('This email is already registered');
-      return;
-    }
-    
     setIsLoading(true);
     setError(null);
     
     try {
-      const response = await fetch('/api/author/request-join', {
+      const response = await fetch('/api/profile', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,9 +126,8 @@ export default function JoinPage() {
         body: JSON.stringify({
           name,
           handle,
-          email,
           bio,
-          website
+          website_url: website
         }),
       });
       
@@ -116,66 +140,25 @@ export default function JoinPage() {
       // Success!
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit request');
+      setError(err instanceof Error ? err.message : 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
   };
   
-  // Auto-generate handle from name
-// Replace the useEffect for handle generation
-useEffect(() => {
-  // Only auto-generate when name changes AND handle is empty
-  if (name && handle === '') {
-    const generatedHandle = name
-      .toLowerCase()
-      .replace(/[^a-z0-9_]/g, '_') // Replace invalid chars with underscore
-      .replace(/_{2,}/g, '_'); // Replace multiple underscores with single one
-    setHandle(generatedHandle);
-  }
-}, [name]);
-// Replace the handle onChange handler
-const handleHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const value = e.target.value;
-  
-  // Allow empty value
-  setHandle(value);
-  
-  // Validate for allowed characters
-  const validPattern = /^[a-zA-Z0-9_]*$/;
-  const isValidChars = validPattern.test(value);
-  
-  if (!isValidChars && value !== '') {
-    setHandleError('Only letters, numbers, and underscores allowed');
-    setHandleValid(false);
-  } else if (value.length > 0 && value.length < 4) {
-    setHandleError('Username must be at least 4 characters');
-    setHandleValid(false);
-  } else {
-    setHandleError(null);
-    setHandleValid(true);
-  }
-};
-  
-  if (joinDisabled) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
-        <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Join Requests Paused</h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            We're currently not accepting new author requests. Please check back later!
-          </p>
-          <Link 
-            href="/"
-            className="text-orange-500 hover:text-orange-600 dark:text-orange-400 dark:hover:text-orange-300 font-medium"
-          >
-            Return to homepage
-          </Link>
+        <div className="flex items-center space-x-2">
+          <div className="animate-spin h-5 w-5 border-2 border-orange-500 rounded-full border-t-transparent"></div>
+          <span className="text-gray-700 dark:text-gray-300">Loading...</span>
         </div>
       </div>
     );
   }
   
+  // Success state - keep your existing UI
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
@@ -185,10 +168,10 @@ const handleHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           className="max-w-md w-full bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8"
         >
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Request Submitted!</h1>
-            <p className="text-green-600 dark:text-green-400 mb-4">Your author request has been received</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Profile Completed!</h1>
+            <p className="text-green-600 dark:text-green-400 mb-4">Your author profile has been submitted</p>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              We'll review your request and contact you via email if approved. Thank you for your interest!
+              We'll review your request and contact you when your account is approved. Thank you for joining WriteAway!
             </p>
             <Link 
               href="/"
@@ -202,6 +185,7 @@ const handleHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     );
   }
   
+  // Main form - mostly keep your existing UI with some tweaks
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4 py-12">
       <motion.div
@@ -212,8 +196,8 @@ const handleHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       >
         <div className="p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Join WriteAway</h1>
-            <p className="text-gray-600 dark:text-gray-300">Be among the brave who can say, ‘I blog… on a spreadsheet.’ </p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Complete Your Profile</h1>
+            <p className="text-gray-600 dark:text-gray-300">You're almost there! Tell us a bit more about yourself.</p>
           </div>
           
           {error && (
@@ -240,61 +224,28 @@ const handleHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               
               <div>
                 <label htmlFor="handle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Username
+                  Username*
                 </label>
                 <input
-  id="handle"
-  type="text"
-  value={handle}
-  onChange={handleHandleChange}
-  className={`w-full px-4 py-2 border ${
-    !handleValid && handle !== ''
-      ? 'border-red-300 dark:border-red-700' 
-      : 'border-gray-300 dark:border-slate-600'
-  } rounded-md focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-700 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white`}
-  required
-/>
-{handleError && (
-  <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-    {handleError}
-  </p>
-)}
+                  id="handle"
+                  type="text"
+                  value={handle}
+                  onChange={handleHandleChange}
+                  className={`w-full px-4 py-2 border ${
+                    !handleValid && handle !== ''
+                      ? 'border-red-300 dark:border-red-700' 
+                      : 'border-gray-300 dark:border-slate-600'
+                  } rounded-md focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-700 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white`}
+                  required
+                />
+                {handleError && (
+                  <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                    {handleError}
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   This will be your URL: writeaway.blog/{handle}
                 </p>
-              </div>
-              
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email Address*
-                </label>
-                <div className="relative">
-                  <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setEmailExists(false);
-                    }}
-                    className={`w-full px-4 py-2 border ${
-                      emailExists
-                        ? 'border-red-300 dark:border-red-700' 
-                        : 'border-gray-300 dark:border-slate-600'
-                    } rounded-md focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-700 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white`}
-                    required
-                  />
-                  {emailCheckLoading && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin h-4 w-4 border-2 border-orange-500 rounded-full border-t-transparent"></div>
-                    </div>
-                  )}
-                </div>
-                {emailExists && (
-                  <p className="text-xs text-red-500 dark:text-red-400 mt-1">
-                    This email is already registered
-                  </p>
-                )}
               </div>
               
               <div>
@@ -327,10 +278,10 @@ const handleHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={isLoading || emailExists || (handle && handle.length < 3)}
+                  disabled={isLoading || (handle && handle.length < 4) || !handleValid}
                   className="w-full py-3 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? 'Submitting...' : 'Submit Request'}
+                  {isLoading ? 'Saving...' : 'Complete Profile'}
                 </button>
               </div>
             </div>

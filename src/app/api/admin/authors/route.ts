@@ -57,64 +57,67 @@ export async function DELETE(request: NextRequest) {
     }
     
     // Get author handle before deletion for revalidation
-    const { data: authorData } = await adminSupabase
+    const { data: authorData, error: authorError } = await adminSupabase
       .from('authors')
-      .select('handle')
+      .select('handle, name')
       .eq('id', authorId)
       .single();
       
-    const handle = authorData?.handle;
+    if (authorError || !authorData) {
+      console.error('Error finding author:', authorError);
+      return NextResponse.json({ error: 'Author not found' }, { status: 404 });
+    }
     
-    // Delete author's posts first
-    if (handle) {
-      const { error: postsError } = await adminSupabase
-        .from('posts')
-        .delete()
-        .eq('author_handle', handle)
-        
-      if (postsError) {
-        console.error('Error deleting author posts:', postsError);
-        return NextResponse.json({ error: 'Failed to delete author posts' }, { status: 500 });
-      }
+    const { handle, name } = authorData;
+    console.log(`Deleting author: ${name} (${handle})`);
+    
+    // Delete author's posts first - using BOTH author and author_handle columns
+    // Posts table has both fields according to the schema
+    const { error: postsError1 } = await adminSupabase
+      .from('posts')
+      .delete()
+      .eq('author_handle', handle);
       
-      // Delete author preferences
-      const { error: prefsError } = await adminSupabase
-        .from('author_preferences')
-        .delete()
-        .eq('author_handle', handle)
-        
-      if (prefsError) {
-        console.error('Error deleting author preferences:', prefsError);
-        // Continue despite error - not critical
-      }
+    if (postsError1) {
+      console.error(`Error deleting posts by author_handle for ${handle}:`, postsError1);
+    }
+    
+    // Also try deleting by author column as backup
+    const { error: postsError2 } = await adminSupabase
+      .from('posts')
+      .delete()
+      .eq('author', handle);
+      
+    if (postsError2) {
+      console.error(`Error deleting posts by author for ${handle}:`, postsError2);
     }
     
     // Delete the author
-    const { error } = await adminSupabase
+    const { error: deleteError } = await adminSupabase
       .from('authors')
       .delete()
       .eq('id', authorId);
       
-    if (error) {
-      console.error('Error deleting author:', error);
+    if (deleteError) {
+      console.error(`Error deleting author ${handle}:`, deleteError);
       return NextResponse.json({ error: 'Failed to delete author' }, { status: 500 });
     }
     
     // Revalidate author's pages to remove them
-    if (handle) {
-      try {
-        revalidatePath(`/${handle}`, 'page');
-        revalidatePath(`/${handle}/blog`, 'page');
-        revalidatePath('/', 'page'); // Revalidate homepage too
-      } catch (revalidateError) {
-        console.error('Error revalidating paths:', revalidateError);
-        // Continue despite error - still successful deletion
-      }
+    try {
+      revalidatePath(`/${handle}`, 'page');
+      revalidatePath(`/${handle}/blog`, 'page');
+      revalidatePath('/', 'page'); // Revalidate homepage too
+      revalidateTag('authors'); // Add a tag for authors list
+      revalidateTag('posts');   // Add a tag for posts
+    } catch (revalidateError) {
+      console.error('Error revalidating paths:', revalidateError);
+      // Continue despite error - still successful deletion
     }
     
     return NextResponse.json({
       success: true,
-      message: 'Author deleted successfully'
+      message: `Author ${name} (${handle}) deleted successfully`
     });
   } catch (error) {
     console.error('Unexpected error in DELETE author:', error);
@@ -124,6 +127,5 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-
 
 
