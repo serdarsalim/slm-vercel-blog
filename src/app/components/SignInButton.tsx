@@ -27,7 +27,7 @@ export default function SignInButton({ isMobile = false, onNavigate }: SignInBut
           className="block text-left py-2 px-3 mb-2 text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400 rounded-lg transition-colors"
           onClick={onNavigate}
         >
-          Profile
+          Settings
         </Link>
         <button
           onClick={() => {
@@ -50,7 +50,7 @@ export default function SignInButton({ isMobile = false, onNavigate }: SignInBut
           href="/profile"
           className="px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400"
         >
-          Profile
+          Settings
         </Link>
         <button
           onClick={() => signOut()}
