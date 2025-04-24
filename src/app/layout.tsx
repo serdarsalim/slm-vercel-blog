@@ -31,8 +31,8 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "WriteAway",
-  description: "A blog about technology, history and some personal stuff.",
+  title: "WriteAway – A Blogging Platform That Respects Your Time",
+  description: "Write, edit, and publish content instantly with a clean, no-setup interface. No logins, no plugins, no nonsense—just publish.",
 };
 // Add this line to your layout.tsx
 export const scrollRestoration = 'manual'; // Let browser handle restoration
