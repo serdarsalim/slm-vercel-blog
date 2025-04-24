@@ -29,7 +29,7 @@ export default async function LandingPage() {
           <div className="flex flex-col items-center text-center">
           <h1 className="text-4xl md:text-5xl lg:text-6xl pb-2 font-bold mb-6 leading-relaxed bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300">
 
-              Share your ideas with the world!
+          Your Voice. One Click Away.
             
             </h1>
          
@@ -41,14 +41,18 @@ export default async function LandingPage() {
      
 
 
-      {/* Author Carousel Section - NOW AFTER CONTENT */}
-      {authors && authors.length > 0 && (
-        <section className="py-16 bg-white dark:bg-slate-900">
-          <div className="max-w-6xl mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-6 text-center">How does it look? </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto text-center mb-10">
-              Below some of the accounts that are already using WriteAway.
-            </p>
+    {/* Author Carousel Section - NOW AFTER CONTENT */}
+{authors && authors.length > 0 && (
+  <section className="py-16 bg-white dark:bg-slate-900">
+    <div className="max-w-6xl mx-auto px-4">
+      <h2 className="text-3xl font-bold mb-6 text-center">
+        See WriteAway in Action 🔥
+      </h2>
+      <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto text-center mb-10">
+        
+        Check out a few of the real blogs already live on the platform.
+        
+      </p>
             
             {/* Use client component with next/dynamic - increased container height */}
             <div className="min-h-[400px] flex items-center justify-center pb-8">
@@ -71,7 +75,7 @@ export default async function LandingPage() {
                 href="/authors"
                 className="inline-flex items-center text-orange-500 hover:text-orange-600 font-medium"
               >
-                <span>More accounts</span>
+                <span>Explore Accounts</span>
                 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
@@ -97,7 +101,7 @@ export default async function LandingPage() {
               </div>
               <h3 className="text-2xl font-bold mb-3">You Own Your Data</h3>
               <p className="text-gray-600 dark:text-gray-300">
-                Everything lives in your Google Sheet. Edit, backup, or export your content however you want.
+                Everything gets backed up in your Google Drive. Edit, backup, or export your content however you want.
               </p>
             </div>
             

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import JoinButton from '../components/JoinButton';
 
 export default function About() {
   return (
@@ -55,8 +56,8 @@ function AboutContent() {
     <span className="font-semibold"> rethink how content gets made</span>—by handing creators the tools they already use, and cutting out everything they don’t.
   </p>
   <p className="text-lg mb-6">
-    We turned Google Sheets into a full-blown content editor—complete with a CMS modal, WYSIWYG editor, image manager, and instant preview. 
-    Authors can write, format, and manage their content right inside the spreadsheet, then publish to the web with a click.
+  Write, edit, and publish from a clean web interface—no setup, no login, no clutter.
+Behind the scenes, your content is safely stored and synced to your Google Drive.
   </p>
   <p className="text-lg mb-6">
    Bonus: Our system lets you edit, reorder, delete, and update content in bulk—instantly. You stay in control, your data stays yours, and your blog stays fast, fresh, and functional.
@@ -133,9 +134,9 @@ function AboutContent() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 transform transition-transform hover:scale-105">
             <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-3xl font-bold text-orange-500 mb-6 mx-auto">1</div>
-            <h3 className="text-xl font-bold text-center mb-4">Create in Google Sheets</h3>
+            <h3 className="text-xl font-bold text-center mb-4">Create in Google WebApp</h3>
             <p className="text-gray-600 dark:text-gray-300 text-center">
-              Write your blog posts in a familiar Google Sheets interface with custom formatting tools built right in.
+              Write your blog posts in a powerful App interface with custom formatting tools built right in.
             </p>
           </div>
           
@@ -143,7 +144,7 @@ function AboutContent() {
             <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-3xl font-bold text-orange-500 mb-6 mx-auto">2</div>
             <h3 className="text-xl font-bold text-center mb-4">Click to Publish</h3>
             <p className="text-gray-600 dark:text-gray-300 text-center">
-              With a single click, our intelligent system transforms your spreadsheet content into beautifully formatted blog posts.
+              With a single click your post is live on your blog, with no extra steps or technical hurdles.
             </p>
           </div>
           
@@ -151,7 +152,7 @@ function AboutContent() {
             <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-3xl font-bold text-orange-500 mb-6 mx-auto">3</div>
             <h3 className="text-xl font-bold text-center mb-4">Share With the World</h3>
             <p className="text-gray-600 dark:text-gray-300 text-center">
-              Your content is instantly available on your customized blog with your own unique URL and branding.
+              Your content is instantly available on your customized blog with your own unique URL and profile.
             </p>
           </div>
         </div>
@@ -241,12 +242,7 @@ function AboutContent() {
             Become part of the WriteAway family and transform how you create and share content.
           </p>
           
-          <Link 
-  href="/api/auth/signin/google?callbackUrl=/pending"
-  className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-lg transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-1 duration-200"
->
-  Join WriteAway
-</Link>
+           <JoinButton />
           
           <div className="mt-10 pt-10 border-t border-gray-200 dark:border-gray-700">
             <p className="text-gray-600 dark:text-gray-300 mb-3">
