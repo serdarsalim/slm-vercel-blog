@@ -164,7 +164,12 @@ export default function BlogDisplay({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
             className={`
-              prose prose-base md:prose-lg dark:prose-invert 
+              prose prose-base dark:prose-invert
+              prose-p:text-[17px] prose-p:leading-[1.65] sm:prose-p:text-lg
+              prose-li:text-[17px] sm:prose-li:text-lg
+              prose-h2:text-[22px] sm:prose-h2:text-2xl
+              prose-h3:text-[19px] sm:prose-h3:text-xl
+              
               ${fontStyle === "sans-serif" ? "font-sans" : "font-serif"}
               px-0 md:px-10 lg:px-9
                     

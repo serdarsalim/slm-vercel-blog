@@ -33,11 +33,13 @@ export async function GET(request: NextRequest) {
     // Step 1: Revalidate tags - affects all post-related pages
     console.log('Revalidating tags: posts');
     revalidateTag('posts');
-    
+    revalidateTag('authors'); // Add this line
+
     // Step 2: Revalidate specific paths for comprehensive coverage
     console.log('Revalidating common paths');
     revalidatePath('/', 'page');              // Home page
-    
+    revalidatePath('/authors', 'page'); // Add this line
+
     // Step 3: If a specific slug and handle are provided, handle that explicitly
     if (slug && handle) {
       console.log(`Specifically revalidating: /${handle}/${slug}`);
@@ -107,11 +109,11 @@ export async function POST(request: NextRequest) {
     // Step 1: Revalidate tags - affects all post-related pages
     console.log('Revalidating tags: posts');
     revalidateTag('posts');
-    
+    revalidateTag('authors');
     // Step 2: Revalidate specific paths for comprehensive coverage
     console.log('Revalidating common paths');
     revalidatePath('/', 'page');              // Home page
-    
+    revalidatePath('/authors', 'page'); 
     // Step 3: If a specific slug and handle are provided, handle that explicitly
     if (slug && handle) {
       console.log(`Specifically revalidating: /${handle}/${slug}`);

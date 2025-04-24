@@ -190,7 +190,7 @@ export default function Navbar() {
             href="/authors"
             className="px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
-            All Accounts
+            Explore
           </Link>
 
           {/* My Account Link - Only show when logged in */}
@@ -277,7 +277,7 @@ export default function Navbar() {
               className="py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
               onClick={() => setIsMenuOpen(false)}
             >
-              All Accounts
+             Explore
             </Link>
 
                  {/* My Account Link - Mobile version */}
