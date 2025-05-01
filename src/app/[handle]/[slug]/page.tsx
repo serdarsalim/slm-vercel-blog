@@ -40,7 +40,7 @@ export async function generateMetadata({
     openGraph: {
       title: post.title,
       description: post.excerpt || `${post.title} by ${author.name}`,
-      url: `https://writeaway.blog/${author.handle}/${post.slug}`,
+      url: `https://revalidation.xyz/${author.handle}/${post.slug}`,
       images: post.featuredImage ? [{ url: post.featuredImage }] : undefined,
       type: 'article',
       authors: [author.name]

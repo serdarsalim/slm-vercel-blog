@@ -16,7 +16,7 @@ export default function Footer() {
           href="/" 
           className="hover:text-gray-800 dark:hover:text-white transition-colors"
         >
-          WriteAway
+          Revalidation
         </Link>
         <Link 
           href="/about"
@@ -40,7 +40,7 @@ export default function Footer() {
       
       
       
-      <p>© {new Date().getFullYear()} WriteAway. All Rights Reserved.</p>
+      <p>© {new Date().getFullYear()} Revalidation. All Rights Reserved.</p>
     </footer>
   );
 }

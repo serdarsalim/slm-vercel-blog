@@ -61,7 +61,7 @@ function TermsContent() {
         <section>
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-300 mb-4">1. Google Services Disclaimer</h2>
           <p className="mb-4 text-gray-700 dark:text-gray-200">
-           WriteAway is not affiliated with, endorsed by, sponsored by, or connected to Google LLC in any way. 
+           REVALIDATION.XYZ is not affiliated with, endorsed by, sponsored by, or connected to Google LLC in any way. 
             Google Sheets™, Google Drive™, and related marks and logos are trademarks of Google LLC. Our templates 
             are independently created and maintained to work with Google's services.
           </p>
@@ -118,7 +118,7 @@ function TermsContent() {
         <section>
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-300 mb-4">6. Limitation of Liability</h2>
           <p className="mb-4 text-gray-700 dark:text-gray-200">
-            WriteAway shall not be liable for any indirect, incidental, special, consequential, or punitive 
+            REVALIDATION.XYZ shall not be liable for any indirect, incidental, special, consequential, or punitive 
             damages resulting from the use or inability to use our templates.
           </p>
         </section>

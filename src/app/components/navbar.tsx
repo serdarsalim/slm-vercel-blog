@@ -119,7 +119,7 @@ export default function Navbar() {
                           animate-ping opacity-70 duration-1000 delay-75"></div>
             </div>
             <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-blue-300">
-              WriteAway
+              Revalidation
             </span>
           </Link>
         )}

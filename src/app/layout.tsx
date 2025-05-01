@@ -31,7 +31,7 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "WriteAway – A Blogging Platform That Respects Your Time",
+  title: "Revalidation – A thought experiment.",
   description: "Write, edit, and publish content instantly with a clean, no-setup interface. No logins, no plugins, no nonsense—just publish.",
 };
 // Add this line to your layout.tsx

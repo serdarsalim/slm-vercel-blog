@@ -11,8 +11,8 @@ function SchemaContent() {
   
   // Function to convert relative URLs to absolute URLs
   const getAbsoluteUrl = (relativeUrl) => {
-    // Base URL for the site (updated to your domain)
-    const baseUrl = "https://writeaway.blog";
+    // Updated base URL for the site
+    const baseUrl = "https://www.revalidation.xyz";
     
     // Check if the URL is already absolute
     if (!relativeUrl || relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
@@ -30,9 +30,9 @@ function SchemaContent() {
   const blogSchema = {
     "@context": "https://schema.org",
     "@type": "Blog",
-    "name": "WriteAway Blog",
-    "description": "The world's first spreadsheet-powered publishing platform.",
-    "url": "https://writeaway.blog",
+    "name": "Revalidation",
+    "description": "A thought experiment. Not your typical blog.",
+    "url": "https://www.revalidation.xyz",
     "mainEntity": {
       "@type": "ItemList",
       "itemListElement": posts.map((post, index) => ({
@@ -48,7 +48,7 @@ function SchemaContent() {
             "@type": "Person",
             "name": post.author
           },
-          "url": `https://writeaway.blog/${post.author_handle}/${post.slug}`
+          "url": `https://www.revalidation.xyz/${post.author_handle}/${post.slug}`
         }
       }))
     }
@@ -58,32 +58,32 @@ function SchemaContent() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "WriteAway Blog", 
-    "url": "https://writeaway.blog",
+    "name": "Revalidation", 
+    "url": "https://www.revalidation.xyz",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://writeaway.blog/logo.png",
+      "url": "https://www.revalidation.xyz/logo.png",
       "width": "180",
       "height": "180"
     }, 
     "sameAs": [
       // Add your social links here
     ],
-    "description": "The world's first spreadsheet-powered publishing platform."
+    "description": "A thought experiment. Not your typical blog."
   };
 
   // WebSite schema for better SEO
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "url": "https://writeaway.blog",
-    "name": "WriteAway Blog",
-    "description": "The world's first spreadsheet-powered publishing platform.",
+    "url": "https://www.revalidation.xyz",
+    "name": "Revalidation",
+    "description": "A thought experiment. Not your typical blog.",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": "https://writeaway.blog/?search={search_term_string}"
+        "urlTemplate": "https://www.revalidation.xyz/?search={search_term_string}"
       },
       "query-input": "required name=search_term_string"
     }
@@ -93,15 +93,15 @@ function SchemaContent() {
   const webpageSchema = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "url": `https://writeaway.blog${pathname}`,
+    "url": `https://www.revalidation.xyz${pathname}`,
     "name": pathname === "/" 
-      ? "WriteAway Blog | Write On Sheets, Publish Anywhere" 
-      : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | WriteAway Blog`,
-    "description": "The world's first spreadsheet-powered publishing platform.",
+      ? "Revalidation | A Thought Experiment" 
+      : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | Revalidation`,
+    "description": "A thought experiment. Not your typical blog.",
     "isPartOf": {
       "@type": "WebSite",
-      "name": "WriteAway Blog",
-      "url": "https://writeaway.blog"
+      "name": "Revalidation",
+      "url": "https://www.revalidation.xyz"
     }
   };
 
