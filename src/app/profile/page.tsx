@@ -17,7 +17,9 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [handleError, setHandleError] = useState<string | null>(null);
+  const [handleValid, setHandleValid] = useState(true);
   // Redirect if not logged in
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -39,6 +41,11 @@ export default function ProfilePage() {
             setBio(data.profile.bio || "");
             setWebsite(data.profile.website_url || "");
             setAvatarUrl(data.profile.avatar_url || "");
+            
+            // Check if user is admin
+            if (data.profile.role === 'admin') {
+              setIsAdmin(true);
+            }
           }
         })
         .catch((err) => {
@@ -54,6 +61,27 @@ export default function ProfilePage() {
     }
   }, [session]);
 
+  const handleHandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setHandle(value);
+    
+    // Validate handle characters and length
+    const validPattern = /^[a-zA-Z0-9_-]*$/;
+    const isValidChars = validPattern.test(value);
+    
+    if (!isValidChars && value !== '') {
+      setHandleError('Only letters, numbers, underscores, and hyphens allowed');
+      setHandleValid(false);
+    }else if (!isAdmin && value.length > 0 && value.length < 4) {
+      setHandleError('Username must be at least 4 characters');
+      setHandleValid(false);
+    } else {
+      setHandleError(null);
+      setHandleValid(true);
+    }
+  };
+
+  
   // Handler for avatar changes
   const handleAvatarChange = (url: string) => {
     setAvatarUrl(url);
@@ -61,6 +89,25 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate handle before submission
+    if (!handleValid) {
+      setMessage({
+        type: "error", 
+        text: handleError || "Invalid username format"
+      });
+      return;
+    }
+    
+    // Additional validation for non-admins
+    if (!isAdmin && handle.length < 4) {
+      setMessage({
+        type: "error",
+        text: "Username must be at least 4 characters long"
+      });
+      return;
+    }
+    
     setIsSaving(true);
     setMessage({ type: "", text: "" });
 
@@ -175,21 +222,24 @@ export default function ProfilePage() {
             </div>
             
             <div>
-              <label htmlFor="handle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Username*
-              </label>
-              <input
-                type="text"
-                id="handle"
-                value={handle}
-                onChange={(e) => setHandle(e.target.value)}
-                required
-                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                This will be your URL: revalidation.xyz//{handle}
-              </p>
-            </div>
+        <label htmlFor="handle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          Username*
+        </label>
+        <input
+          type="text"
+          id="handle"
+          value={handle}
+          onChange={handleHandleChange} // Use the validation function
+          required
+          className={`w-full px-3 py-2 bg-white dark:bg-slate-700 border ${handleError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600`}
+        />
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          This will be your URL: revalidation.xyz/{handle}
+        </p>
+        {handleError && (
+          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{handleError}</p>
+        )}
+      </div>
             
             <div>
               <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -219,9 +269,9 @@ export default function ProfilePage() {
             </div>
             
             <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isSaving}
+            <button
+  type="submit"
+  disabled={isSaving || !handleValid || (!isAdmin && handle.length < 4)}
                 className="w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? 'Saving...' : 'Save Profile'}

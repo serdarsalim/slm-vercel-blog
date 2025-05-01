@@ -20,65 +20,51 @@ export default function OnboardingPage() {
   const [success, setSuccess] = useState(false);
   const [handleValid, setHandleValid] = useState(true);
   const [handleError, setHandleError] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
-
-  // Check auth status and load profile data
- // Modify this useEffect in your pending page:
-
-// Check auth status and load profile data
-useEffect(() => {
-  if (status === "unauthenticated") {
-    router.push('/login');
-    return;
-  }
   
-  if (status === "authenticated" && session?.user?.email) {
-    // Pre-fill name from session if available
-    if (session.user.name) {
-      setName(session.user.name);
+  // Check auth status and load profile data
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push('/login');
+      return;
     }
     
-    // Check if user has an author profile or pending request
-    fetch('/api/profile')
-      .then(res => res.json())
-      .then(data => {
-        if (data.profile) {
-          const userStatus = data.profile.status;
-
-          if (userStatus === 'active') {
-            // Existing author - redirect to dashboard
-            router.push('/dashboard');
-          } else if (userStatus === 'pending') {
-            // Check if the profile has any bio or website info
-            // If not, it's likely a new user who hasn't completed their profile
-            if (!data.profile.bio && !data.profile.website_url) {
-              // New user - show profile form
+    if (status === "authenticated" && session?.user?.email) {
+      // Pre-fill name from session if available
+      if (session.user.name) {
+        setName(session.user.name);
+      }
+      
+      // Check if user has an author profile or pending request
+      fetch('/api/profile')
+        .then(res => res.json())
+        .then(data => {
+          if (data.profile) {
+            const userStatus = data.profile.status;
+            
+            if (userStatus === 'active') {
+              // Existing author - redirect to dashboard
+              router.push('/dashboard');
+            } else if (userStatus === 'pending') {
+              // Pending request - redirect to waiting page
+              router.push('/pending');
+            } else {
+              // Incomplete profile - pre-fill data
               setName(data.profile.name || session.user.name || '');
               setHandle(data.profile.handle || '');
-              setIsLoading(false);
-            } else {
-              // Existing pending request - show waiting message
-              setIsPending(true);
+              setBio(data.profile.bio || '');
+              setWebsite(data.profile.website_url || '');
               setIsLoading(false);
             }
           } else {
-            // Incomplete profile - pre-fill data
-            setName(data.profile.name || session.user.name || '');
-            setHandle(data.profile.handle || '');
-            setBio(data.profile.bio || '');
-            setWebsite(data.profile.website_url || '');
             setIsLoading(false);
           }
-        } else {
+        })
+        .catch(err => {
+          console.error("Error checking profile:", err);
           setIsLoading(false);
-        }
-      })
-      .catch(err => {
-        console.error("Error checking profile:", err);
-        setIsLoading(false);
-      });
-  }
-}, [status, session, router]);
+        });
+    }
+  }, [status, session, router]);
 
   // Auto-generate handle - keep this from your original code
   useEffect(() => {
@@ -172,30 +158,6 @@ useEffect(() => {
     );
   }
   
-  // After your existing isLoading check
-if (isPending) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white dark:bg-slate-800 rounded-lg shadow-lg p-8"
-      >
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Request Pending</h1>
-          <p className="text-orange-600 dark:text-orange-400 mb-4">Your request is being reviewed</p>
-          <p className="text-gray-600 dark:text-gray-300 mb-6">
-            We'll review your submission and contact you when your account is approved.
-          </p>
-          <Link href="/" className="text-orange-500 hover:text-orange-600 font-medium">
-            Return to homepage
-          </Link>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
   // Success state - keep your existing UI
   if (success) {
     return (
@@ -209,7 +171,7 @@ if (isPending) {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Profile Completed!</h1>
             <p className="text-green-600 dark:text-green-400 mb-4">Your author profile has been submitted</p>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              We'll review your request and contact you when your account is approved. Thank you for joining revalidation!
+              We'll review your request and contact you when your account is approved. Thank you for joining WriteAway!
             </p>
             <Link 
               href="/"
@@ -282,7 +244,7 @@ if (isPending) {
                   </p>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  This will be your URL: revalidation.xyz/{handle}
+                  This will be your URL: writeaway.blog/{handle}
                 </p>
               </div>
               
