@@ -35,7 +35,7 @@ export async function POST(request) {
 
   try {
     const { paths, nocache, authorHandle, operation } = payload;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const siteUrl = 'https://halqa.xyz';
     
     // Log operation details
     if (operation) {
