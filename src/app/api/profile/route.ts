@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, getServiceRoleClient } from "@/lib/auth-config";
+import { revalidatePath } from "next/cache";
 
 export async function GET(request: NextRequest) {
   try {
@@ -151,6 +152,13 @@ export async function POST(request: NextRequest) {
         .update({ author_handle: handle })
         .eq("author_id", existingAuthor.id);
       
+              // ADD THESE LINES - Critical for refreshing the UI!
+      console.log("🔄 Revalidating paths after profile update");
+      revalidatePath('/authors'); // Revalidate authors listing
+      revalidatePath(`/${handle}`); // Revalidate author's own page
+      revalidatePath('/'); // Revalidate homepage if it shows authors
+      
+
     } else {
       // Update the request - no foreign key issues here
       const { error: updateRequestError } = await serviceRoleClient
