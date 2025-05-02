@@ -31,7 +31,7 @@ const merriweather = Merriweather({
 });
 
 export const metadata: Metadata = {
-  title: "Revalidation – A thought experiment.",
+  title: "HALQA – JOIN THE CIRCLE",
   description: "Write, edit, and publish content instantly with a clean, no-setup interface. No logins, no plugins, no nonsense—just publish.",
 };
 // Add this line to your layout.tsx

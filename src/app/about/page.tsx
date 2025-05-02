@@ -52,7 +52,7 @@ function AboutContent() {
 
 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 md:p-12">
   <p className="text-xl md:text-2xl font-light mb-6 text-center">
-    <span className="font-semibold text-orange-500">WriteAway</span> exists to 
+    <span className="font-semibold text-orange-500">HALQA</span> exists to 
     <span className="font-semibold"> rethink how content gets made</span>—by handing creators the tools they already use, and cutting out everything they don’t.
   </p>
   <p className="text-lg mb-6">
@@ -96,13 +96,13 @@ Behind the scenes, your content is safely stored and synced to your Google Drive
           <div className="flex flex-col md:flex-row gap-8 items-center">
           <div className="md:w-1/2">
   <p className="text-lg mb-4">
-    WriteAway began with a simple, slightly annoyed question: <span className="italic">“Why is blogging still so complicated?”</span>
+    HALQA began with a simple, slightly annoyed question: <span className="italic">“Why is blogging still so complicated?”</span>
   </p>
   <p className="text-lg mb-4">
     We were tired of clunky CMS platforms and technical hurdles. Then we realized: almost everyone knows spreadsheets. So why not use them?
   </p>
   <p className="text-lg">
-    WriteAway turns Google Sheets into a full CMS—WYSIWYG editor, image manager, live sync and all. No fluff, no plugins. Just clean, efficient publishing from the tool you already know.
+    HALQA turns Google WebApp into a full CMS—WYSIWYG editor, image manager, live sync and all. No fluff, no plugins. Just clean, efficient publishing from the tool you already know.
   </p>
 </div>
             <div className="md:w-1/2 relative h-72 md:h-96 rounded-xl overflow-hidden shadow-lg">
@@ -162,7 +162,7 @@ Behind the scenes, your content is safely stored and synced to your Google Drive
   href="/api/auth/signin/google?callbackUrl=/pending"
   className="px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium text-lg transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-1 duration-200"
 >
-  Join WriteAway
+  Join HALQA
 </Link>
         </div>
       </motion.section>
@@ -184,7 +184,7 @@ Behind the scenes, your content is safely stored and synced to your Google Drive
         
         <div className="bg-gradient-to-br from-orange-500 to-pink-500 rounded-2xl shadow-xl p-8 md:p-12 text-white">
           <p className="text-xl md:text-2xl font-light mb-8 text-center">
-            WriteAway is just getting started. Our roadmap includes:
+            HALQA is just getting started. Our roadmap includes:
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -239,7 +239,7 @@ Behind the scenes, your content is safely stored and synced to your Google Drive
         
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 md:p-12 text-center">
           <p className="text-xl mb-8">
-            Become part of the WriteAway family and transform how you create and share content.
+            Become part of the HALQA family and transform how you create and share content.
           </p>
           
            <JoinButton />
@@ -249,10 +249,10 @@ Behind the scenes, your content is safely stored and synced to your Google Drive
               Questions or feedback? We'd love to hear from you.
             </p>
             <a 
-              href="mailto:contact@writeaway.blog" 
+              href="mailto:contact@halqa.xyz" 
               className="text-orange-500 hover:text-orange-600 font-medium"
             >
-              contact@writeaway.blog
+              contact@halqa.xyz
             </a>
           </div>
         </div>

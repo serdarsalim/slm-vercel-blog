@@ -51,7 +51,7 @@ export default async function AuthorsPage() {
                       <p className="text-gray-600 dark:text-gray-300 line-clamp-3">{author.bio}</p>
                     ) : (
                       <p className="text-gray-500 dark:text-gray-400 italic">
-                        {author.name} is a WriteAway author.
+                        {author.name} is a HALQA author.
                       </p>
                     )}
                   </div>

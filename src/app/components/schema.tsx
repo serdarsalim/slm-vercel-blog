@@ -11,8 +11,8 @@ function SchemaContent() {
   
   // Function to convert relative URLs to absolute URLs
   const getAbsoluteUrl = (relativeUrl) => {
-    // Updated base URL for the site
-    const baseUrl = "https://www.revalidation.xyz";
+    // Updated base URL for the site (removed www. as requested)
+    const baseUrl = "https://halqa.xyz";
     
     // Check if the URL is already absolute
     if (!relativeUrl || relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
@@ -30,9 +30,9 @@ function SchemaContent() {
   const blogSchema = {
     "@context": "https://schema.org",
     "@type": "Blog",
-    "name": "Revalidation",
+    "name": "Halqa",
     "description": "A thought experiment. Not your typical blog.",
-    "url": "https://www.revalidation.xyz",
+    "url": "https://halqa.xyz",
     "mainEntity": {
       "@type": "ItemList",
       "itemListElement": posts.map((post, index) => ({
@@ -48,7 +48,7 @@ function SchemaContent() {
             "@type": "Person",
             "name": post.author
           },
-          "url": `https://www.revalidation.xyz/${post.author_handle}/${post.slug}`
+          "url": `https://halqa.xyz/${post.author_handle}/${post.slug}`
         }
       }))
     }
@@ -58,11 +58,11 @@ function SchemaContent() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "Revalidation", 
-    "url": "https://www.revalidation.xyz",
+    "name": "Halqa", 
+    "url": "https://halqa.xyz",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://www.revalidation.xyz/logo.png",
+      "url": "https://halqa.xyz/logo.png",
       "width": "180",
       "height": "180"
     }, 
@@ -76,14 +76,14 @@ function SchemaContent() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "url": "https://www.revalidation.xyz",
-    "name": "Revalidation",
+    "url": "https://halqa.xyz",
+    "name": "Halqa",
     "description": "A thought experiment. Not your typical blog.",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": "https://www.revalidation.xyz/?search={search_term_string}"
+        "urlTemplate": "https://halqa.xyz/?search={search_term_string}"
       },
       "query-input": "required name=search_term_string"
     }
@@ -93,15 +93,15 @@ function SchemaContent() {
   const webpageSchema = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "url": `https://www.revalidation.xyz${pathname}`,
+    "url": `https://halqa.xyz${pathname}`,
     "name": pathname === "/" 
-      ? "Revalidation | A Thought Experiment" 
-      : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | Revalidation`,
+      ? "Halqa | A Thought Experiment" 
+      : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | Halqa`,
     "description": "A thought experiment. Not your typical blog.",
     "isPartOf": {
       "@type": "WebSite",
-      "name": "Revalidation",
-      "url": "https://www.revalidation.xyz"
+      "name": "Halqa",
+      "url": "https://halqa.xyz"
     }
   };
 

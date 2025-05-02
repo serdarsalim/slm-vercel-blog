@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
             cache: 'no-store',
             headers: { 
               'X-Cache-Warmer': operationId,
-              'User-Agent': 'WriteAway Cache Warmer 2.0',
+              'User-Agent': 'HALQA Cache Warmer 2.0',
               'Pragma': 'no-cache',
               'Cache-Control': 'no-cache'
             }

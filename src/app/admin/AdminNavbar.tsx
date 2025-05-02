@@ -36,7 +36,7 @@ export default function AdminNavbar() {
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
               <Link href="/admin" className="text-xl font-bold text-orange-500">
-                WriteAway Admin
+                HALQA Admin
               </Link>
             </div>
             <div className="hidden sm:ml-8 sm:flex sm:space-x-8">

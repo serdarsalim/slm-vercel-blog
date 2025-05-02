@@ -234,7 +234,7 @@ export default function ProfilePage() {
           className={`w-full px-3 py-2 bg-white dark:bg-slate-700 border ${handleError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600`}
         />
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          This will be your URL: revalidation.xyz/{handle}
+          This will be your URL: HALQA.XYZ/{handle}
         </p>
         {handleError && (
           <p className="mt-1 text-sm text-red-600 dark:text-red-400">{handleError}</p>

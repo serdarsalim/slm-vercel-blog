@@ -44,11 +44,11 @@ export default async function Page() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="flex flex-col items-center text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl pb-2 font-bold mb-6 leading-relaxed text-gray-900 dark:text-slate-100 font-mono tracking-tight">
-              REVALIDATION
+              HALQA
             </h1>
             
             <p className="font-mono text-lg md:text-xl tracking-tight text-gray-600 dark:text-slate-400 mb-10">
-            A THOUGHT EXPERIMENT
+            JOIN THE CIRCLE
             </p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default async function Page() {
           <h2 className="text-3xl font-bold mb-3 text-center font-mono tracking-tight text-gray-900 dark:text-slate-100">
           </h2>
           <p className="text-lg text-gray-600 dark:text-slate-400 max-w-3xl mx-auto text-center mb-10 font-mono">
-            MEMBERS
+           MEMBERS
           </p>
           
           {authors.length > 0 ? (
@@ -119,7 +119,7 @@ export default async function Page() {
         </div>
         <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">BUILD</h3>
         <p className="text-gray-600 dark:text-slate-400 font-mono text-sm">
-          Build meaningful tools that help humanity thrive not destroy it. Use technology to empower.
+          Brainstorm on meaningful tools that help humanity thrive. Use technology to make the world a better place.
         </p>
       </div>
       

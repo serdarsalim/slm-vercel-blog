@@ -171,7 +171,7 @@ export default function OnboardingPage() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Profile Completed!</h1>
             <p className="text-green-600 dark:text-green-400 mb-4">Your author profile has been submitted</p>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              We'll review your request and contact you when your account is approved. Thank you for joining WriteAway!
+              We'll review your request and contact you when your account is approved. Thank you for joining HALQA!
             </p>
             <Link 
               href="/"
@@ -244,7 +244,7 @@ export default function OnboardingPage() {
                   </p>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  This will be your URL: writeaway.blog/{handle}
+                  This will be your URL: HALQA.XYZ/{handle}
                 </p>
               </div>
               

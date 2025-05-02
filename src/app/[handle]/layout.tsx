@@ -19,18 +19,18 @@ export async function generateMetadata({ params }: { params: { handle: string } 
   }
   
   return {
-    title: `${author.name} | WriteAway Blog`,
+    title: `${author.name} | HALQA`,
     description: author.bio || `Latest posts by ${author.name}`,
     openGraph: {
-      title: `${author.name} | WriteAway Blog`,
+      title: `${author.name} | HALQA`,
       description: author.bio || `Latest posts by ${author.name}`,
-      url: `https://writeaway.blog/${author.handle}`,
+      url: `https://HALQA.XYZ/${author.handle}`,
       images: author.avatar_url ? [{ url: author.avatar_url }] : undefined,
       type: 'website'
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${author.name} | WriteAway Blog`,
+      title: `${author.name} | HALQA`,
       description: author.bio || `Latest posts by ${author.name}`,
       images: author.avatar_url ? [author.avatar_url] : undefined
     }

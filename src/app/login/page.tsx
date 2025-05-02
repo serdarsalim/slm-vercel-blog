@@ -28,7 +28,7 @@ function LoginContent() {
       >
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-            {isJoining ? "Join WriteAway" : "Sign in to WriteAway"}
+            {isJoining ? "Join HALQA" : "Sign in to HALQA"}
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
             Use your Google account to {isJoining ? "create an account" : "sign in"}

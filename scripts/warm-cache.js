@@ -4,7 +4,7 @@ require('dotenv').config({ path: '.env.local' });
 
 // Configuration
 const IS_DEV = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
-const BASE_URL = process.env.SITE_URL || (IS_DEV ? 'http://localhost:3000' : 'https://revalidation.xyz');
+const BASE_URL = process.env.SITE_URL || (IS_DEV ? 'http://localhost:3000' : 'https://halqa.xyz');
 const API_URL = `${BASE_URL}/api/posts`;
 const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET || 'your_default_secret';
 const CONCURRENT_REQUESTS = 3; // Adjust based on your server capacity

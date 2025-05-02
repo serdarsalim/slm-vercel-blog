@@ -177,7 +177,7 @@ export default function AuthorCarousel({ authors }: AuthorCarouselProps) {
                           </p>
                         ) : (
                           <p className="text-gray-500 dark:text-gray-400 text-sm italic">
-                            {author.name} is a WriteAway author.
+                            {author.name} is a HALQA author.
                           </p>
                         )}
                       </div>
