@@ -1,4 +1,3 @@
-// scripts/generate-sitemap.js
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
@@ -32,18 +31,21 @@ async function generateSitemap() {
       return date.toISOString().replace(/\.\d+Z$/, 'Z');
     };
     
-    // Build XML string - NO BLANK LINE before XML declaration!
-    let xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
+    // IMPORTANT: Split into declaration and content to guarantee it's included
+    const xmlDeclaration = '<?xml version="1.0" encoding="UTF-8"?>';
+    let xmlContent = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+    
+    // Add homepage
+    xmlContent += `  <url>
     <loc>${baseUrl}</loc>
     <lastmod>${formatDate(new Date())}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>`;
     
+    // Add authors
     for (const author of authors) {
-      xml += `
+      xmlContent += `
   <url>
     <loc>${baseUrl}/${author.handle}</loc>
     <lastmod>${formatDate(author.updated_at)}</lastmod>
@@ -52,8 +54,9 @@ async function generateSitemap() {
   </url>`;
     }
     
+    // Add posts
     for (const post of posts) {
-      xml += `
+      xmlContent += `
   <url>
     <loc>${baseUrl}/${post.author_handle}/${post.slug}</loc>
     <lastmod>${formatDate(post.updated_at)}</lastmod>
@@ -62,12 +65,19 @@ async function generateSitemap() {
   </url>`;
     }
     
-    xml += `
-</urlset>`;
+    // Close the XML
+    xmlContent += '\n</urlset>';
+    
+    // Combine declaration and content with a newline between
+    const completeXml = xmlDeclaration + '\n' + xmlContent;
 
-    // Write to a static file
+    // Write to file with explicit UTF-8 encoding
     const publicDir = path.join(process.cwd(), 'public');
-    fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), xml);
+    fs.writeFileSync(
+      path.join(publicDir, 'sitemap.xml'), 
+      completeXml, 
+      { encoding: 'utf8' }
+    );
     
     console.log('Sitemap generated successfully');
   } catch (error) {
