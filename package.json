@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
+    "postbuild": "node scripts/generate-sitemap.js",
     "start": "next start",
     "lint": "next lint",
     "fetch-blog-data": "node scripts/fetch-blog-data.js",

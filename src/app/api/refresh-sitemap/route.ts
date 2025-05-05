@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getServiceRoleClient } from "@/lib/auth-config";
+import fs from 'fs/promises';
+import path from 'path';
 
-export async function GET() {
+export async function GET(request) {
   try {
+    // Add your security check here if needed
+    const token = request.nextUrl.searchParams.get('token');
+    if (token !== process.env.REVALIDATION_SECRET) {
+      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
+    }
+    
     const serviceRoleClient = getServiceRoleClient();
     const baseUrl = 'https://halqa.xyz';
     
@@ -15,7 +23,7 @@ export async function GET() {
       .from("posts")
       .select("slug, author_handle, updated_at");
     
-    // Build XML string manually - no type issues with this approach
+    // Build XML string
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -25,7 +33,7 @@ export async function GET() {
     <priority>1.0</priority>
   </url>`;
     
-    // Add all author URLs
+    // Add authors and posts...
     for (const author of authors) {
       xml += `
   <url>
@@ -36,7 +44,6 @@ export async function GET() {
   </url>`;
     }
     
-    // Add all post URLs
     for (const post of posts) {
       xml += `
   <url>
@@ -47,31 +54,16 @@ export async function GET() {
   </url>`;
     }
     
-    // Close the XML
     xml += `
 </urlset>`;
+
+    // Write to a static file
+    const publicDir = path.join(process.cwd(), 'public');
+    await fs.writeFile(path.join(publicDir, 'sitemap.xml'), xml);
     
-    // Return with correct content type
-    return new NextResponse(xml, {
-      headers: {
-        'Content-Type': 'application/xml',
-      }
-    });
+    return NextResponse.json({ success: true, message: 'Sitemap updated successfully' });
   } catch (error) {
     console.error("Error generating sitemap:", error);
-    
-    // Fallback minimal sitemap
-    return new NextResponse(`<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://halqa.xyz</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
-    <priority>1.0</priority>
-  </url>
-</urlset>`, {
-      headers: {
-        'Content-Type': 'application/xml'
-      }
-    });
+    return NextResponse.json({ success: false, message: 'Failed to update sitemap' }, { status: 500 });
   }
 }
