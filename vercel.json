@@ -21,7 +21,13 @@
   ],
   "redirects": [
     {
-      "source": "https://www.halqa.xyz/:path*",
+      "source": "/:path*", 
+      "has": [
+        {
+          "type": "host",
+          "value": "www.halqa.xyz"
+        }
+      ],
       "destination": "https://halqa.xyz/:path*",
       "permanent": true
     }
