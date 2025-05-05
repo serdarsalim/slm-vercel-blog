@@ -30,10 +30,40 @@ const merriweather = Merriweather({
   subsets: ["latin"],
 });
 
+// Update your metadata in layout.tsx
 export const metadata: Metadata = {
-  title: "HALQA – JOIN THE CIRCLE",
+  metadataBase: new URL('https://halqa.xyz'),
+  title: {
+    default: "HALQA – JOIN THE CIRCLE",
+    template: "%s | HALQA"
+  },
   description: "Write, edit, and publish content instantly with a clean, no-setup interface. No logins, no plugins, no nonsense—just publish.",
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://halqa.xyz',
+    siteName: 'HALQA',
+    images: [{
+      url: '/og-image.jpg', // Create this image in your public folder
+      width: 1200,
+      height: 630,
+      alt: 'HALQA – JOIN THE CIRCLE',
+    }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'HALQA – JOIN THE CIRCLE',
+    description: 'Write, edit, and publish content instantly with a clean, no-setup interface.',
+    images: ['/og-image.jpg'],
+  },
+  alternates: {
+    canonical: 'https://halqa.xyz',
+    types: {
+      'application/rss+xml': 'https://halqa.xyz/feed.xml',
+    },
+  },
 };
+
 // Add this line to your layout.tsx
 export const scrollRestoration = 'manual'; // Let browser handle restoration
 export default function RootLayout({

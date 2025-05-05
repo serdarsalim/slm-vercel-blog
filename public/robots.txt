@@ -5,4 +5,4 @@ Disallow: /admin/
 Disallow: /_next/
 Disallow: /static/
 
-Sitemap: https://sheetsmaster.co/sitemap.xml
+Sitemap: https://halqa.xyz/sitemap.xml
