@@ -1,8 +1,9 @@
 User-agent: *
 Allow: /
+Allow: /api/sitemapnew  
 Disallow: /api/
 Disallow: /admin/
 Disallow: /_next/
 Disallow: /static/
 
-Sitemap: https://halqa.xyz/sitemapnew
+Sitemap: https://halqa.xyz/api/sitemapnew
