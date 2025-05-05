@@ -18,5 +18,12 @@
         }
       ]
     }
+  ],
+  "redirects": [
+    {
+      "source": "https://www.halqa.xyz/:path*",
+      "destination": "https://halqa.xyz/:path*",
+      "permanent": true
+    }
   ]
 }
