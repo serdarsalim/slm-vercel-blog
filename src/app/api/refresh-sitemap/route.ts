@@ -3,12 +3,21 @@ import { getServiceRoleClient } from "@/lib/auth-config";
 import fs from 'fs/promises';
 import path from 'path';
 
-export const config = {
-  matcher: ['/((?!google\\w+\\.html).*)']
-};
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request) {
   try {
+    // Check if this is a Google verification file request
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    
+    if (pathname.match(/\/google\w+\.html$/)) {
+      // Skip processing Google verification files
+      return new NextResponse(null, { status: 404 });
+    }
+
+
     // Add your security check here if needed
     const token = request.nextUrl.searchParams.get('token');
     if (token !== process.env.REVALIDATION_SECRET) {
