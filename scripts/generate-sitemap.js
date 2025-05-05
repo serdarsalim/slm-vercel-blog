@@ -31,12 +31,10 @@ async function generateSitemap() {
       return date.toISOString().replace(/\.\d+Z$/, 'Z');
     };
     
-    // IMPORTANT: Split into declaration and content to guarantee it's included
-    const xmlDeclaration = '<?xml version="1.0" encoding="UTF-8"?>';
-    let xmlContent = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-    
-    // Add homepage
-    xmlContent += `  <url>
+    // SINGLE STRING APPROACH - XML declaration guaranteed to be at the top
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
     <loc>${baseUrl}</loc>
     <lastmod>${formatDate(new Date())}</lastmod>
     <changefreq>daily</changefreq>
@@ -45,7 +43,7 @@ async function generateSitemap() {
     
     // Add authors
     for (const author of authors) {
-      xmlContent += `
+      xml += `
   <url>
     <loc>${baseUrl}/${author.handle}</loc>
     <lastmod>${formatDate(author.updated_at)}</lastmod>
@@ -56,7 +54,7 @@ async function generateSitemap() {
     
     // Add posts
     for (const post of posts) {
-      xmlContent += `
+      xml += `
   <url>
     <loc>${baseUrl}/${post.author_handle}/${post.slug}</loc>
     <lastmod>${formatDate(post.updated_at)}</lastmod>
@@ -66,16 +64,14 @@ async function generateSitemap() {
     }
     
     // Close the XML
-    xmlContent += '\n</urlset>';
-    
-    // Combine declaration and content with a newline between
-    const completeXml = xmlDeclaration + '\n' + xmlContent;
+    xml += `
+</urlset>`;
 
-    // Write to file with explicit UTF-8 encoding
+    // Write directly to file with explicit UTF-8 encoding
     const publicDir = path.join(process.cwd(), 'public');
     fs.writeFileSync(
       path.join(publicDir, 'sitemap.xml'), 
-      completeXml, 
+      xml, 
       { encoding: 'utf8' }
     );
     
