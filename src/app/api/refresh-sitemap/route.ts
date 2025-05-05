@@ -3,6 +3,10 @@ import { getServiceRoleClient } from "@/lib/auth-config";
 import fs from 'fs/promises';
 import path from 'path';
 
+export const config = {
+  matcher: ['/((?!google\\w+\\.html).*)']
+};
+
 export async function GET(request) {
   try {
     // Add your security check here if needed
@@ -22,6 +26,9 @@ export async function GET(request) {
     const { data: posts = [] } = await serviceRoleClient
       .from("posts")
       .select("slug, author_handle, updated_at");
+
+    // Exclude non-author files (e.g., verification HTML)
+    const filteredAuthors = authors.filter(author => !author.handle.endsWith('.html'));
     
     // Format date without milliseconds
     const formatDate = (dateString) => {
@@ -40,7 +47,7 @@ export async function GET(request) {
   </url>`;
     
     // Add authors and posts...
-    for (const author of authors) {
+    for (const author of filteredAuthors) {
       xml += `
   <url>
     <loc>${baseUrl}/${author.handle}</loc>
