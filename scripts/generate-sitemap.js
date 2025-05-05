@@ -26,12 +26,18 @@ async function generateSitemap() {
       .from("posts")
       .select("slug, author_handle, updated_at");
     
-    // Build XML string
+    // Format date without milliseconds
+    const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      return date.toISOString().replace(/\.\d+Z$/, 'Z');
+    };
+    
+    // Build XML string - NO BLANK LINE before XML declaration!
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>${baseUrl}</loc>
-    <lastmod>${new Date().toISOString()}</lastmod>
+    <lastmod>${formatDate(new Date())}</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>`;
@@ -40,7 +46,7 @@ async function generateSitemap() {
       xml += `
   <url>
     <loc>${baseUrl}/${author.handle}</loc>
-    <lastmod>${new Date(author.updated_at).toISOString()}</lastmod>
+    <lastmod>${formatDate(author.updated_at)}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`;
@@ -50,7 +56,7 @@ async function generateSitemap() {
       xml += `
   <url>
     <loc>${baseUrl}/${post.author_handle}/${post.slug}</loc>
-    <lastmod>${new Date(post.updated_at).toISOString()}</lastmod>
+    <lastmod>${formatDate(post.updated_at)}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>`;
