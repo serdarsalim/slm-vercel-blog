@@ -1,4 +1,3 @@
-// src/app/robots.ts (in addition to your public/robots.txt)
 import { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
@@ -8,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/admin/', '/_next/', '/static/'],
     },
-    sitemap: 'https://halqa.xyz/sitemap.xml',
+    sitemap: 'https://halqa.xyz/api/sitemapnew',  // NEW URL
   }
 }

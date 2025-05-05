@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     default: "HALQA – JOIN THE CIRCLE",
     template: "%s | HALQA"
   },
-  description: "Write, edit, and publish content instantly with a clean, no-setup interface. No logins, no plugins, no nonsense—just publish.",
+  description: "Write, edit, and publish content instantly with a clean, no-setup interface.",
   openGraph: {
     type: 'website',
     locale: 'en_US',
