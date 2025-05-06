@@ -48,7 +48,7 @@ export default async function Page() {
             </h1>
             
             <p className="font-mono text-lg md:text-xl tracking-tight text-gray-600 dark:text-slate-400 mb-10">
-            JOIN THE CIRCLE
+            STORIES WORTH YOUR TIME
             </p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default async function Page() {
           <h2 className="text-3xl font-bold mb-3 text-center font-mono tracking-tight text-gray-900 dark:text-slate-100">
           </h2>
           <p className="text-lg text-gray-600 dark:text-slate-400 max-w-3xl mx-auto text-center mb-10 font-mono">
-           MEMBERS
+           DISCOVER STORIES
           </p>
           
           {authors.length > 0 ? (
@@ -71,9 +71,9 @@ export default async function Page() {
             <div className="min-h-[400px] flex flex-col items-center justify-center pb-8 text-gray-600 dark:text-slate-400 font-mono">
               <div className="text-5xl mb-4">⚠</div>
               <p className="text-sm text-orange-600 dark:text-orange-400 mb-2 font-mono">
-                NO ACTIVE GUARDIAN CHANNELS DETECTED
+                NO ACTIVE PROFILES DETECTED
               </p>
-              <p className="text-sm">Guardian profiles will appear here when initialized.</p>
+              <p className="text-sm">Profiles will appear here when initialized.</p>
             </div>
           )}
           
@@ -84,7 +84,7 @@ export default async function Page() {
               className="inline-flex items-center text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-mono border border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-300 dark:hover:border-emerald-600 px-4 py-2 bg-white/80 dark:bg-slate-900/50 rounded"
             >
               <span className="mr-2">&gt;</span>
-              <span>ACCESS FULL DIRECTORY</span>
+              <span>BROWSE ALL PROFILES</span>
               <svg className="w-4 h-4 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
@@ -106,7 +106,7 @@ export default async function Page() {
         </div>
         <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">SEEK</h3>
         <p className="text-gray-600 dark:text-slate-400 font-mono text-sm">
-          Ask the questions that matter. Seek the truth in a world of noise, find the answers. Then share it.
+        We identify meaningful problems worth solving—from personal challenges to systemic issues. Through storytelling, we explore what's working, what's broken, and what needs fixing in our world.
         </p>
       </div>
       
@@ -119,7 +119,9 @@ export default async function Page() {
         </div>
         <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">BUILD</h3>
         <p className="text-gray-600 dark:text-slate-400 font-mono text-sm">
-          Brainstorm on meaningful tools that help humanity thrive. Use technology to make the world a better place.
+        We design thoughtful solutions that address root causes rather than symptoms. Our stories examine both existing systems and alternative approaches that might better serve humanity. 
+
+
         </p>
       </div>
       
@@ -132,7 +134,9 @@ export default async function Page() {
         </div>
         <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">IMPLEMENT</h3>
         <p className="text-gray-600 dark:text-slate-400 font-mono text-sm">
-          Implement solutions in a way that do not disrupt the natural order of things or cause harm.
+        We explore how solutions can be applied responsibly in the real world. While perfect systems rarely exist, we can implement changes that maximize benefits while minimizing unintended harm.
+
+
         </p>
       </div>
     </div>

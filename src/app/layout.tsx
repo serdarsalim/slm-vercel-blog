@@ -37,14 +37,16 @@ export const metadata: Metadata = {
     default: "HALQA – JOIN THE CIRCLE",
     template: "%s | HALQA"
   },
-  description: "Write, edit, and publish content instantly with a clean, no-setup interface.",
+  description: "Stories that help us seek problems worth solving, build human-centered solutions, and implement them without unintended consequences.",
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://halqa.xyz',
     siteName: 'HALQA',
+    title: 'HALQA – JOIN THE CIRCLE',
+    description: 'Stories that transform challenges into solutions for humanity - seeking what matters, building what works, implementing what helps.',
     images: [{
-      url: '/og-image.jpg', // Create this image in your public folder
+      url: '/og-image.jpg',
       width: 1200,
       height: 630,
       alt: 'HALQA – JOIN THE CIRCLE',
@@ -53,7 +55,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'HALQA – JOIN THE CIRCLE',
-    description: 'Write, edit, and publish content instantly with a clean, no-setup interface.',
+    description: 'Stories that transform challenges into solutiWeons for humanity - seeking what matters, building what works, implementing what helps.',
     images: ['/og-image.jpg'],
   },
   alternates: {
@@ -62,6 +64,7 @@ export const metadata: Metadata = {
       'application/rss+xml': 'https://halqa.xyz/feed.xml',
     },
   },
+  keywords: 'problem solving, human-centered design, ethical technology, storytelling, innovation, solutions, community',
 };
 
 // Add this line to your layout.tsx

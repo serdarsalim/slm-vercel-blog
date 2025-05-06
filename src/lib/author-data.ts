@@ -208,19 +208,44 @@ export function convertToLegacyBlogPost(post: any): BlogPost {
  * Get all registered authors
  */
 // Get all listed authors - updated with filtering
+// Get all listed authors - updated to sort by most recent activity
 export async function getAllAuthors() {
+  // First fetch all listed authors
   const { data: authors, error } = await supabase
     .from('authors_public')
     .select('*')
-    .eq('listing_status', 'listed') // 👈 Filter only listed authors
-    .order('name');
+    .eq('listing_status', 'listed');
     
-  if (error) {
+  if (error || !authors) {
     console.error('Error fetching authors:', error);
     return [];
   }
   
-  return authors || [];
+  // For each author, find their most recent post date
+  const authorsWithActivity = await Promise.all(
+    authors.map(async (author) => {
+      // Get most recent post
+      const { data: latestPosts } = await supabase
+        .from('posts')
+        .select('updated_at, created_at')
+        .eq('author_handle', author.handle)
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      
+      // Calculate activity timestamp (use most recent post date or 0 if no posts)
+      const lastActivity = latestPosts && latestPosts.length > 0 
+        ? new Date(latestPosts[0].updated_at || latestPosts[0].created_at).getTime()
+        : 0;
+      
+      return {
+        ...author,
+        lastActivity
+      };
+    })
+  );
+  
+  // Sort by most recent activity (highest timestamp first)
+  return authorsWithActivity.sort((a, b) => b.lastActivity - a.lastActivity);
 }
 
 // Get latest posts from listed authors - updated with filtering
