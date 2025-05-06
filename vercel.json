@@ -31,5 +31,11 @@
       "destination": "https://halqa.xyz/:path*",
       "permanent": true
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/refresh-sitemap",
+      "schedule": "0 0 * * *"
+    }
   ]
 }
