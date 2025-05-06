@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const BLOCKED_PATTERNS = [
+  '/wp-',           // Catches wp-admin, wp-content, wp-includes, etc.
+  '.php',           // Block PHP file requests
+  'xmlrpc',
+  'wordpress',
+  'administrator',
+  'phpmyadmin',
+  'setup-config',
+  'myadmin',
+  'webconfig',
+];
+
 // Define static routes that should not be treated as author handles
 const STATIC_ROUTES = [
   '/home',
@@ -15,6 +27,11 @@ const STATIC_ROUTES = [
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  if (BLOCKED_PATTERNS.some(pattern => pathname.includes(pattern))) {
+    return new NextResponse(null, { status: 404 });
+  }
+  
   
   // Handle CORS for API routes
   if (pathname.startsWith('/api/')) {
