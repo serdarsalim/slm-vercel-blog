@@ -31,7 +31,7 @@ function SchemaContent() {
     "@context": "https://schema.org",
     "@type": "Blog",
     "name": "Halqa",
-    "description": "A thought experiment. Not your typical blog.",
+    "description": "Join the Circle. Not your typical blog.",
     "url": "https://halqa.xyz",
     "mainEntity": {
       "@type": "ItemList",
@@ -69,7 +69,7 @@ function SchemaContent() {
     "sameAs": [
       // Add your social links here
     ],
-    "description": "A thought experiment. Not your typical blog."
+    "description": "Join the Circle. Not your typical blog."
   };
 
   // WebSite schema for better SEO
@@ -78,7 +78,7 @@ function SchemaContent() {
     "@type": "WebSite",
     "url": "https://halqa.xyz",
     "name": "Halqa",
-    "description": "A thought experiment. Not your typical blog.",
+    "description": "Join the Circle. Not your typical blog.",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
@@ -95,9 +95,9 @@ function SchemaContent() {
     "@type": "WebPage",
     "url": `https://halqa.xyz${pathname}`,
     "name": pathname === "/" 
-      ? "Halqa | A Thought Experiment" 
+      ? "Join the Circle" 
       : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | Halqa`,
-    "description": "A thought experiment. Not your typical blog.",
+    "description": "Join the Circle. Not your typical blog.",
     "isPartOf": {
       "@type": "WebSite",
       "name": "Halqa",
