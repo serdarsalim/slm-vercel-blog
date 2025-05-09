@@ -60,6 +60,10 @@ export default function AuthorBlogContent({
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
+  // Add these at the top with your other refs
+    const isInitialMount = useRef(true);
+    const safeToLoad = useRef(false);
+
   // Initialize browser state once
   useEffect(() => {
     setIsBrowser(true);
@@ -197,36 +201,48 @@ export default function AuthorBlogContent({
 
   // Setup intersection observer for infinite scroll
   useEffect(() => {
-    // Skip setup if loading or no more posts
-    if (isLoadingMore || !hasMorePosts || !isBrowser) return;
+  // Skip setup during SSR or when loading
+  if (!isBrowser || isLoadingMore || !hasMorePosts) return;
+  
+  const currentTarget = observerTarget.current;
+  if (!currentTarget) return;
+  
+  // Create new observer instance
+  const observer = new IntersectionObserver(
+    (entries) => {
+      // Critical fix: Don't trigger loads during initial hydration
+      if (!entries[0].isIntersecting || !safeToLoad.current) return;
+      
+      // Prevent triggering multiple times
+      observer.unobserve(currentTarget);
+      
+      // Add exponential backoff for retries
+      const backoffTime = Math.min(2000, Math.pow(2, loadAttempts.current) * 500);
+      setTimeout(loadMorePosts, loadAttempts.current > 0 ? backoffTime : 0);
+    },
+    {
+      rootMargin: '100px',
+      threshold: 0.1,
+    }
+  );
+  
+  observer.observe(currentTarget);
+  
+  // Flag that we're past initial mount - this breaks the infinite loop
+  if (isInitialMount.current) {
+    isInitialMount.current = false;
     
-    const currentTarget = observerTarget.current;
-    if (!currentTarget) return;
-    
-    // Create new observer instance
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0].isIntersecting) return;
-        
-        // Prevent triggering multiple times
-        observer.unobserve(currentTarget);
-        
-        // Add exponential backoff for retries
-        const backoffTime = Math.min(2000, Math.pow(2, loadAttempts.current) * 500);
-        setTimeout(loadMorePosts, loadAttempts.current > 0 ? backoffTime : 0);
-      },
-      {
-        rootMargin: '100px',
-        threshold: 0.1,
-      }
-    );
-    
-    observer.observe(currentTarget);
-    
-    return () => {
-      observer.disconnect();
-    };
-  }, [isLoadingMore, hasMorePosts, isBrowser, loadMorePosts]);
+    // Set a very short timeout to allow hydration to stabilize
+    // This doesn't delay page load - it just prevents immediate triggering
+    setTimeout(() => {
+      safeToLoad.current = true;
+    }, 50);
+  }
+  
+  return () => {
+    observer.disconnect();
+  };
+}, [isLoadingMore, hasMorePosts, isBrowser, loadMorePosts]);
 
   // Animation variants
   const cardVariants = {
