@@ -52,6 +52,7 @@ export default function AuthorBlogContent({
   const [posts, setPosts] = useState<any[]>(initialPosts);
   const [isBrowser, setIsBrowser] = useState(false);
   const loadAttempts = useRef(0);
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // Set browser state for hydration safety
   useEffect(() => {
@@ -267,104 +268,142 @@ export default function AuthorBlogContent({
            
           </motion.div>
 
-          {/* Category filters */}
-          <div className="w-full flex flex-wrap justify-center pt-4 gap-2 mb-6 select-none">
-            {[
-              { name: "all", count: posts.length } as CategoryWithCount,
-              ...Object.entries(categoryCounts)
-                .map(
-                  ([name, count]): CategoryWithCount => ({
-                    name,
-                    count: count as number, // Explicitly cast to number
-                  })
-                )
-                .sort((a, b) => b.count - a.count),
-            ].map(({ name, count }) => (
-              <motion.button
-                key={name}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleCategoryClick(name)}
-                className={`
-                  px-2 py-1 
-                  rounded-lg 
-                  transition-colors
-                  duration-200 
-                  font-normal
-                  text-xs
-                  flex items-center
-                  z-10 relative
-                  cursor-pointer
-                  touch-element
-                  ${
-                    selectedCategories.includes(name)
-                      ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
-                      : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
-                  }
-                `}
-              >
-                <span>
-                  {name === "all"
-                    ? "All Posts"
-                    : name.charAt(0).toUpperCase() + name.slice(1)}
-                  <span
-                    className={`
-                      ml-1
-                      inline-flex items-center justify-center 
-                      w-4 h-4 
-                      rounded-full text-[10px] font-medium
-                      ${
-                        selectedCategories.includes(name)
-                          ? "bg-white text-orange-500 dark:bg-orange-800 dark:text-orange-200"
-                          : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
-                      }
-                    `}
-                  >
-                    {count}
-                  </span>
-                </span>
-              </motion.button>
-            ))}
-          </div>
+     
 
-          {/* Search bar */}
-          <div className="relative w-full mb-6">
-            <input
-              type="text"
-              placeholder="Search posts..."
-              className="w-full px-4 py-2 mb-1 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 touch-element"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-            {searchInput && (
-              <button
-                className="absolute right-4 top-3 cursor-pointer touch-element"
-                onClick={() => {
-                  setSearchInput("");
-                  setSearchTerm("");
-                }}
-              >
-                <span className="text-gray-400 dark:text-gray-500 text-lg">
-                  ×
-                </span>
-              </button>
-            )}
-          </div>
-
-          {/* Search results indicator */}
-          {searchTerm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center text-sm text-gray-500 dark:text-gray-400 mb-8"
+         {/* Category filters with search icon next to the last label */}
+<AnimatePresence>
+  {!isSearchExpanded && (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="w-full flex flex-wrap justify-center pt-4 gap-2 mb-6 select-none"
+    >
+      {/* Render all category buttons first */}
+      {[
+        { name: "all", count: posts.length } as CategoryWithCount,
+        ...Object.entries(categoryCounts)
+          .map(
+            ([name, count]): CategoryWithCount => ({
+              name,
+              count: count as number,
+            })
+          )
+          .sort((a, b) => b.count - a.count),
+      ].map(({ name, count }) => (
+        <motion.button
+          key={name}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => handleCategoryClick(name)}
+          className={`
+            px-2 py-1 
+            rounded-lg 
+            transition-colors
+            duration-200 
+            font-normal
+            text-xs
+            flex items-center
+            z-10 relative
+            cursor-pointer
+            touch-element
+            ${
+              selectedCategories.includes(name)
+                ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
+                : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+            }
+          `}
+        >
+          <span>
+            {name === "all"
+              ? "All Posts"
+              : name.charAt(0).toUpperCase() + name.slice(1)}
+            <span
+              className={`
+                ml-1
+                inline-flex items-center justify-center 
+                w-4 h-4 
+                rounded-full text-[10px] font-medium
+                ${
+                  selectedCategories.includes(name)
+                    ? "bg-white text-orange-500 dark:bg-orange-800 dark:text-orange-200"
+                    : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
+                }
+              `}
             >
-              {filteredPosts.length === 0
-                ? "No posts found matching your search"
-                : `Found ${filteredPosts.length} post${
-                    filteredPosts.length === 1 ? "" : "s"
-                  } matching "${searchTerm}"`}
-            </motion.div>
-          )}
+              {count}
+            </span>
+          </span>
+        </motion.button>
+      ))}
+      
+      {/* Search Icon Button - styled to match category buttons */}
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setIsSearchExpanded(true)}
+        className="px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-orange-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 transition-colors touch-element"
+        aria-label="Search posts"
+      >
+        <div className="flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
         </div>
+      </motion.button>
+    </motion.div>
+  )}
+</AnimatePresence>
+
+{/* Keep the expanded search input outside the categories */}
+<AnimatePresence>
+  {isSearchExpanded && (
+    <motion.div
+      className="relative w-full mb-6"
+      initial={{ width: "40px", opacity: 0 }}
+      animate={{ width: "100%", opacity: 1 }}
+      exit={{ width: "40px", opacity: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      <input
+        type="text"
+        placeholder="Search and you'll find..."
+        className="w-full px-4 py-2 pl-10 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 touch-element"
+        value={searchInput}
+        onChange={(e) => setSearchInput(e.target.value)}
+        autoFocus
+      />
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <button
+        className="absolute right-3 top-2.5 cursor-pointer touch-element"
+        onClick={() => {
+          setIsSearchExpanded(false);
+          setSearchInput("");
+          setSearchTerm("");
+        }}
+      >
+        <span className="text-gray-400 dark:text-gray-500 text-lg">×</span>
+      </button>
+    </motion.div>
+  )}
+</AnimatePresence>
+{/* Search results indicator - keep this as is */}
+{searchTerm && (
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    className="text-center text-sm text-gray-500 dark:text-gray-400 mb-8"
+  >
+    {filteredPosts.length === 0
+      ? "No posts found matching your search"
+      : `Found ${filteredPosts.length} post${
+          filteredPosts.length === 1 ? "" : "s"
+        } matching "${searchTerm}"`}
+  </motion.div>
+)}
+        </div>
+
+        
       </section>
 
       {/* Blog Posts */}

@@ -12,101 +12,169 @@ export default function AuthorProfileHeader() {
   
   // Format social links for display
   const socialLinks = author.social_links || {};
-  // Add this interface to define the expected props
-interface AuthorProfileHeaderProps {
-  author: Author;
-}
+  
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
-      className="relative w-full bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 py-8 px-4 -mb-1"
+      className="relative w-full bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 pt-6 pb-0 px-2 md:px-4 -mb-6"
     >
-      <div className="max-w-4xl mx-auto flex flex-col items-center">
-        {/* Author Avatar */}
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="mb-3 relative w-32 h-32 rounded-full overflow-hidden border-4 border-white dark:border-slate-700 shadow-lg"
-        >
-          {author.avatar_url ? (
-            <Image
-              src={author.avatar_url}
-              alt={author.name}
-              fill
-              sizes="128px"
-              className="object-cover"
-              priority
-            />
-          ) : (
-            <div className="w-full h-full bg-orange-100 dark:bg-orange-800/30 flex items-center justify-center text-4xl text-orange-500 dark:text-orange-300 font-bold">
-              {author.name.charAt(0)}
+      {/* Add custom background color ONLY to this inner container */}
+      <div className="max-w-4xl mx-auto rounded-lg p-3 md:p-6 shadow-sm" 
+           style={{ backgroundColor: "#fffcf8" }}> 
+        
+        {/* Mobile view - only visible on small screens */}
+        <div className="md:hidden">
+          {/* Avatar and name side-by-side on mobile */}
+          <div className="flex items-center mb-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-lg mr-4">
+              {author.avatar_url ? (
+                <Image
+                  src={author.avatar_url}
+                  alt={author.name}
+                  width={64}
+                  height={64}
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="w-full h-full bg-orange-100 dark:bg-orange-800/30 flex items-center justify-center text-2xl text-orange-500 dark:text-orange-300 font-bold">
+                  {author.name.charAt(0)}
+                </div>
+              )}
+            </div>
+            
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {author.name}
+            </h1>
+          </div>
+          
+          {/* Bio, website, and social links below */}
+          {author.bio && (
+            <p className="text-base text-gray-700 dark:text-gray-200 mb-4 leading-relaxed">
+              {author.bio}
+            </p>
+          )}
+          
+          {author.website_url && (
+            <a
+              href={author.website_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors flex items-center gap-1 text-sm mb-3"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+              <span>{author.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
+            </a>
+          )}
+          
+          {Object.keys(socialLinks).length > 0 && (
+            <div className="flex flex-wrap gap-4 mt-2">
+              {Object.entries(socialLinks).map(([platform, url]) => (
+                <a
+                  key={platform}
+                  href={url as string}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+                >
+                  <SocialIcon platform={platform} />
+                </a>
+              ))}
             </div>
           )}
-        </motion.div>
+        </div>
         
-        {/* Author Name */}
-        <motion.h1
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white text-center mb-3"
-        >
-          {author.name}
-        </motion.h1>
-        
-        {/* Author Bio */}
-        {author.bio && (
-          <motion.p
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.3 }}
-            className="text-lg text-gray-600 dark:text-gray-300 text-center max-w-2xl mb-6"
-          >
-            {author.bio}
-          </motion.p>
-        )}
-
-           {/* Website link if available */}
-{author.website_url && (
-  <a
-    href={author.website_url}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors flex items-center gap-1 text-sm"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-    </svg>
-    <span>{author.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
-  </a>
-)}
-        
-        {/* Social Links */}
-        {Object.keys(socialLinks).length > 0 && (
+        {/* Desktop view - hidden on mobile, visible on md+ screens */}
+        <div className="hidden md:flex flex-row items-start gap-6 pl-6 pr-6">
+          {/* Left column - Avatar */}
           <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.7, delay: 0.4 }}
-            className="flex flex-wrap justify-center gap-4 mt-2"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="sticky top-4  w-32 h-32 rounded-full overflow-hidden border-4 border-white dark:border-slate-700 shadow-lg"
           >
-            {Object.entries(socialLinks).map(([platform, url]) => (
+            {author.avatar_url ? (
+              <Image
+                src={author.avatar_url}
+                alt={author.name}
+                fill
+                sizes="128px"
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <div className="w-full h-full bg-orange-100 dark:bg-orange-800/30 flex items-center justify-center text-4xl text-orange-500 dark:text-orange-300 font-bold">
+                {author.name.charAt(0)}
+              </div>
+            )}
+          </motion.div>
+          
+          {/* Right column - Content */}
+          <div className="flex-1 flex flex-col text-left">
+            {/* Author Name */}
+            <motion.h1
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.7, delay: 0.2 }}
+              className="text-4xl font-bold text-gray-900 dark:text-white mb-2"
+            >
+              {author.name}
+            </motion.h1>
+            
+            {/* Author Bio - Smaller text */}
+            {author.bio && (
+              <motion.p
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.3 }}
+                className="text-base text-gray-600 dark:text-gray-300 mb-4 max-w-2xl"
+              >
+                {author.bio}
+              </motion.p>
+            )}
+  
+            {/* Website link if available */}
+            {author.website_url && (
               <a
-                key={platform}
-                href={url as string}
+                href={author.website_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+                className="text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors flex items-center gap-1 text-sm self-start mb-3"
               >
-                <SocialIcon platform={platform} />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                <span>{author.website_url.replace(/^https?:\/\//, '').replace(/\/$/, '')}</span>
               </a>
-            ))}
+            )}
             
-         
-          </motion.div>
-        )}
+            {/* Social Links */}
+            {Object.keys(socialLinks).length > 0 && (
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.7, delay: 0.4 }}
+                className="flex flex-wrap justify-start gap-4 mt-2"
+              >
+                {Object.entries(socialLinks).map(([platform, url]) => (
+                  <a
+                    key={platform}
+                    href={url as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-500 dark:text-gray-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
+                  >
+                    <SocialIcon platform={platform} />
+                  </a>
+                ))}
+              </motion.div>
+            )}
+          </div>
+        </div>
       </div>
     </motion.div>
   );
