@@ -40,19 +40,29 @@ export default async function Page() {
       <div className="geometric-overlay absolute inset-0 opacity-10" style={{ zIndex: 0 }}></div>
       
       {/* Hero Section */}
-      <section className="pt-16 pb-4 relative bg-gray-50 dark:bg-transparent" style={{ zIndex: 2 }}>
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="flex flex-col items-center text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl pb-2 font-bold mb-6 leading-relaxed text-gray-900 dark:text-slate-100 font-mono tracking-tight">
-              HALQA
-            </h1>
-            
-            <p className="font-mono text-lg md:text-xl tracking-tight text-gray-600 dark:text-slate-400 mb-10">
-            STORIES WORTH YOUR TIME
-            </p>
-          </div>
-        </div>
-      </section>
+     {/* Hero Section - Enhanced with gradient */}
+<section className="pt-16 pb-4 relative" style={{ 
+  zIndex: 2,
+  background: "linear-gradient(135deg, var(--card-bg-color) 0%, var(--gradient-middle) 50%, var(--gradient-end) 100%)",
+}}>
+  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/30 dark:to-slate-900/30"></div>
+  
+  {/* Subtle animated accent */}
+  <div className="absolute -top-10 right-1/4 w-64 h-64 bg-blue-200/20 dark:bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow"></div>
+  <div className="absolute -bottom-20 left-1/3 w-72 h-72 bg-orange-200/20 dark:bg-orange-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+
+  <div className="max-w-6xl mx-auto px-4 relative">
+    <div className="flex flex-col items-center text-center">
+      <h1 className="text-4xl md:text-5xl lg:text-6xl pb-2 font-bold mb-6 leading-relaxed text-gray-900 dark:text-slate-100 font-mono tracking-tight">
+        HALQA
+      </h1>
+      
+      <p className="font-mono text-lg md:text-xl tracking-tight text-gray-600 dark:text-slate-400 mb-10">
+        Welcome, so good to see you! 
+      </p>
+    </div>
+  </div>
+</section>
       
       {/* Author Carousel Section - USING YOUR EXISTING COMPONENT */}
       <section className="py-16 bg-white dark:bg-slate-950/50 relative backdrop-blur-sm" style={{ zIndex: 2 }}>
@@ -60,7 +70,7 @@ export default async function Page() {
           <h2 className="text-3xl font-bold mb-3 text-center font-mono tracking-tight text-gray-900 dark:text-slate-100">
           </h2>
           <p className="text-lg text-gray-600 dark:text-slate-400 max-w-3xl mx-auto text-center mb-10 font-mono">
-           DISCOVER STORIES
+           Here's some content to get you started
           </p>
           
           {authors.length > 0 ? (
@@ -94,7 +104,7 @@ export default async function Page() {
       </section>
       
     {/* Value Proposition Section - With dark mode support */}
-<section className="py-16 bg-gray-50 dark:bg-slate-900 relative" style={{ zIndex: 2 }}>
+<section className="py-16 bg-white dark:bg-slate-900 relative" style={{ zIndex: 2 }}>
   <div className="max-w-6xl mx-auto px-4 mb-5">
     <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
       {/* SEEK - Magnifying Glass Icon */}
@@ -104,9 +114,9 @@ export default async function Page() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
         </div>
-        <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">SEEK</h3>
+        <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">Explore</h3>
         <p className="text-gray-600 dark:text-slate-400 font-mono text-sm">
-        We identify meaningful problems worth solving—from personal challenges to systemic issues. Through storytelling, we explore what's working, what's broken, and what needs fixing in our world.
+        We dig into the stories that matter—the personal struggles we face daily and the bigger challenges affecting us all. We shine light on what deserves our attention.
         </p>
       </div>
       
@@ -117,9 +127,9 @@ export default async function Page() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
           </svg>
         </div>
-        <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">BUILD</h3>
+        <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">Consider</h3>
         <p className="text-gray-600 dark:text-slate-400 font-mono text-sm">
-        We design thoughtful solutions that address root causes rather than symptoms. Our stories examine both existing systems and alternative approaches that might better serve humanity. 
+        We examine possible approaches that might address the deeper causes, not just symptoms. We're piecing together understanding, even when solutions aren't immediately obvious.
 
 
         </p>
@@ -132,9 +142,9 @@ export default async function Page() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
           </svg>
         </div>
-        <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">IMPLEMENT</h3>
+        <h3 className="text-xl font-bold mb-3 font-mono text-gray-900 dark:text-slate-100">Envision</h3>
         <p className="text-gray-600 dark:text-slate-400 font-mono text-sm">
-        We explore how solutions can be applied responsibly in the real world. While perfect systems rarely exist, we can implement changes that maximize benefits while minimizing unintended harm.
+        We imagine what could be, without pretending there are easy answers. Some challenges can't be solved today, but by thinking through possibilities, we plant seeds for the future.
 
 
         </p>

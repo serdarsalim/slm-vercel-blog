@@ -140,8 +140,7 @@ export default function AuthorCarousel({ authors }: AuthorCarouselProps) {
             >
               <div className="px-2 md:px-4 h-full pb-6">
   <Link href={`/${author.handle}`} className="block h-full">
-    <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 transition-colors duration-300 hover:border-orange-500 dark:hover:border-orange-500 h-full flex flex-col shadow-sm">
-
+  <div className="rounded-xl overflow-hidden border-2 border-gray-200 dark:border-gray-700 transition-colors duration-300 hover:border-orange-500 dark:hover:border-orange-500 h-full flex flex-col shadow-sm" style={{ backgroundColor: "var(--card-bg-color)" }}>
                     {/* Fixed height content area - ensures uniform card sizes */}
                     <div className="p-6 text-center flex flex-col h-full">
                       {/* Avatar */}

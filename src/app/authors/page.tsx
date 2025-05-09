@@ -8,9 +8,9 @@ export default async function AuthorsPage() {
   const authors = await getAllAuthors();
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen  dark:bg-slate-900">
       <div className="max-w-6xl mx-auto px-4 py-16">
-        <h1 className="text-4xl font-bold mb-12 text-center">Explore Accounts</h1>
+        <h1 className="text-4xl font-bold mb-12 text-center">Discover more content</h1>
         
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -20,24 +20,30 @@ export default async function AuthorsPage() {
                 <span className="sr-only">View {author.name}'s profile</span>
               </Link>
               
-              <div className="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full" style={{ minHeight: "230px", width: "100%" }}>
+              <div className="rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full" 
+                style={{ 
+                  minHeight: "230px", 
+                  width: "100%",
+                  backgroundColor: "var(--card-bg-color)"
+                }}>
                 <div className="p-6 h-full flex flex-col">
                   {/* Author avatar and name */}
                   <div className="flex items-center mb-4">
-                    <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex-shrink-0">
-                      {author.avatar_url ? (
-                        <Image 
-                          src={author.avatar_url} 
-                          alt={author.name} 
-                          width={64} 
-                          height={64} 
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl text-gray-500 dark:text-gray-400">
-                          {author.name.charAt(0)}
-                        </div>
-                      )}
+                  <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden flex-shrink-0 relative border-0">
+                    {author.avatar_url ? (
+                      <Image 
+                        src={author.avatar_url} 
+                        alt={author.name} 
+                        fill
+                        sizes="64px"
+                        className="object-cover rounded-full"
+                        style={{ margin: 0, border: 'none' }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-2xl text-gray-500 dark:text-gray-400">
+                        {author.name.charAt(0)}
+                      </div>
+                    )}
                     </div>
                     <div className="ml-4">
                       <h3 className="text-xl font-bold text-gray-900 dark:text-white">{author.name}</h3>

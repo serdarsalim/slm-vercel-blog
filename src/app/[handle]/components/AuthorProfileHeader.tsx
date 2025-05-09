@@ -22,7 +22,7 @@ export default function AuthorProfileHeader() {
     >
       {/* Add custom background color ONLY to this inner container */}
       <div className="max-w-4xl mx-auto rounded-lg p-3 md:p-6 shadow-sm" 
-           style={{ backgroundColor: "#fffcf8" }}> 
+           style={{ backgroundColor: "var(--card-bg-color)" }}> 
         
         {/* Mobile view - only visible on small screens */}
         <div className="md:hidden">

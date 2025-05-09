@@ -27,6 +27,34 @@
   --transition-normal: 250ms;
 }
 
+/* Add these animation utilities */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+:root {
+  --card-bg-color: #f2e9dd;
+  --gradient-middle: #f0f9ff;
+  --gradient-end: #e0f2fe;
+}
+
+.dark {
+  --card-bg-color: #121118;
+  --gradient-middle: #1a1c2e;
+  --gradient-end: #0c1425;
+}
+
 /* Dark mode colors */
 .dark {
   --background: #0f172a; /* slate-900 */
