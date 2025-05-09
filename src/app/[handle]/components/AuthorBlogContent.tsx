@@ -55,44 +55,31 @@ export default function AuthorBlogContent({
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   // Set browser state for hydration safety
-  useEffect(() => {
-    setIsBrowser(true);
+  // Replace the useEffect that handles the reload logic (around line 70)
+
+useEffect(() => {
+  setIsBrowser(true);
+  
+  // Skip auto-reload completely - it's causing more problems than it solves
+  // Instead, let's add a manual retry button if posts fail to load
+  
+  // Clear any previous reload markers
+  sessionStorage.removeItem('alreadyReloaded');
+  
+  // Check if posts should be visible but aren't showing after a delay
+  const initialLoadCheck = setTimeout(() => {
+    const hasNoCards = document.querySelectorAll('.blog-card').length === 0;
+    const hasFinishedLoading = !isLoadingMore;
+    const shouldHaveCards = posts.length > 0;
     
-    // CRITICAL: Check if we've already tried reloading
-    const hasReloaded = sessionStorage.getItem('alreadyReloaded');
-    
-    // Only set up the recovery if we haven't already reloaded
-    if (!hasReloaded) {
-      const recoveryTimeout = setTimeout(() => {
-        // More reliable check - make sure we're not just in an empty state
-        const hasNoCards = document.querySelectorAll('.blog-card').length === 0;
-        const hasFinishedLoading = !isLoadingMore;
-        const shouldHaveCards = posts.length > 0;
-        
-        if (hasNoCards && hasFinishedLoading && shouldHaveCards) {
-          console.log('Page appears stuck, forcing reload');
-          // Mark that we've tried reloading
-          sessionStorage.setItem('alreadyReloaded', 'true');
-          window.location.reload();
-        } else {
-          // If we've successfully loaded, clear the reload marker after 10 seconds
-          setTimeout(() => {
-            sessionStorage.removeItem('alreadyReloaded');
-          }, 10000);
-        }
-      }, 2000); // Wait 2 seconds instead of 1
-      
-      return () => clearTimeout(recoveryTimeout); 
+    if (hasNoCards && hasFinishedLoading && shouldHaveCards) {
+      // Instead of auto-reload, set an error state that shows a retry button
+      setLoadingError('Posts failed to display. Please try refreshing the page.');
     }
-    
-    // If we've already reloaded once, clear the marker after 30 seconds
-    // This prevents the loop but lets future visits recover if needed
-    const clearMarkerTimeout = setTimeout(() => {
-      sessionStorage.removeItem('alreadyReloaded');
-    }, 30000);
-    
-    return () => clearTimeout(clearMarkerTimeout);
-  }, [posts.length, isLoadingMore]); // Add dependencies
+  }, 3000); // Give more time for hydration
+  
+  return () => clearTimeout(initialLoadCheck);
+}, []); // Run once on mount, not on every post change
 
   // Apply debounced search
   useEffect(() => {
@@ -160,31 +147,31 @@ export default function AuthorBlogContent({
   const hasMorePosts = renderedCount < sortedPosts.length;
 
   // Function to load more posts - wrapped in useCallback to prevent circular dependency
-  const loadMorePosts = useCallback(() => {
-    if (!hasMorePosts || isLoadingMore) return;
-    
-    // Track loading state
-    setIsLoadingMore(true);
-    setLoadingError(null);
-    
-    // Simulate a delay for smooth loading experience
-    setTimeout(() => {
-      try {
-        const MAX_POSTS_PER_LOAD = 10;
-        const newCount = Math.min(renderedCount + MAX_POSTS_PER_LOAD, sortedPosts.length);
-        setRenderedCount(newCount);
-        // Reset load attempts on successful load
-        loadAttempts.current = 0;
-      } catch (error) {
-        console.error('Error loading more posts:', error);
-        setLoadingError('Failed to load more posts. Please try again.');
-        // Increment load attempts for potential retry backoff
-        loadAttempts.current += 1;
-      } finally {
-        setIsLoadingMore(false);
-      }
-    }, 600);
-  }, [hasMorePosts, isLoadingMore, renderedCount, sortedPosts.length]); // Dependencies
+ // Update loadMorePosts to be more robust
+
+const loadMorePosts = useCallback(() => {
+  if (!hasMorePosts || isLoadingMore) return;
+  
+  // Track loading state
+  setIsLoadingMore(true);
+  
+  // Ensure we don't have race conditions
+  const currentRenderedCount = renderedCount;
+  
+  // Use setTimeout with a fixed delay
+  setTimeout(() => {
+    try {
+      const MAX_POSTS_PER_LOAD = 8; // Reduce batch size for more stable loading
+      const newCount = Math.min(currentRenderedCount + MAX_POSTS_PER_LOAD, sortedPosts.length);
+      setRenderedCount(newCount);
+    } catch (error) {
+      console.error('Error loading more posts:', error);
+      setLoadingError('Failed to load more posts. Please try again.');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, 500); // Consistent delay
+}, [hasMorePosts, renderedCount, sortedPosts.length]);
 
   // Get category counts for filter buttons
   const categoryCounts = useMemo(() => {
