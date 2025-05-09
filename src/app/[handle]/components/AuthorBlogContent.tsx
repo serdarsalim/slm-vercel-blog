@@ -14,12 +14,12 @@ interface AuthorBlogContentProps {
   initialFeaturedPosts: any[];
 }
 
-// Add a proper type for your category data
 interface CategoryWithCount {
   name: string;
-  count: number; // Explicitly typed as number
+  count: number;
 }
 
+// Debounce hook with stable reference
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
@@ -40,144 +40,151 @@ export default function AuthorBlogContent({
   initialPosts,
   initialFeaturedPosts,
 }: AuthorBlogContentProps) {
+  // Context and refs
   const { author } = useAuthor();
-
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const loadAttempts = useRef(0);
+  const postsIdRef = useRef<string>("");
+  
+  // Core state
+  const [posts, setPosts] = useState<any[]>(initialPosts);
   const [renderedCount, setRenderedCount] = useState(8);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [isBrowser, setIsBrowser] = useState(false);
+  
+  // Search and filters
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearchTerm = useDebounce(searchInput, 300);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
-  const [posts, setPosts] = useState<any[]>(initialPosts);
-  const [isBrowser, setIsBrowser] = useState(false);
-  const loadAttempts = useRef(0);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
-  // Set browser state for hydration safety
-  // Replace the useEffect that handles the reload logic (around line 70)
-
-useEffect(() => {
-  setIsBrowser(true);
-  
-  // Skip auto-reload completely - it's causing more problems than it solves
-  // Instead, let's add a manual retry button if posts fail to load
-  
-  // Clear any previous reload markers
-  sessionStorage.removeItem('alreadyReloaded');
-  
-  // Check if posts should be visible but aren't showing after a delay
-  const initialLoadCheck = setTimeout(() => {
-    const hasNoCards = document.querySelectorAll('.blog-card').length === 0;
-    const hasFinishedLoading = !isLoadingMore;
-    const shouldHaveCards = posts.length > 0;
+  // Initialize browser state once
+  useEffect(() => {
+    setIsBrowser(true);
     
-    if (hasNoCards && hasFinishedLoading && shouldHaveCards) {
-      // Instead of auto-reload, set an error state that shows a retry button
-      setLoadingError('Posts failed to display. Please try refreshing the page.');
-    }
-  }, 3000); // Give more time for hydration
-  
-  return () => clearTimeout(initialLoadCheck);
-}, []); // Run once on mount, not on every post change
+    // Clean up any lingering session storage
+    sessionStorage.removeItem('alreadyReloaded');
+    
+    // Safety check for hydration issues (delayed)
+    const initialLoadCheck = setTimeout(() => {
+      if (isBrowser && posts.length > 0) {
+        const hasNoCards = document.querySelectorAll('.blog-card').length === 0;
+        if (hasNoCards) {
+          setLoadingError('Posts failed to display properly.');
+        }
+      }
+    }, 3000);
+    
+    return () => clearTimeout(initialLoadCheck);
+  }, []); // Run only once on mount
 
-  // Apply debounced search
+  // Apply debounced search with stable dependencies
   useEffect(() => {
     setSearchTerm(debouncedSearchTerm);
-    setRenderedCount(8);
-    loadAttempts.current = 0; // Reset load attempts when search changes
+    if (debouncedSearchTerm !== searchTerm) {
+      setRenderedCount(8);
+      loadAttempts.current = 0;
+    }
   }, [debouncedSearchTerm]);
 
-  // Create optimized Fuse instance for search
+  // Create search index with memoization
   const fuse = useMemo(() => {
-    if (posts && posts.length > 0) {
-      return new Fuse(posts, {
-        keys: [
-          { name: "title", weight: 1.8 },
-          { name: "excerpt", weight: 1.2 },
-          { name: "categories", weight: 1.5 },
-        ],
-        threshold: 0.2,
-        ignoreLocation: true,
-        minMatchCharLength: 3,
-      });
-    }
-    return null;
+    if (!posts?.length) return null;
+    
+    return new Fuse(posts, {
+      keys: [
+        { name: "title", weight: 1.8 },
+        { name: "excerpt", weight: 1.2 },
+        { name: "categories", weight: 1.5 },
+      ],
+      threshold: 0.2,
+      ignoreLocation: true,
+      minMatchCharLength: 3,
+    });
   }, [posts]);
 
-  // Handle category selection
-  const handleCategoryClick = (cat: string) => {
-    setSelectedCategories([cat]);
-    setRenderedCount(8);
-    loadAttempts.current = 0; // Reset load attempts when category changes
-  };
-
-  // Apply filters and search
+  // Filter posts by search term and categories
   const filteredPosts = useMemo(() => {
     if (searchTerm && fuse) {
-      return fuse.search(searchTerm).map((result) => result.item);
+      return fuse.search(searchTerm).map(result => result.item);
     }
 
-    return posts.filter((p) => {
-      if (selectedCategories.includes("all")) return true;
+    if (selectedCategories.includes("all")) {
+      return posts;
+    }
 
-      const postCategories = getCategoryArray(p.categories).map((cat) =>
-        cat.toLowerCase().trim()
-      );
-
-      return selectedCategories.some((selectedCat) =>
+    return posts.filter(post => {
+      const postCategories = getCategoryArray(post.categories)
+        .map(cat => cat.toLowerCase().trim());
+      
+      return selectedCategories.some(selectedCat => 
         postCategories.includes(selectedCat.toLowerCase().trim())
       );
     });
   }, [posts, fuse, searchTerm, selectedCategories]);
 
-  // Featured posts first, then regular posts
-  const sortedPosts = useMemo(() => {
-    const featuredPosts = filteredPosts.filter((post) => post.featured);
-    const nonFeaturedPosts = filteredPosts.filter((post) => !post.featured);
-    return [...featuredPosts, ...nonFeaturedPosts];
+  // Track post IDs for dependency comparison
+  useEffect(() => {
+    const newPostsId = JSON.stringify(filteredPosts.map(p => p.id));
+    postsIdRef.current = newPostsId;
   }, [filteredPosts]);
 
-  // Get only the rendered posts to be shown
+  // Sort posts (featured first)
+  const sortedPosts = useMemo(() => {
+    const postsId = postsIdRef.current;
+    const featuredPosts = filteredPosts.filter(post => post.featured);
+    const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
+    return [...featuredPosts, ...nonFeaturedPosts];
+  }, [filteredPosts, postsIdRef.current]);
+
+  // Get visible posts for current view
   const visiblePosts = useMemo(() => {
     return sortedPosts.slice(0, renderedCount);
   }, [sortedPosts, renderedCount]);
 
-  // Check if there are more posts to load
-  const hasMorePosts = renderedCount < sortedPosts.length;
+  // Check if more posts can be loaded
+  const hasMorePosts = useMemo(() => 
+    renderedCount < sortedPosts.length, 
+    [renderedCount, sortedPosts.length]
+  );
 
-  // Function to load more posts - wrapped in useCallback to prevent circular dependency
- // Update loadMorePosts to be more robust
+  // Handle category filter selection
+  const handleCategoryClick = useCallback((cat: string) => {
+    setSelectedCategories([cat]);
+    setRenderedCount(8);
+    loadAttempts.current = 0;
+  }, []);
 
-const loadMorePosts = useCallback(() => {
-  if (!hasMorePosts || isLoadingMore) return;
-  
-  // Track loading state
-  setIsLoadingMore(true);
-  
-  // Ensure we don't have race conditions
-  const currentRenderedCount = renderedCount;
-  
-  // Use setTimeout with a fixed delay
-  setTimeout(() => {
-    try {
-      const MAX_POSTS_PER_LOAD = 8; // Reduce batch size for more stable loading
-      const newCount = Math.min(currentRenderedCount + MAX_POSTS_PER_LOAD, sortedPosts.length);
-      setRenderedCount(newCount);
-    } catch (error) {
-      console.error('Error loading more posts:', error);
-      setLoadingError('Failed to load more posts. Please try again.');
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, 500); // Consistent delay
-}, [hasMorePosts, renderedCount, sortedPosts.length]);
+  // Load more posts with safe dependency list
+  const loadMorePosts = useCallback(() => {
+    if (!hasMorePosts || isLoadingMore) return;
+    
+    setIsLoadingMore(true);
+    
+    // Use state updater form to avoid stale closure issues
+    setTimeout(() => {
+      try {
+        setRenderedCount(current => {
+          const MAX_POSTS_PER_LOAD = 8;
+          return Math.min(current + MAX_POSTS_PER_LOAD, sortedPosts.length);
+        });
+      } catch (error) {
+        console.error('Error loading more posts:', error);
+        setLoadingError('Failed to load more posts. Please try again.');
+        loadAttempts.current += 1;
+      } finally {
+        setIsLoadingMore(false);
+      }
+    }, 500);
+  }, [hasMorePosts, isLoadingMore, sortedPosts.length]);
 
-  // Get category counts for filter buttons
+  // Calculate category counts for filters
   const categoryCounts = useMemo(() => {
     return posts.reduce((acc, post) => {
       const categories = getCategoryArray(post.categories);
-
+      
       categories.forEach((cat) => {
         if (cat) {
           const lowerCat = cat.toLowerCase().trim();
@@ -187,6 +194,39 @@ const loadMorePosts = useCallback(() => {
       return acc;
     }, {} as Record<string, number>);
   }, [posts]);
+
+  // Setup intersection observer for infinite scroll
+  useEffect(() => {
+    // Skip setup if loading or no more posts
+    if (isLoadingMore || !hasMorePosts || !isBrowser) return;
+    
+    const currentTarget = observerTarget.current;
+    if (!currentTarget) return;
+    
+    // Create new observer instance
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return;
+        
+        // Prevent triggering multiple times
+        observer.unobserve(currentTarget);
+        
+        // Add exponential backoff for retries
+        const backoffTime = Math.min(2000, Math.pow(2, loadAttempts.current) * 500);
+        setTimeout(loadMorePosts, loadAttempts.current > 0 ? backoffTime : 0);
+      },
+      {
+        rootMargin: '100px',
+        threshold: 0.1,
+      }
+    );
+    
+    observer.observe(currentTarget);
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, [isLoadingMore, hasMorePosts, isBrowser, loadMorePosts]);
 
   // Animation variants
   const cardVariants = {
@@ -206,194 +246,154 @@ const loadMorePosts = useCallback(() => {
     },
   };
 
-  // Setup the intersection observer for infinite scroll
-  const observerTarget = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry.isIntersecting && !isLoadingMore && hasMorePosts) {
-          // Calculate exponential backoff if there have been errors
-          const backoffTime = Math.min(2000, Math.pow(2, loadAttempts.current) * 500);
-          setTimeout(() => {
-            loadMorePosts();
-          }, loadAttempts.current > 0 ? backoffTime : 0);
-        }
-      },
-      {
-        rootMargin: '100px', // Start loading before the element is fully visible
-        threshold: 0.1, // Trigger when at least 10% of the target is visible
-      }
-    );
-    
-    const currentTarget = observerTarget.current;
-    
-    if (currentTarget) {
-      observer.observe(currentTarget);
-    }
-    
-    return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
-      observer.disconnect();
-    };
-  }, [isLoadingMore, hasMorePosts, loadMorePosts]);
-
   return (
     <>
       {/* Blog Header Section */}
       <section className="pt-0 pb-8 bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">            
-      <div className="max-w-3xl mx-auto px-4">
+        <div className="max-w-3xl mx-auto px-4">
           <motion.div
             initial={{ opacity: 0.9 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5 }}
             className="relative text-center mb-6"
-          >
-           
-          </motion.div>
+          />
 
-     
+          {/* Category filters with search icon */}
+          <AnimatePresence>
+            {!isSearchExpanded && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="w-full flex flex-wrap justify-center pt-4 gap-2 mb-6 select-none"
+              >
+                {/* Render all category buttons */}
+                {[
+                  { name: "all", count: posts.length } as CategoryWithCount,
+                  ...Object.entries(categoryCounts)
+                    .map(
+                      ([name, count]): CategoryWithCount => ({
+                        name,
+                        count: count as number, // Explicitly tell TypeScript this is a number
+                      })
+                    )
+                    .sort((a, b) => b.count - a.count),
+                ].map(({ name, count }) => (
+                  <motion.button
+                    key={name}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleCategoryClick(name)}
+                    className={`
+                      px-2 py-1 
+                      rounded-lg 
+                      transition-colors
+                      duration-200 
+                      font-normal
+                      text-xs
+                      flex items-center
+                      z-10 relative
+                      cursor-pointer
+                      touch-element
+                      ${
+                        selectedCategories.includes(name)
+                          ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
+                          : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+                      }
+                    `}
+                  >
+                    <span>
+                      {name === "all"
+                        ? "All Posts"
+                        : name.charAt(0).toUpperCase() + name.slice(1)}
+                      <span
+                        className={`
+                          ml-1
+                          inline-flex items-center justify-center 
+                          w-4 h-4 
+                          rounded-full text-[10px] font-medium
+                          ${
+                            selectedCategories.includes(name)
+                              ? "bg-white text-orange-500 dark:bg-orange-800 dark:text-orange-200"
+                              : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
+                          }
+                        `}
+                      >
+                        {count}
+                      </span>
+                    </span>
+                  </motion.button>
+                ))}
+                
+                {/* Search Icon Button */}
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsSearchExpanded(true)}
+                  className="px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-orange-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 transition-colors touch-element"
+                  aria-label="Search posts"
+                >
+                  <div className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </motion.button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-         {/* Category filters with search icon next to the last label */}
-<AnimatePresence>
-  {!isSearchExpanded && (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="w-full flex flex-wrap justify-center pt-4 gap-2 mb-6 select-none"
-    >
-      {/* Render all category buttons first */}
-      {[
-        { name: "all", count: posts.length } as CategoryWithCount,
-        ...Object.entries(categoryCounts)
-          .map(
-            ([name, count]): CategoryWithCount => ({
-              name,
-              count: count as number,
-            })
-          )
-          .sort((a, b) => b.count - a.count),
-      ].map(({ name, count }) => (
-        <motion.button
-          key={name}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => handleCategoryClick(name)}
-          className={`
-            px-2 py-1 
-            rounded-lg 
-            transition-colors
-            duration-200 
-            font-normal
-            text-xs
-            flex items-center
-            z-10 relative
-            cursor-pointer
-            touch-element
-            ${
-              selectedCategories.includes(name)
-                ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
-                : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
-            }
-          `}
-        >
-          <span>
-            {name === "all"
-              ? "All Posts"
-              : name.charAt(0).toUpperCase() + name.slice(1)}
-            <span
-              className={`
-                ml-1
-                inline-flex items-center justify-center 
-                w-4 h-4 
-                rounded-full text-[10px] font-medium
-                ${
-                  selectedCategories.includes(name)
-                    ? "bg-white text-orange-500 dark:bg-orange-800 dark:text-orange-200"
-                    : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
-                }
-              `}
+          {/* Expanded search input */}
+          <AnimatePresence>
+            {isSearchExpanded && (
+              <motion.div
+                className="relative w-full mb-6"
+                initial={{ width: "40px", opacity: 0 }}
+                animate={{ width: "100%", opacity: 1 }}
+                exit={{ width: "40px", opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              >
+                <input
+                  type="text"
+                  placeholder="Search and you'll find..."
+                  className="w-full px-4 py-2 pl-10 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 touch-element"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  autoFocus
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <button
+                  className="absolute right-3 top-2.5 cursor-pointer touch-element"
+                  onClick={() => {
+                    setIsSearchExpanded(false);
+                    setSearchInput("");
+                    setSearchTerm("");
+                  }}
+                >
+                  <span className="text-gray-400 dark:text-gray-500 text-lg">×</span>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Search results indicator */}
+          {searchTerm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-sm text-gray-500 dark:text-gray-400 mb-8"
             >
-              {count}
-            </span>
-          </span>
-        </motion.button>
-      ))}
-      
-      {/* Search Icon Button - styled to match category buttons */}
-      <motion.button
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsSearchExpanded(true)}
-        className="px-2 py-1 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 hover:bg-orange-200 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 transition-colors touch-element"
-        aria-label="Search posts"
-      >
-        <div className="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+              {filteredPosts.length === 0
+                ? "No posts found matching your search"
+                : `Found ${filteredPosts.length} post${
+                    filteredPosts.length === 1 ? "" : "s"
+                  } matching "${searchTerm}"`}
+            </motion.div>
+          )}
         </div>
-      </motion.button>
-    </motion.div>
-  )}
-</AnimatePresence>
-
-{/* Keep the expanded search input outside the categories */}
-<AnimatePresence>
-  {isSearchExpanded && (
-    <motion.div
-      className="relative w-full mb-6"
-      initial={{ width: "40px", opacity: 0 }}
-      animate={{ width: "100%", opacity: 1 }}
-      exit={{ width: "40px", opacity: 0 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-    >
-      <input
-        type="text"
-        placeholder="Search and you'll find..."
-        className="w-full px-4 py-2 pl-10 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 touch-element"
-        value={searchInput}
-        onChange={(e) => setSearchInput(e.target.value)}
-        autoFocus
-      />
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-      <button
-        className="absolute right-3 top-2.5 cursor-pointer touch-element"
-        onClick={() => {
-          setIsSearchExpanded(false);
-          setSearchInput("");
-          setSearchTerm("");
-        }}
-      >
-        <span className="text-gray-400 dark:text-gray-500 text-lg">×</span>
-      </button>
-    </motion.div>
-  )}
-</AnimatePresence>
-{/* Search results indicator - keep this as is */}
-{searchTerm && (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    className="text-center text-sm text-gray-500 dark:text-gray-400 mb-8"
-  >
-    {filteredPosts.length === 0
-      ? "No posts found matching your search"
-      : `Found ${filteredPosts.length} post${
-          filteredPosts.length === 1 ? "" : "s"
-        } matching "${searchTerm}"`}
-  </motion.div>
-)}
-        </div>
-
-        
       </section>
 
-      {/* Blog Posts */}
+      {/* Blog Posts Section */}
       <section className="py-8 bg-white dark:bg-slate-900 -mt-14 relative w-full">
         <div className="w-full px-4 mb-20 sm:max-w-3xl sm:mx-auto">
           {sortedPosts.length === 0 ? (
@@ -415,7 +415,7 @@ const loadMorePosts = useCallback(() => {
               transition={{ duration: 0.4 }}
               className="space-y-3"
             >
-              {/* Optimized rendering for better performance */}
+              {/* Only render posts on the client side after hydration */}
               {isBrowser && (
                 <>
                   {visiblePosts.map((post, index) => (
@@ -436,7 +436,6 @@ const loadMorePosts = useCallback(() => {
                         <BlogPostCard
                           post={{
                             ...post,
-                            // Ensure we're passing a compatible BlogPost type
                             id: post.id,
                             slug: post.slug,
                             title: post.title,
@@ -465,7 +464,7 @@ const loadMorePosts = useCallback(() => {
                 </>
               )}
 
-              {/* Infinite scroll loading trigger and indicator */}
+              {/* Infinite scroll loading trigger */}
               <div
                 ref={observerTarget}
                 className="py-8 flex justify-center items-center min-h-[100px]"
