@@ -94,7 +94,7 @@ export default async function Page() {
               className="inline-flex items-center text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-mono border border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-300 dark:hover:border-emerald-600 px-4 py-2 bg-white/80 dark:bg-slate-900/50 rounded"
             >
               <span className="mr-2">&gt;</span>
-              <span>BROWSE ALL PROFILES</span>
+              <span>Discover More Topics</span>
               <svg className="w-4 h-4 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
