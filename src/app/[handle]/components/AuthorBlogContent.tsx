@@ -40,17 +40,15 @@ export default function AuthorBlogContent({
   initialPosts,
   initialFeaturedPosts,
 }: AuthorBlogContentProps) {
+  // Constants
+  const POSTS_PER_PAGE = 15;
+  
   // Context and refs
   const { author } = useAuthor();
-  const observerTarget = useRef<HTMLDivElement>(null);
-  const loadAttempts = useRef(0);
-  const postsIdRef = useRef<string>("");
   
   // Core state
   const [posts, setPosts] = useState<any[]>(initialPosts);
-  const [renderedCount, setRenderedCount] = useState(8);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isBrowser, setIsBrowser] = useState(false);
   
   // Search and filters
@@ -60,36 +58,16 @@ export default function AuthorBlogContent({
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
-  // Add these at the top with your other refs
-    const isInitialMount = useRef(true);
-    const safeToLoad = useRef(false);
-
   // Initialize browser state once
   useEffect(() => {
     setIsBrowser(true);
-    
-    // Clean up any lingering session storage
-    sessionStorage.removeItem('alreadyReloaded');
-    
-    // Safety check for hydration issues (delayed)
-    const initialLoadCheck = setTimeout(() => {
-      if (isBrowser && posts.length > 0) {
-        const hasNoCards = document.querySelectorAll('.blog-card').length === 0;
-        if (hasNoCards) {
-          setLoadingError('Posts failed to display properly.');
-        }
-      }
-    }, 3000);
-    
-    return () => clearTimeout(initialLoadCheck);
-  }, []); // Run only once on mount
+  }, []);
 
   // Apply debounced search with stable dependencies
   useEffect(() => {
     setSearchTerm(debouncedSearchTerm);
     if (debouncedSearchTerm !== searchTerm) {
-      setRenderedCount(8);
-      loadAttempts.current = 0;
+      setCurrentPage(1); // Reset to first page on new search
     }
   }, [debouncedSearchTerm]);
 
@@ -129,60 +107,47 @@ export default function AuthorBlogContent({
     });
   }, [posts, fuse, searchTerm, selectedCategories]);
 
-  // Track post IDs for dependency comparison
-  useEffect(() => {
-    const newPostsId = JSON.stringify(filteredPosts.map(p => p.id));
-    postsIdRef.current = newPostsId;
-  }, [filteredPosts]);
-
   // Sort posts (featured first)
   const sortedPosts = useMemo(() => {
-    const postsId = postsIdRef.current;
     const featuredPosts = filteredPosts.filter(post => post.featured);
     const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
     return [...featuredPosts, ...nonFeaturedPosts];
-  }, [filteredPosts, postsIdRef.current]);
+  }, [filteredPosts]);
 
-  // Get visible posts for current view
+  // Calculate pagination
+  const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const endIndex = startIndex + POSTS_PER_PAGE;
+  
+  // Get visible posts for current page
   const visiblePosts = useMemo(() => {
-    return sortedPosts.slice(0, renderedCount);
-  }, [sortedPosts, renderedCount]);
-
-  // Check if more posts can be loaded
-  const hasMorePosts = useMemo(() => 
-    renderedCount < sortedPosts.length, 
-    [renderedCount, sortedPosts.length]
-  );
+    return sortedPosts.slice(startIndex, endIndex);
+  }, [sortedPosts, startIndex, endIndex]);
 
   // Handle category filter selection
   const handleCategoryClick = useCallback((cat: string) => {
     setSelectedCategories([cat]);
-    setRenderedCount(8);
-    loadAttempts.current = 0;
+    setCurrentPage(1); // Reset to first page
   }, []);
 
-  // Load more posts with safe dependency list
-  const loadMorePosts = useCallback(() => {
-    if (!hasMorePosts || isLoadingMore) return;
-    
-    setIsLoadingMore(true);
-    
-    // Use state updater form to avoid stale closure issues
-    setTimeout(() => {
-      try {
-        setRenderedCount(current => {
-          const MAX_POSTS_PER_LOAD = 8;
-          return Math.min(current + MAX_POSTS_PER_LOAD, sortedPosts.length);
-        });
-      } catch (error) {
-        console.error('Error loading more posts:', error);
-        setLoadingError('Failed to load more posts. Please try again.');
-        loadAttempts.current += 1;
-      } finally {
-        setIsLoadingMore(false);
-      }
-    }, 500);
-  }, [hasMorePosts, isLoadingMore, sortedPosts.length]);
+  // Pagination handlers
+  const goToPage = useCallback((page: number) => {
+    setCurrentPage(page);
+    // Scroll to top of posts section
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  const goToPreviousPage = useCallback(() => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+  }, [currentPage, goToPage]);
+
+  const goToNextPage = useCallback(() => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    }
+  }, [currentPage, totalPages, goToPage]);
 
   // Calculate category counts for filters
   const categoryCounts = useMemo(() => {
@@ -198,51 +163,6 @@ export default function AuthorBlogContent({
       return acc;
     }, {} as Record<string, number>);
   }, [posts]);
-
-  // Setup intersection observer for infinite scroll
-  useEffect(() => {
-  // Skip setup during SSR or when loading
-  if (!isBrowser || isLoadingMore || !hasMorePosts) return;
-  
-  const currentTarget = observerTarget.current;
-  if (!currentTarget) return;
-  
-  // Create new observer instance
-  const observer = new IntersectionObserver(
-    (entries) => {
-      // Critical fix: Don't trigger loads during initial hydration
-      if (!entries[0].isIntersecting || !safeToLoad.current) return;
-      
-      // Prevent triggering multiple times
-      observer.unobserve(currentTarget);
-      
-      // Add exponential backoff for retries
-      const backoffTime = Math.min(2000, Math.pow(2, loadAttempts.current) * 500);
-      setTimeout(loadMorePosts, loadAttempts.current > 0 ? backoffTime : 0);
-    },
-    {
-      rootMargin: '100px',
-      threshold: 0.1,
-    }
-  );
-  
-  observer.observe(currentTarget);
-  
-  // Flag that we're past initial mount - this breaks the infinite loop
-  if (isInitialMount.current) {
-    isInitialMount.current = false;
-    
-    // Set a very short timeout to allow hydration to stabilize
-    // This doesn't delay page load - it just prevents immediate triggering
-    setTimeout(() => {
-      safeToLoad.current = true;
-    }, 50);
-  }
-  
-  return () => {
-    observer.disconnect();
-  };
-}, [isLoadingMore, hasMorePosts, isBrowser, loadMorePosts]);
 
   // Animation variants
   const cardVariants = {
@@ -260,6 +180,42 @@ export default function AuthorBlogContent({
     hover: {
       transition: { duration: 0.2, ease: "easeOut" },
     },
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
   };
 
   return (
@@ -290,7 +246,7 @@ export default function AuthorBlogContent({
                     .map(
                       ([name, count]): CategoryWithCount => ({
                         name,
-                        count: count as number, // Explicitly tell TypeScript this is a number
+                        count: count as number,
                       })
                     )
                     .sort((a, b) => b.count - a.count),
@@ -425,133 +381,145 @@ export default function AuthorBlogContent({
               </p>
             </motion.div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0.8 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.4 }}
-              className="space-y-3"
-            >
-              {/* Only render posts on the client side after hydration */}
-              {isBrowser && (
-                <>
-                  {visiblePosts.map((post, index) => (
-                    <motion.div
-                      key={post.id || post.slug}
-                      custom={index}
-                      initial="hidden"
-                      animate="visible"
-                      exit="exit"
-                      whileHover="hover"
-                      variants={cardVariants}
-                      className="blog-card border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:border-orange-200 dark:hover:border-orange-900/40 hover:shadow-[1px_1px_0_0_rgba(251,146,60,0.3)] dark:hover:shadow-[1px_1px_0_0_rgba(249,115,22,0.2)]"
-                    >
-                      <Link
-                        href={`/${author.handle}/${post.slug}`}
-                        className="block"
+            <>
+              <motion.div
+                initial={{ opacity: 0.8 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+                className="space-y-3"
+              >
+                {/* Only render posts on the client side after hydration */}
+                {isBrowser && (
+                  <>
+                    {visiblePosts.map((post, index) => (
+                      <motion.div
+                        key={post.id || post.slug}
+                        custom={index}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        whileHover="hover"
+                        variants={cardVariants}
+                        className="blog-card border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:border-orange-200 dark:hover:border-orange-900/40 hover:shadow-[1px_1px_0_0_rgba(251,146,60,0.3)] dark:hover:shadow-[1px_1px_0_0_rgba(249,115,22,0.2)]"
                       >
-                        <BlogPostCard
-                          post={{
-                            ...post,
-                            id: post.id,
-                            slug: post.slug,
-                            title: post.title,
-                            content: post.content,
-                            excerpt: post.excerpt || "",
-                            date: post.date,
-                            categories: post.categories || [],
-                            featured: post.featured || false,
-                            author: post.author || author.name,
-                            author_handle: post.author_handle || author.handle,
-                            featuredImage: post.featuredImage || "",
-                            comment:
-                              post.comment !== undefined ? post.comment : true,
-                            socmed:
-                              post.socmed !== undefined ? post.socmed : true,
-                            created_at: post.created_at,
-                            updated_at: post.updated_at,
-                          }}
-                          index={index}
-                          cardVariants={cardVariants}
-                          shouldAnimate={false}
-                        />
-                      </Link>
-                    </motion.div>
-                  ))}
-                </>
+                        <Link
+                          href={`/${author.handle}/${post.slug}`}
+                          className="block"
+                        >
+                          <BlogPostCard
+                            post={{
+                              ...post,
+                              id: post.id,
+                              slug: post.slug,
+                              title: post.title,
+                              content: post.content,
+                              excerpt: post.excerpt || "",
+                              date: post.date,
+                              categories: post.categories || [],
+                              featured: post.featured || false,
+                              author: post.author || author.name,
+                              author_handle: post.author_handle || author.handle,
+                              featuredImage: post.featuredImage || "",
+                              comment:
+                                post.comment !== undefined ? post.comment : true,
+                              socmed:
+                                post.socmed !== undefined ? post.socmed : true,
+                              created_at: post.created_at,
+                              updated_at: post.updated_at,
+                            }}
+                            index={index}
+                            cardVariants={cardVariants}
+                            shouldAnimate={false}
+                          />
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </>
+                )}
+              </motion.div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="mt-12 flex justify-center items-center gap-2"
+                >
+                  {/* Previous Button */}
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className={`
+                      px-3 py-2 rounded-md text-sm font-medium transition-colors
+                      ${currentPage === 1
+                        ? 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                        : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-orange-100 dark:hover:bg-orange-900/30 border border-gray-200 dark:border-slate-600'
+                      }
+                    `}
+                    aria-label="Previous page"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex gap-1">
+                    {getPageNumbers().map((pageNum, idx) => (
+                      <div key={idx}>
+                        {pageNum === '...' ? (
+                          <span className="px-3 py-2 text-gray-400 dark:text-gray-600">...</span>
+                        ) : (
+                          <button
+                            onClick={() => goToPage(pageNum as number)}
+                            className={`
+                              px-3 py-2 rounded-md text-sm font-medium transition-colors
+                              ${currentPage === pageNum
+                                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-400 dark:border-orange-800'
+                                : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-orange-100 dark:hover:bg-orange-900/30 border border-gray-200 dark:border-slate-600'
+                              }
+                            `}
+                          >
+                            {pageNum}
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                    className={`
+                      px-3 py-2 rounded-md text-sm font-medium transition-colors
+                      ${currentPage === totalPages
+                        ? 'bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                        : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-orange-100 dark:hover:bg-orange-900/30 border border-gray-200 dark:border-slate-600'
+                      }
+                    `}
+                    aria-label="Next page"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </button>
+                </motion.div>
               )}
 
-              {/* Infinite scroll loading trigger */}
-              <div
-                ref={observerTarget}
-                className="py-8 flex justify-center items-center min-h-[100px]"
-                aria-hidden="true"
-              >
-                <AnimatePresence mode="wait">
-                  {isLoadingMore && hasMorePosts && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="flex flex-col items-center"
-                    >
-                      <svg
-                        className="animate-spin h-8 w-8 text-orange-500 dark:text-orange-300 mb-2"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Loading more posts...</span>
-                    </motion.div>
-                  )}
-
-                  {loadingError && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="text-center text-red-500 dark:text-red-400 py-2"
-                    >
-                      <p>{loadingError}</p>
-                      <button
-                        onClick={() => {
-                          setLoadingError(null);
-                          loadMorePosts();
-                        }}
-                        className="mt-2 px-4 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-md text-sm hover:bg-orange-200 dark:hover:bg-orange-800/40 transition-colors"
-                      >
-                        Try Again
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* End of content message */}
-                {!hasMorePosts && sortedPosts.length > 8 && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6 }}
-                    className="text-center py-4 text-sm text-gray-400 dark:text-gray-500"
-                  >
-                    You've reached the end
-                  </motion.div>
-                )}
-              </div>
-            </motion.div>
+              {/* Page info */}
+              {totalPages > 1 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                  className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                >
+                  Page {currentPage} of {totalPages} • {sortedPosts.length} total posts
+                </motion.div>
+              )}
+            </>
           )}
         </div>
       </section>
