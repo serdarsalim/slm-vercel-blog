@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Fuse from "fuse.js";
@@ -43,33 +43,23 @@ export default function AuthorBlogContent({
   // Constants
   const POSTS_PER_PAGE = 15;
   
-  // Context and refs
+  // Context
   const { author } = useAuthor();
   
   // Core state
-  const [posts, setPosts] = useState<any[]>(initialPosts);
+  const [posts] = useState<any[]>(initialPosts); // Made this readonly since you're not updating it
   const [currentPage, setCurrentPage] = useState(1);
-  const [isBrowser, setIsBrowser] = useState(false);
   
   // Search and filters
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearchTerm = useDebounce(searchInput, 300);
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
-  // Initialize browser state once
+  // Reset page when search term changes
   useEffect(() => {
-    setIsBrowser(true);
-  }, []);
-
-  // Apply debounced search with stable dependencies
-  useEffect(() => {
-    setSearchTerm(debouncedSearchTerm);
-    if (debouncedSearchTerm !== searchTerm) {
-      setCurrentPage(1); // Reset to first page on new search
-    }
-  }, [debouncedSearchTerm]);
+    setCurrentPage(1);
+  }, [debouncedSearchTerm, selectedCategories]);
 
   // Create search index with memoization
   const fuse = useMemo(() => {
@@ -89,25 +79,29 @@ export default function AuthorBlogContent({
 
   // Filter posts by search term and categories
   const filteredPosts = useMemo(() => {
-    if (searchTerm && fuse) {
-      return fuse.search(searchTerm).map(result => result.item);
+    let result = posts;
+
+    // Apply search filter
+    if (debouncedSearchTerm && fuse) {
+      result = fuse.search(debouncedSearchTerm).map(result => result.item);
     }
 
-    if (selectedCategories.includes("all")) {
-      return posts;
+    // Apply category filter
+    if (!selectedCategories.includes("all")) {
+      result = result.filter(post => {
+        const postCategories = getCategoryArray(post.categories)
+          .map(cat => cat.toLowerCase().trim());
+        
+        return selectedCategories.some(selectedCat => 
+          postCategories.includes(selectedCat.toLowerCase().trim())
+        );
+      });
     }
 
-    return posts.filter(post => {
-      const postCategories = getCategoryArray(post.categories)
-        .map(cat => cat.toLowerCase().trim());
-      
-      return selectedCategories.some(selectedCat => 
-        postCategories.includes(selectedCat.toLowerCase().trim())
-      );
-    });
-  }, [posts, fuse, searchTerm, selectedCategories]);
+    return result;
+  }, [posts, fuse, debouncedSearchTerm, selectedCategories]);
 
-  // Sort posts (featured first)
+  // Sort posts (featured first) - removed problematic ref dependency
   const sortedPosts = useMemo(() => {
     const featuredPosts = filteredPosts.filter(post => post.featured);
     const nonFeaturedPosts = filteredPosts.filter(post => !post.featured);
@@ -127,7 +121,6 @@ export default function AuthorBlogContent({
   // Handle category filter selection
   const handleCategoryClick = useCallback((cat: string) => {
     setSelectedCategories([cat]);
-    setCurrentPage(1); // Reset to first page
   }, []);
 
   // Pagination handlers
@@ -167,7 +160,7 @@ export default function AuthorBlogContent({
   // Animation variants
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: (i) => ({
+    visible: (i: number) => ({
       opacity: 1,
       y: 0,
       transition: {
@@ -184,7 +177,7 @@ export default function AuthorBlogContent({
 
   // Generate page numbers to display
   const getPageNumbers = () => {
-    const pages = [];
+    const pages: (number | string)[] = [];
     const maxPagesToShow = 5;
     
     if (totalPages <= maxPagesToShow) {
@@ -339,7 +332,6 @@ export default function AuthorBlogContent({
                   onClick={() => {
                     setIsSearchExpanded(false);
                     setSearchInput("");
-                    setSearchTerm("");
                   }}
                 >
                   <span className="text-gray-400 dark:text-gray-500 text-lg">×</span>
@@ -349,7 +341,7 @@ export default function AuthorBlogContent({
           </AnimatePresence>
 
           {/* Search results indicator */}
-          {searchTerm && (
+          {debouncedSearchTerm && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -359,7 +351,7 @@ export default function AuthorBlogContent({
                 ? "No posts found matching your search"
                 : `Found ${filteredPosts.length} post${
                     filteredPosts.length === 1 ? "" : "s"
-                  } matching "${searchTerm}"`}
+                  } matching "${debouncedSearchTerm}"`}
             </motion.div>
           )}
         </div>
@@ -388,54 +380,49 @@ export default function AuthorBlogContent({
                 transition={{ duration: 0.4 }}
                 className="space-y-3"
               >
-                {/* Only render posts on the client side after hydration */}
-                {isBrowser && (
-                  <>
-                    {visiblePosts.map((post, index) => (
-                      <motion.div
-                        key={post.id || post.slug}
-                        custom={index}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        whileHover="hover"
-                        variants={cardVariants}
-                        className="blog-card border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:border-orange-200 dark:hover:border-orange-900/40 hover:shadow-[1px_1px_0_0_rgba(251,146,60,0.3)] dark:hover:shadow-[1px_1px_0_0_rgba(249,115,22,0.2)]"
-                      >
-                        <Link
-                          href={`/${author.handle}/${post.slug}`}
-                          className="block"
-                        >
-                          <BlogPostCard
-                            post={{
-                              ...post,
-                              id: post.id,
-                              slug: post.slug,
-                              title: post.title,
-                              content: post.content,
-                              excerpt: post.excerpt || "",
-                              date: post.date,
-                              categories: post.categories || [],
-                              featured: post.featured || false,
-                              author: post.author || author.name,
-                              author_handle: post.author_handle || author.handle,
-                              featuredImage: post.featuredImage || "",
-                              comment:
-                                post.comment !== undefined ? post.comment : true,
-                              socmed:
-                                post.socmed !== undefined ? post.socmed : true,
-                              created_at: post.created_at,
-                              updated_at: post.updated_at,
-                            }}
-                            index={index}
-                            cardVariants={cardVariants}
-                            shouldAnimate={false}
-                          />
-                        </Link>
-                      </motion.div>
-                    ))}
-                  </>
-                )}
+                {visiblePosts.map((post, index) => (
+                  <motion.div
+                    key={post.id || post.slug}
+                    custom={index}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    whileHover="hover"
+                    variants={cardVariants}
+                    className="blog-card border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:border-orange-200 dark:hover:border-orange-900/40 hover:shadow-[1px_1px_0_0_rgba(251,146,60,0.3)] dark:hover:shadow-[1px_1px_0_0_rgba(249,115,22,0.2)]"
+                  >
+                    <Link
+                      href={`/${author.handle}/${post.slug}`}
+                      className="block"
+                    >
+                      <BlogPostCard
+                        post={{
+                          ...post,
+                          id: post.id,
+                          slug: post.slug,
+                          title: post.title,
+                          content: post.content,
+                          excerpt: post.excerpt || "",
+                          date: post.date,
+                          categories: post.categories || [],
+                          featured: post.featured || false,
+                          author: post.author || author.name,
+                          author_handle: post.author_handle || author.handle,
+                          featuredImage: post.featuredImage || "",
+                          comment:
+                            post.comment !== undefined ? post.comment : true,
+                          socmed:
+                            post.socmed !== undefined ? post.socmed : true,
+                          created_at: post.created_at,
+                          updated_at: post.updated_at,
+                        }}
+                        index={index}
+                        cardVariants={cardVariants}
+                        shouldAnimate={false}
+                      />
+                    </Link>
+                  </motion.div>
+                ))}
               </motion.div>
 
               {/* Pagination Controls */}
