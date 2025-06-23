@@ -69,7 +69,7 @@ function SchemaContent() {
     "sameAs": [
       // Add your social links here
     ],
-    "description": "Join the Circle. Not your typical blog."
+    "description": "Tools, insights, and ideas that matter."
   };
 
   // WebSite schema for better SEO
@@ -78,7 +78,7 @@ function SchemaContent() {
     "@type": "WebSite",
     "url": "https://halqa.xyz",
     "name": "Halqa",
-    "description": "Join the Circle. Not your typical blog.",
+    "description": "Tools, insights, and ideas that matter.",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
@@ -97,7 +97,7 @@ function SchemaContent() {
     "name": pathname === "/" 
       ? "Join the Circle" 
       : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | Halqa`,
-    "description": "Join the Circle. Not your typical blog.",
+    "description": "Tools, insights, and ideas that matter.",
     "isPartOf": {
       "@type": "WebSite",
       "name": "Halqa",
