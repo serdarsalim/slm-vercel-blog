@@ -248,6 +248,46 @@ export async function getAllAuthors() {
   return authorsWithActivity.sort((a, b) => b.lastActivity - a.lastActivity);
 }
 
+/**
+ * Get authors with their recent posts for homepage display
+ */
+export async function getAuthorsWithRecentPosts() {
+  try {
+    // Get all listed authors
+    const { data: authors, error: authorsError } = await supabase
+      .from('authors_public')
+      .select('*')
+      .eq('listing_status', 'listed');
+      
+    if (authorsError || !authors) {
+      console.error('Error fetching authors:', authorsError);
+      return [];
+    }
+    
+    // For each author, fetch their 2 most recent posts
+    const authorsWithPosts = await Promise.all(
+      authors.map(async (author) => {
+        const { data: posts } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('author_handle', author.handle)
+          .order('date', { ascending: false })
+          .limit(2);
+        
+        return {
+          ...author,
+          posts: posts || []
+        };
+      })
+    );
+    
+    return authorsWithPosts;
+  } catch (e) {
+    console.error('Exception fetching authors with posts:', e);
+    return [];
+  }
+}
+
 // Get latest posts from listed authors - updated with filtering
 export async function getLatestPostsAcrossAuthors(limit = 5) {
   const { data: posts, error } = await supabase

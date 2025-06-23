@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { getAllAuthors } from '@/lib/author-data';
+import { getAuthorsWithRecentPosts } from '@/lib/author-data';
 import CustomStyles from './components/CustomStyles';
 
 // Import your EXISTING AuthorCarousel component with dynamic import
@@ -27,7 +27,7 @@ const ScanLines = () => (
 
 // Helper function to get recent articles from all authors
 async function getRecentArticles() {
-  const authors = await getAllAuthors();
+  const authors = await getAuthorsWithRecentPosts();
   const allArticles = [];
   
   for (const author of authors) {
@@ -37,12 +37,12 @@ async function getRecentArticles() {
       allArticles.push({
         ...article,
         authorName: author.name,
-        authorSlug: author.slug
+        authorHandle: author.handle
       });
     });
   }
   
-  // Sort by date and return the most recent ones - Fixed TypeScript error
+  // Sort by date and return the most recent ones
   return allArticles
     .sort((a, b) => {
       const dateA = new Date(a.date || 0).getTime();
@@ -54,13 +54,8 @@ async function getRecentArticles() {
 
 export default async function Page() {
   // Server-side data fetching
-  const authors = await getAllAuthors();
+  const authors = await getAuthorsWithRecentPosts();
   const recentArticles = await getRecentArticles();
-  
-  // Debug logging - you can remove this after testing
-  console.log('Authors found:', authors.length);
-  console.log('Recent articles found:', recentArticles.length);
-  console.log('Sample article:', recentArticles[0]);
   
   return (
     <div className="min-h-screen terminal-bg text-slate-300 relative overflow-x-hidden">
@@ -124,7 +119,6 @@ export default async function Page() {
               href="/authors"
               className="inline-flex items-center text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-mono border border-emerald-200 dark:border-emerald-800/50 hover:border-emerald-300 dark:hover:border-emerald-600 px-3 md:px-4 py-2 bg-white/80 dark:bg-slate-900/50 rounded text-sm md:text-base"
             >
-              <span className="mr-2">&gt;</span>
               <span>Explore more</span>
               <svg className="w-4 h-4 ml-2 md:ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -144,17 +138,12 @@ export default async function Page() {
             Latest insights and stories from our community
           </p>
           
-          {/* Debug info - remove after testing */}
-          <div className="text-center mb-4 text-sm text-gray-500 font-mono">
-            Debug: {authors.length} authors, {recentArticles.length} articles
-          </div>
-          
           {recentArticles.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               {recentArticles.map((article, index) => (
                 <Link
-                  key={`${article.authorSlug}-${article.slug}-${index}`}
-                  href={`/authors/${article.authorSlug}/${article.slug}`}
+                  key={`${article.authorHandle}-${article.slug}-${index}`}
+                  href={`/${article.authorHandle}/${article.slug}`}
                   className="group bg-white dark:bg-slate-800/50 rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-slate-700/50"
                 >
                   {/* Featured Image */}
@@ -186,9 +175,9 @@ export default async function Page() {
                       {article.title}
                     </h3>
                     
-                    {article.subtitle && (
+                    {article.excerpt && (
                       <p className="text-sm md:text-base text-gray-600 dark:text-slate-400 font-mono leading-relaxed line-clamp-3">
-                        {article.subtitle}
+                        {article.excerpt}
                       </p>
                     )}
                     
@@ -208,10 +197,6 @@ export default async function Page() {
               <div className="text-4xl md:text-5xl mb-4">📝</div>
               <p className="text-sm mb-2">No articles available yet</p>
               <p className="text-sm">Articles will appear here when published.</p>
-              {/* Debug info */}
-              <p className="text-xs mt-4 text-gray-500">
-                Debug: Found {authors.length} authors with {authors.reduce((total, author) => total + (author.posts?.length || 0), 0)} total posts
-              </p>
             </div>
           )}
         </div>
