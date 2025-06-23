@@ -34,7 +34,7 @@ const merriweather = Merriweather({
 export const metadata: Metadata = {
   metadataBase: new URL('https://halqa.xyz'),
   title: {
-    default: "HALQA – JOIN THE CIRCLE",
+    default: "HALQA – Tools, insights, and ideas that matter.",
     template: "%s | HALQA"
   },
   description: "Stories that help us seek problems worth solving, build human-centered solutions, and implement them without unintended consequences.",
@@ -43,18 +43,18 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: 'https://halqa.xyz',
     siteName: 'HALQA',
-    title: 'HALQA – JOIN THE CIRCLE',
+    title: 'HALQA – Tools, insights, and ideas that matter.',
     description: 'Stories that transform challenges into solutions for humanity - seeking what matters, building what works, implementing what helps.',
     images: [{
       url: '/og-image.jpg',
       width: 1200,
       height: 630,
-      alt: 'HALQA – JOIN THE CIRCLE',
+      alt: 'HALQA – Tools, insights, and ideas that matter.',
     }]
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'HALQA – JOIN THE CIRCLE',
+    title: 'HALQA – Tools, insights, and ideas that matter.',
     description: 'Stories that transform challenges into solutiWeons for humanity - seeking what matters, building what works, implementing what helps.',
     images: ['/og-image.jpg'],
   },
