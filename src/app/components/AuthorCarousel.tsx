@@ -184,7 +184,7 @@ export default function AuthorCarousel({ authors }: AuthorCarouselProps) {
                       {/* View Profile Link - Always at bottom */}
                       <div className="mt-auto pt-2">
                         <span className="inline-block text-sm font-medium text-orange-500 dark:text-orange-400 hover:underline">
-                          View Profile →
+                          Open →
                         </span>
                       </div>
                     </div>
