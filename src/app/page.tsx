@@ -1,8 +1,20 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { getAuthorsWithRecentPosts } from '@/lib/author-data';
 import CustomStyles from './components/CustomStyles';
+import { createClient } from '@supabase/supabase-js';
+
+// Create a service role client for server-side queries
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!, // This bypasses RLS
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 // Import your EXISTING AuthorCarousel component with dynamic import
 const AuthorCarousel = dynamic(() => import('./components/AuthorCarousel'), {
@@ -25,7 +37,44 @@ const ScanLines = () => (
   </div>
 );
 
-// Helper function to get recent articles from all authors
+// Get authors with their recent posts - only "listed" ones
+async function getAuthorsWithRecentPosts() {
+  const { data: authors, error } = await supabaseAdmin
+    .from('authors')
+    .select(`
+      *,
+      posts(
+        id,
+        slug,
+        title,
+        excerpt,
+        date,
+        featuredImage,
+        created_at,
+        author_handle
+      )
+    `)
+    .eq('listing_status', 'listed')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching authors with posts:', error);
+    return [];
+  }
+
+  // Sort posts by date for each author
+  return (authors || []).map(author => ({
+    ...author,
+    posts: (author.posts || []).sort((a, b) => {
+      const dateA = new Date(a.date || a.created_at).getTime();
+      const dateB = new Date(b.date || b.created_at).getTime();
+      return dateB - dateA;
+    })
+  }));
+}
+
+// Helper function to get recent articles from all listed authors
 async function getRecentArticles() {
   const authors = await getAuthorsWithRecentPosts();
   const allArticles = [];
@@ -45,11 +94,11 @@ async function getRecentArticles() {
   // Sort by date and return the most recent ones
   return allArticles
     .sort((a, b) => {
-      const dateA = new Date(a.date || 0).getTime();
-      const dateB = new Date(b.date || 0).getTime();
+      const dateA = new Date(a.date || a.created_at || 0).getTime();
+      const dateB = new Date(b.date || b.created_at || 0).getTime();
       return dateB - dateA; // Most recent first
     })
-    .slice(0, 6); // Limit to 6 total articles
+    .slice(0, 12); // Limit to 6 total articles
 }
 
 export default async function Page() {
@@ -65,30 +114,29 @@ export default async function Page() {
       {/* Geometric pattern overlay */}
       <div className="geometric-overlay absolute inset-0 opacity-10" style={{ zIndex: 0 }}></div>
       
-      {/* Hero Section */}
-     {/* Hero Section - Enhanced with gradient */}
-<section className="pt-16 pb-4 relative overflow-hidden" style={{ 
-  zIndex: 2,
-  background: "linear-gradient(135deg, var(--card-bg-color) 0%, var(--gradient-middle) 50%, var(--gradient-end) 100%)",
-}}>
-  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/30 dark:to-slate-900/30"></div>
-  
-  {/* Subtle animated accent - constrained positioning */}
-  <div className="absolute -top-10 right-1/4 w-32 h-32 md:w-64 md:h-64 bg-blue-200/20 dark:bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow"></div>
-  <div className="absolute -bottom-20 left-1/3 w-36 h-36 md:w-72 md:h-72 bg-orange-200/20 dark:bg-orange-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
+      {/* Hero Section - Enhanced with gradient */}
+      <section className="pt-16 pb-4 relative overflow-hidden" style={{ 
+        zIndex: 2,
+        background: "linear-gradient(135deg, var(--card-bg-color) 0%, var(--gradient-middle) 50%, var(--gradient-end) 100%)",
+      }}>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/30 dark:to-slate-900/30"></div>
+        
+        {/* Subtle animated accent - constrained positioning */}
+        <div className="absolute -top-10 right-1/4 w-32 h-32 md:w-64 md:h-64 bg-blue-200/20 dark:bg-blue-500/10 rounded-full blur-3xl animate-pulse-slow"></div>
+        <div className="absolute -bottom-20 left-1/3 w-36 h-36 md:w-72 md:h-72 bg-orange-200/20 dark:bg-orange-500/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '2s' }}></div>
 
-  <div className="max-w-6xl mx-auto px-4 relative">
-    <div className="flex flex-col items-center text-center">
-      <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl pb-2 font-bold mb-6 leading-relaxed text-gray-900 dark:text-slate-100 font-mono tracking-tight break-words">
-        HALQA
-      </h1>
-      
-      <p className="font-mono text-base sm:text-lg md:text-xl tracking-tight text-gray-600 dark:text-slate-400 mb-10 px-2">
-        Welcome, so good to see you! 
-      </p>
-    </div>
-  </div>
-</section>
+        <div className="max-w-6xl mx-auto px-4 relative">
+          <div className="flex flex-col items-center text-center">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl pb-2 font-bold mb-6 leading-relaxed text-gray-900 dark:text-slate-100 font-mono tracking-tight break-words">
+              HALQA
+            </h1>
+            
+            <p className="font-mono text-base sm:text-lg md:text-xl tracking-tight text-gray-600 dark:text-slate-400 mb-10 px-2">
+              Welcome, so good to see you! 
+            </p>
+          </div>
+        </div>
+      </section>
       
       {/* Author Carousel Section - USING YOUR EXISTING COMPONENT */}
       <section className="py-8 md:py-16 bg-white dark:bg-slate-950/50 relative backdrop-blur-sm overflow-hidden" style={{ zIndex: 2 }}>
@@ -128,7 +176,7 @@ export default async function Page() {
         </div>
       </section>
 
-       {/* Recent Articles Section */}
+      {/* Recent Articles Section */}
       <section className="py-8 md:py-16 bg-gray-50 dark:bg-slate-900/50 relative overflow-hidden" style={{ zIndex: 2 }}>
         <div className="max-w-6xl mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold mb-3 text-center font-mono tracking-tight text-gray-900 dark:text-slate-100">
@@ -202,7 +250,51 @@ export default async function Page() {
         </div>
       </section>
       
-
+      {/* Value Proposition Section - With dark mode support */}
+      <section className="py-8 md:py-16 bg-white dark:bg-slate-900 relative overflow-hidden" style={{ zIndex: 2 }}>
+        <div className="max-w-6xl mx-auto px-4 mb-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
+            {/* SEEK - Magnifying Glass Icon */}
+            <div className="flex flex-col items-center text-center px-2">
+              <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 mb-4 md:mb-6">
+                <svg className="w-6 h-6 md:w-8 md:h-8 text-emerald-600 dark:text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-mono text-gray-900 dark:text-slate-100">Explore</h3>
+              <p className="text-gray-600 dark:text-slate-400 font-mono text-xs md:text-sm leading-relaxed">
+              We create solutions for complex problems and share insights from different perspectives - technology, finance, history, and personal growth.
+              </p>
+            </div>
+            
+            {/* BUILD - Construction/Tools Icon */}
+            <div className="flex flex-col items-center text-center px-2">
+              <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 mb-4 md:mb-6">
+                <svg className="w-6 h-6 md:w-8 md:h-8 text-cyan-600 dark:text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-mono text-gray-900 dark:text-slate-100">Consider</h3>
+              <p className="text-gray-600 dark:text-slate-400 font-mono text-xs md:text-sm leading-relaxed">
+              We examine possible approaches that might address the deeper causes, not just symptoms. We're piecing together understanding, even when solutions aren't immediately obvious.
+              </p>
+            </div>
+            
+            {/* IMPLEMENT - Rocket Launch Icon */}
+            <div className="flex flex-col items-center text-center px-2">
+              <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 mb-4 md:mb-6">
+                <svg className="w-6 h-6 md:w-8 md:h-8 text-blue-600 dark:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+              </div>
+              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-mono text-gray-900 dark:text-slate-100">Envision</h3>
+              <p className="text-gray-600 dark:text-slate-400 font-mono text-xs md:text-sm leading-relaxed">
+              We imagine what could be, without pretending there are easy answers. Some challenges can't be solved today, but by thinking through possibilities, we plant seeds for the future.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
