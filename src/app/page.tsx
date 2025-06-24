@@ -98,7 +98,7 @@ async function getRecentArticles() {
       const dateB = new Date(b.date || b.created_at || 0).getTime();
       return dateB - dateA; // Most recent first
     })
-    .slice(0, 12); // Limit to 6 total articles
+    .slice(0, 12); // Limit to 12 total articles
 }
 
 export default async function Page() {
@@ -254,42 +254,42 @@ export default async function Page() {
       <section className="py-8 md:py-16 bg-white dark:bg-slate-900 relative overflow-hidden" style={{ zIndex: 2 }}>
         <div className="max-w-6xl mx-auto px-4 mb-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
-            {/* SEEK - Magnifying Glass Icon */}
+            {/* Worth Your Time - Clock Icon */}
             <div className="flex flex-col items-center text-center px-2">
               <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 mb-4 md:mb-6">
                 <svg className="w-6 h-6 md:w-8 md:h-8 text-emerald-600 dark:text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
-              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-mono text-gray-900 dark:text-slate-100">Explore</h3>
+              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-mono text-gray-900 dark:text-slate-100">Worth Your Time</h3>
               <p className="text-gray-600 dark:text-slate-400 font-mono text-xs md:text-sm leading-relaxed">
-              We create solutions for complex problems and share insights from different perspectives - technology, finance, history, and personal growth.
+                Life's short. We only publish what makes you think, laugh, or learn something useful. No padding, no posturing, no wasted minutes.
               </p>
             </div>
             
-            {/* BUILD - Construction/Tools Icon */}
+            {/* Actually Helpful - Lightbulb Icon */}
             <div className="flex flex-col items-center text-center px-2">
               <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 mb-4 md:mb-6">
                 <svg className="w-6 h-6 md:w-8 md:h-8 text-cyan-600 dark:text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
                 </svg>
               </div>
-              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-mono text-gray-900 dark:text-slate-100">Consider</h3>
+              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-mono text-gray-900 dark:text-slate-100">Actually Helpful</h3>
               <p className="text-gray-600 dark:text-slate-400 font-mono text-xs md:text-sm leading-relaxed">
-              We examine possible approaches that might address the deeper causes, not just symptoms. We're piecing together understanding, even when solutions aren't immediately obvious.
+                Tools that work. Stories that stick. Ideas you can use tomorrow. If we can't make it practical or entertaining, we don't make it.
               </p>
             </div>
             
-            {/* IMPLEMENT - Rocket Launch Icon */}
+            {/* For Everyone - Globe Icon */}
             <div className="flex flex-col items-center text-center px-2">
               <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 mb-4 md:mb-6">
                 <svg className="w-6 h-6 md:w-8 md:h-8 text-blue-600 dark:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
-              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-mono text-gray-900 dark:text-slate-100">Envision</h3>
+              <h3 className="text-lg md:text-xl font-bold mb-2 md:mb-3 font-mono text-gray-900 dark:text-slate-100">For Everyone</h3>
               <p className="text-gray-600 dark:text-slate-400 font-mono text-xs md:text-sm leading-relaxed">
-              We imagine what could be, without pretending there are easy answers. Some challenges can't be solved today, but by thinking through possibilities, we plant seeds for the future.
+                No paywalls, no gatekeeping, no nonsense. Just humans making things for other humans who want to solve problems together.
               </p>
             </div>
           </div>
