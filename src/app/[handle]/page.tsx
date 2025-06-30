@@ -1,5 +1,4 @@
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
 import { Author, BlogPost } from '@/app/types/blogpost';
 import { getAuthorByHandle, getAuthorPosts, getAuthorFeaturedPosts } from '@/lib/author-data';
 import AuthorProfileHeader from './components/AuthorProfileHeader';
@@ -32,14 +31,10 @@ export default async function AuthorPage({ params }: { params: { handle: string 
         <AuthorProfileHeader />
         
         <div className="max-w-4xl mx-auto bg-white dark:bg-slate-800 shadow-sm">
-          <Suspense fallback={<div className="flex justify-center p-12">
-            <div className="w-8 h-8 border-4 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin"></div>
-          </div>}>
-            <AuthorBlogContent 
-              initialPosts={posts} 
-              initialFeaturedPosts={featuredPosts} 
-            />
-          </Suspense>
+          <AuthorBlogContent 
+            initialPosts={posts} 
+            initialFeaturedPosts={featuredPosts} 
+          />
         </div>
       </AuthorProvider>
     </div>
