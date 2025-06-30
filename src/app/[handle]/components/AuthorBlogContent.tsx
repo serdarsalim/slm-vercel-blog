@@ -48,6 +48,7 @@ export default function AuthorBlogContent({
   
   // Core state
   const [posts] = useState<any[]>(initialPosts); // Made this readonly since you're not updating it
+  const [hasLoadedInitially, setHasLoadedInitially] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   
   // Search and filters
@@ -56,10 +57,13 @@ export default function AuthorBlogContent({
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
-  // Reset page when search term changes
+  // Mark as loaded initially and reset page when search term changes
   useEffect(() => {
+    if (initialPosts && !hasLoadedInitially) {
+      setHasLoadedInitially(true);
+    }
     setCurrentPage(1);
-  }, [debouncedSearchTerm, selectedCategories]);
+  }, [debouncedSearchTerm, selectedCategories, initialPosts, hasLoadedInitially]);
 
   // Create search index with memoization
   const fuse = useMemo(() => {

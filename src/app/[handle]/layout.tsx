@@ -72,11 +72,7 @@ export default async function AuthorLayout({
         author={author} 
         preferences={preferences}
       >
-        <Suspense fallback={
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="animate-spin w-10 h-10 border-4 border-yellow-300 rounded-full border-t-transparent"></div>
-          </div>
-        }>
+        <Suspense fallback={<div></div>}>
           {children}
         </Suspense>
       </AuthorProvider>
