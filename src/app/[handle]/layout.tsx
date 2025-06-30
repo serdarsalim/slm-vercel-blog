@@ -51,31 +51,11 @@ export default async function AuthorLayout({
     notFound();
   }
   
-  // Fetch author data and preferences
-  const author = await getAuthorByHandle(params.handle);
-  const preferences = await getAuthorPreferences(params.handle);
-  
-  // Apply author's theme if available
-  const themeColors = preferences?.theme_colors || {};
-  const fontStyle = preferences?.font_style || 'serif';
-  const customCSS = preferences?.custom_css || '';
-  
   return (
     <div className="author-space">
-      {/* Add custom CSS if provided */}
-      {customCSS && (
-        <style dangerouslySetInnerHTML={{ __html: customCSS }} />
-      )}
-      
-      {/* AuthorProvider gives client components access to author context */}
-      <AuthorProvider 
-        author={author} 
-        preferences={preferences}
-      >
-        <Suspense fallback={<div></div>}>
-          {children}
-        </Suspense>
-      </AuthorProvider>
+      <Suspense fallback={<div></div>}>
+        {children}
+      </Suspense>
     </div>
   );
 }
