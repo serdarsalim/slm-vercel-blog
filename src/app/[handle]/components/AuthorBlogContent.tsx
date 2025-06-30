@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import Fuse from "fuse.js";
 import { useAuthor } from "../AuthorContext";
 import BlogPostCard from "@/app/components/BlogPostCard";
@@ -395,36 +394,31 @@ export default function AuthorBlogContent({
                     variants={cardVariants}
                     className="blog-card border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden transition-all duration-300 hover:border-orange-200 dark:hover:border-orange-900/40 hover:shadow-[1px_1px_0_0_rgba(251,146,60,0.3)] dark:hover:shadow-[1px_1px_0_0_rgba(249,115,22,0.2)]"
                   >
-                    <Link
-                      href={`/${author.handle}/${post.slug}`}
-                      className="block"
-                    >
-                      <BlogPostCard
-                        post={{
-                          ...post,
-                          id: post.id,
-                          slug: post.slug,
-                          title: post.title,
-                          content: post.content,
-                          excerpt: post.excerpt || "",
-                          date: post.date,
-                          categories: post.categories || [],
-                          featured: post.featured || false,
-                          author: post.author || author.name,
-                          author_handle: post.author_handle || author.handle,
-                          featuredImage: post.featuredImage || "",
-                          comment:
-                            post.comment !== undefined ? post.comment : true,
-                          socmed:
-                            post.socmed !== undefined ? post.socmed : true,
-                          created_at: post.created_at,
-                          updated_at: post.updated_at,
-                        }}
-                        index={index}
-                        cardVariants={cardVariants}
-                        shouldAnimate={false}
-                      />
-                    </Link>
+                    <BlogPostCard
+                      post={{
+                        ...post,
+                        id: post.id,
+                        slug: post.slug,
+                        title: post.title,
+                        content: post.content,
+                        excerpt: post.excerpt || "",
+                        date: post.date,
+                        categories: post.categories || [],
+                        featured: post.featured || false,
+                        author: post.author || author.name,
+                        author_handle: post.author_handle || author.handle,
+                        featuredImage: post.featuredImage || "",
+                        comment:
+                          post.comment !== undefined ? post.comment : true,
+                        socmed:
+                          post.socmed !== undefined ? post.socmed : true,
+                        created_at: post.created_at,
+                        updated_at: post.updated_at,
+                      }}
+                      index={index}
+                      cardVariants={cardVariants}
+                      shouldAnimate={false}
+                    />
                   </motion.div>
                 ))}
               </motion.div>

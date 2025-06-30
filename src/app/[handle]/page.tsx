@@ -6,21 +6,30 @@ import AuthorBlogContent from './components/AuthorBlogContent';
 import { AuthorProvider } from './AuthorContext';
 
 export default async function AuthorPage({ params }: { params: { handle: string } }) {
-  const authorData = await getAuthorByHandle(params.handle);
-  
-  if (!authorData) {
-    notFound();
-  }
-  
-  const author = authorData as Author;
-  const posts = (await getAuthorPosts(params.handle)) as BlogPost[];
-  const featuredPosts = (await getAuthorFeaturedPosts(params.handle)) as BlogPost[];
-  // Add your debug logs here
+  try {
+    const authorData = await getAuthorByHandle(params.handle);
+    
+    if (!authorData) {
+      notFound();
+    }
+    
+    const author = authorData as Author;
+    
+    // Fetch posts with timeout and fallback
+    const [posts, featuredPosts] = await Promise.allSettled([
+      getAuthorPosts(params.handle),
+      getAuthorFeaturedPosts(params.handle)
+    ]);
+    
+    const safePosts = posts.status === 'fulfilled' ? posts.value as BlogPost[] : [];
+    const safeFeaturedPosts = featuredPosts.status === 'fulfilled' ? featuredPosts.value as BlogPost[] : [];
+    
+    console.log(`Author: ${author.name}, Posts: ${safePosts.length}, Featured: ${safeFeaturedPosts.length}`);
 
-  // Define default preferences if needed
-  const defaultPreferences = {
-    font_style: 'sans-serif',   // Only required property
-  };
+    // Define default preferences if needed
+    const defaultPreferences = {
+      font_style: 'sans-serif',   // Only required property
+    };
 
   return (
  
@@ -32,11 +41,15 @@ export default async function AuthorPage({ params }: { params: { handle: string 
         
         <div className="max-w-4xl mx-auto bg-white dark:bg-slate-800 shadow-sm">
           <AuthorBlogContent 
-            initialPosts={posts} 
-            initialFeaturedPosts={featuredPosts} 
+            initialPosts={safePosts} 
+            initialFeaturedPosts={safeFeaturedPosts} 
           />
         </div>
       </AuthorProvider>
     </div>
   );
+  } catch (error) {
+    console.error('Error loading author page:', error);
+    notFound();
+  }
 }
