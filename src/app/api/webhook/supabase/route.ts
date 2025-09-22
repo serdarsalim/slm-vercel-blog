@@ -6,46 +6,56 @@ import path from 'path';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET(request) {
+export async function POST(request: Request) {
   try {
-    // Check if this is a Google verification file request
-    const url = new URL(request.url);
-    const pathname = url.pathname;
-    
-    if (pathname.match(/\/google\w+\.html$/)) {
-      // Skip processing Google verification files
-      return new NextResponse(null, { status: 404 });
+    // Verify webhook signature if you have one configured
+    const webhookSecret = process.env.SUPABASE_WEBHOOK_SECRET;
+
+    if (webhookSecret) {
+      const signature = request.headers.get('x-webhook-signature');
+      if (signature !== webhookSecret) {
+        return NextResponse.json({ success: false, message: 'Invalid webhook signature' }, { status: 401 });
+      }
     }
 
+    // Parse webhook payload
+    const payload = await request.json();
+    console.log('Supabase webhook triggered:', payload);
 
-    // Add your security check here if needed
-    const token = request.nextUrl.searchParams.get('token');
-    if (token !== process.env.REVALIDATION_SECRET) {
-      return NextResponse.json({ success: false, message: 'Invalid token' }, { status: 401 });
+    // Check if the change affects content that should trigger a sitemap update
+    const affectedTables = ['posts', 'authors'];
+    const tableName = payload.table || payload.schema?.table;
+
+    if (!affectedTables.includes(tableName)) {
+      return NextResponse.json({
+        success: true,
+        message: `Table ${tableName} does not require sitemap update`
+      });
     }
-    
+
+    // Generate new sitemap
     const serviceRoleClient = getServiceRoleClient();
     const baseUrl = 'https://halqa.co';
-    
+
     // Fetch data
     const { data: authors = [] } = await serviceRoleClient
       .from("authors")
       .select("handle, updated_at");
-      
+
     const { data: posts = [] } = await serviceRoleClient
       .from("posts")
       .select("slug, author_handle, updated_at");
 
-    // Exclude non-author files (e.g., verification HTML)
+    // Filter out non-author files
     const filteredAuthors = authors.filter(author => !author.handle.endsWith('.html'));
-    
+
     // Format date without milliseconds
-    const formatDate = (dateString) => {
+    const formatDate = (dateString: string) => {
       const date = new Date(dateString);
       return date.toISOString().replace(/\.\d+Z$/, 'Z');
     };
-    
-    // Build XML string - NO BLANK LINE before XML declaration!
+
+    // Build XML string
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -54,8 +64,8 @@ export async function GET(request) {
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>`;
-    
-    // Add authors and posts...
+
+    // Add authors
     for (const author of filteredAuthors) {
       xml += `
   <url>
@@ -65,7 +75,8 @@ export async function GET(request) {
     <priority>0.8</priority>
   </url>`;
     }
-    
+
+    // Add posts
     for (const post of posts) {
       xml += `
   <url>
@@ -75,17 +86,29 @@ export async function GET(request) {
     <priority>0.7</priority>
   </url>`;
     }
-    
+
     xml += `
 </urlset>`;
 
-    // Write to a static file
+    // Write to file
     const publicDir = path.join(process.cwd(), 'public');
     await fs.writeFile(path.join(publicDir, 'sitemap.xml'), xml);
-    
-    return NextResponse.json({ success: true, message: 'Sitemap updated successfully' });
+
+    console.log('Sitemap updated automatically via webhook');
+
+    return NextResponse.json({
+      success: true,
+      message: 'Sitemap updated successfully via webhook',
+      updatedAt: new Date().toISOString(),
+      triggeredBy: tableName
+    });
+
   } catch (error) {
-    console.error("Error generating sitemap:", error);
-    return NextResponse.json({ success: false, message: 'Failed to update sitemap' }, { status: 500 });
+    console.error("Error in Supabase webhook:", error);
+    return NextResponse.json({
+      success: false,
+      message: 'Failed to update sitemap via webhook',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

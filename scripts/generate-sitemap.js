@@ -8,7 +8,7 @@ async function generateSitemap() {
   // Load environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const baseUrl = 'https://halqa.xyz';
+  const baseUrl = 'https://halqa.co';
 
   if (!supabaseUrl || !supabaseKey) {
     console.error('❌ Supabase credentials not found in environment variables');
