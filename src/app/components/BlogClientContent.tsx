@@ -4,7 +4,6 @@ import React, {
   useState,
   useEffect,
   useMemo,
-  useRef,
   useCallback,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,14 +43,7 @@ export default function BlogClientContent({
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialSearch = searchParams?.get("search") || "";
-  // Modern approach - preload all but render incrementally
-  const [renderedCount, setRenderedCount] = useState(8);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const scrollObserverRef = useRef<HTMLDivElement>(null);
-  const lastScrollY = useRef(0);
-  const scrollDirection = useRef<"up" | "down">("down");
-  const ticking = useRef(false);
-  const [showLoader, setShowLoader] = useState(false);
+  // All posts are rendered at once on load
 
   // Search state
   const [searchInput, setSearchInput] = useState(initialSearch);
@@ -64,24 +56,14 @@ export default function BlogClientContent({
   const [posts, setPosts] = useState<BlogPost[]>(Array.isArray(initialPosts) ? initialPosts : []);
   const [isBrowser, setIsBrowser] = useState(false);
 
-  // Track if the component is mounted
-  const isMounted = useRef(false);
-
   // Set browser state for hydration safety
   useEffect(() => {
     setIsBrowser(true);
-    isMounted.current = true;
-
-    return () => {
-      isMounted.current = false;
-    };
   }, []);
 
   // Apply debounced search
   useEffect(() => {
     setSearchTerm(debouncedSearchTerm);
-    // Reset render count when search changes
-    setRenderedCount(8);
   }, [debouncedSearchTerm]);
 
   useEffect(() => {
@@ -92,7 +74,6 @@ export default function BlogClientContent({
   const clearSearchFilters = useCallback(() => {
     setSearchInput("");
     setSearchTerm("");
-    setRenderedCount(8);
 
     const params = new URLSearchParams(searchParams?.toString() || "");
     params.delete("search");
@@ -118,14 +99,10 @@ export default function BlogClientContent({
   }, [posts]);
 
   // Handle category selection
-// Replace the current handleCategoryClick function with this:
-const handleCategoryClick = (cat: string) => {
-  // Always select exactly one category - the one clicked
-  setSelectedCategories([cat]);
-  
-  // Reset render count when category changes
-  setRenderedCount(8);
-};
+  const handleCategoryClick = (cat: string) => {
+    // Always select exactly one category - the one clicked
+    setSelectedCategories([cat]);
+  };
   // Apply filters and search
 // Apply filters and search
 const filteredPosts = useMemo(() => {
@@ -159,88 +136,8 @@ const filteredPosts = useMemo(() => {
     return [...featuredPosts, ...nonFeaturedPosts];
   }, [filteredPosts]);
 
-  // Get only the rendered posts to be shown
-  const visiblePosts = useMemo(() => {
-    return sortedPosts.slice(0, renderedCount);
-  }, [sortedPosts, renderedCount]);
-
-  // Check if there are more posts to load
-  const hasMorePosts = renderedCount < sortedPosts.length;
-
-  // Handle smooth incremental loading as user scrolls
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // Update scroll direction
-    const updateScrollDirection = () => {
-      const currentScrollY = window.scrollY;
-
-      if (currentScrollY > lastScrollY.current) {
-        scrollDirection.current = "down";
-      } else if (currentScrollY < lastScrollY.current) {
-        scrollDirection.current = "up";
-      }
-
-      lastScrollY.current = currentScrollY > 0 ? currentScrollY : 0;
-      ticking.current = false;
-    };
-
-    // Check if we should load more posts
-    const handleScroll = () => {
-      if (!ticking.current) {
-        window.requestAnimationFrame(() => {
-          updateScrollDirection();
-
-          // Only try to load more when scrolling down
-          if (
-            scrollDirection.current === "down" &&
-            hasMorePosts &&
-            !isLoadingMore
-          ) {
-            const scrollPercentage =
-              (window.scrollY + window.innerHeight) /
-              document.body.scrollHeight;
-
-            // When we're 75% down the page, load more
-            if (scrollPercentage > 0.75) {
-              loadMorePosts();
-            }
-          }
-
-          ticking.current = false;
-        });
-
-        ticking.current = true;
-      }
-    };
-
-    // Add scroll listener
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [hasMorePosts, isLoadingMore, sortedPosts.length]);
-
-  // Function to load more posts gradually
-  const loadMorePosts = useCallback(() => {
-    if (!hasMorePosts || isLoadingMore || !isMounted.current) return;
-    
-    // Show the loader
-    setShowLoader(true);
-    setIsLoadingMore(true);
-    
-    // Add posts in a single batch after a short delay
-    setTimeout(() => {
-      if (isMounted.current) {
-        // Add a batch of posts all at once (up to 10 more)
-        const newCount = Math.min(renderedCount + 10, sortedPosts.length);
-        setRenderedCount(newCount);
-        setIsLoadingMore(false);
-        setShowLoader(false);
-      }
-    }, 600); // Slightly longer delay to show the loader
-  }, [hasMorePosts, isLoadingMore, renderedCount, sortedPosts.length]);
+  // All posts rendered at once
+  const visiblePosts = sortedPosts;
 
   // Get category counts for filter buttons
   const categoryCounts = useMemo(() => {
@@ -324,7 +221,7 @@ const filteredPosts = useMemo(() => {
             className="relative text-center mb-6"
           >
             <h2 className="text-lg text-gray-600 dark:text-gray-400 font-semibold mb-4 select-none">
-              Digital notes on some interests. 🧶
+              Digital notes on my interests. 🧶
             </h2>
           </motion.div>
 
@@ -456,37 +353,6 @@ const filteredPosts = useMemo(() => {
                 </>
               )}
 
-              {/* Invisible scroll trigger - no visible loading indicator */}
-              {hasMorePosts && (
-                <div
-                  ref={scrollObserverRef}
-                  className="h-1 opacity-0"
-                  aria-hidden="true"
-                />
-              )}
-
-              {/* Loading indicator */}
-              {showLoader && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex justify-center py-8"
-                >
-                  <div className="w-10 h-10 border-4 border-gray-200 dark:border-gray-700 border-t-orange-500 rounded-full animate-spin"></div>
-                </motion.div>
-              )}
-              
-              {/* End message - only shown when no more posts */}
-              {!hasMorePosts && sortedPosts.length > 10 && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                  className="text-center py-6 text-sm text-gray-400 dark:text-gray-500"
-                >
-                  You've seen all posts
-                </motion.div>
-              )}
             </motion.div>
           )}
         </div>

@@ -98,11 +98,13 @@ export default function BlogPostCard({
         <div className="flex flex-row">
           {/* Content section */}
           <div className="p-4 flex-1 overflow-hidden flex flex-col">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2 group-hover:text-orange-700 dark:group-hover:text-orange-400 transition-colors">
+            <h3
+              className="text-base font-semibold text-gray-900 dark:text-[#bfbfbf] mb-2 group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors"
+            >
               {post.title}
             </h3>
 
-            <p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300 mb-auto line-clamp-3">
+            <p className="hidden sm:block text-xs sm:text-sm text-gray-600 dark:text-gray-300/90 mb-auto line-clamp-3">
               {truncatedExcerpt}
             </p>
 
@@ -124,7 +126,7 @@ export default function BlogPostCard({
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-gray-500 dark:text-gray-400/90">
                   {formattedDate}
                 </span>
               </div>
@@ -134,7 +136,7 @@ export default function BlogPostCard({
                 {getCategoryArray(post.categories).map((category, i) => (
                   <span
                     key={`cat-${i}`}
-                    className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs font-medium bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300"
+                    className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs font-medium bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-200"
                   >
                     {category}
                   </span>

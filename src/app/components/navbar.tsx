@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useState, FormEvent, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import SignInButton from "./SignInButton";
@@ -11,7 +10,7 @@ const navLinks = [
 ];
 
 export default function Navbar() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -23,9 +22,15 @@ export default function Navbar() {
   useEffect(() => {
     setMounted(true);
     const savedTheme = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+    if (!savedTheme) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+      setDarkMode(true);
+      return;
+    }
+
+    if (savedTheme === "dark") {
       document.documentElement.classList.add("dark");
       setDarkMode(true);
     } else {
@@ -102,12 +107,15 @@ export default function Navbar() {
     <nav className="relative top-0 left-0 right-0 z-50 py-2 bg-white dark:bg-slate-900 shadow-sm">
       <div className="max-w-4xl mx-auto flex justify-between items-center px-4">
         <Link href="/" className="group flex items-center space-x-3 relative">
-          <div className="relative h-8 w-8 overflow-hidden rounded-lg">
-            <Image src="/logo.png" alt="Logo" fill sizes="32px" priority />
-            <div className="absolute top-0 right-0 w-2 h-2 bg-blue-400 dark:bg-blue-300 rounded-full animate-ping opacity-70 duration-1000 delay-75" />
+          <div className="relative h-9 w-9 rounded-full bg-gradient-to-br from-orange-600 via-orange-700 to-amber-700 shadow-[0_6px_18px_rgba(194,65,12,0.45)] flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.5),transparent)]" />
+            <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white/50 blur-sm" />
+            <span className="text-xs font-semibold tracking-wide text-white/95 drop-shadow">
+              SD
+            </span>
           </div>
-          <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-blue-300">
-            HALQA
+          <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-orange-200">
+            Serdar Salim Domurcuk
           </span>
         </Link>
 
