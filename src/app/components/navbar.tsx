@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, FormEvent, useRef } from "react";
+import { useEffect, useState, useRef, Suspense, FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import SignInButton from "./SignInButton";
 
@@ -14,10 +14,6 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const [searchValue, setSearchValue] = useState("");
-  const paramsSnapshot = useRef("");
 
   useEffect(() => {
     setMounted(true);
@@ -39,11 +35,6 @@ export default function Navbar() {
     }
   }, []);
 
-  useEffect(() => {
-    setSearchValue(searchParams?.get("search") || "");
-    paramsSnapshot.current = searchParams?.toString() || "";
-  }, [searchParams]);
-
   const toggleDarkMode = () => {
     const newDarkMode = !darkMode;
     setDarkMode(newDarkMode);
@@ -56,43 +47,6 @@ export default function Navbar() {
       localStorage.setItem("theme", "light");
     }
   };
-
-  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsMenuOpen(false);
-  };
-
-  const clearSearch = () => {
-    setSearchValue("");
-    setIsMenuOpen(false);
-  };
-
-  useEffect(() => {
-    paramsSnapshot.current = searchParams?.toString() || "";
-  }, [searchParams]);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    const handler = setTimeout(() => {
-      const trimmed = searchValue.trim();
-      const params = new URLSearchParams(paramsSnapshot.current);
-      const currentSearch = params.get("search") || "";
-
-      if (trimmed === currentSearch) return;
-
-      if (trimmed) {
-        params.set("search", trimmed);
-      } else {
-        params.delete("search");
-      }
-
-      const query = params.toString();
-      router.push(query ? `/?${query}` : "/");
-    }, 350);
-
-    return () => clearTimeout(handler);
-  }, [searchValue, mounted, router]);
 
   if (!mounted) return null;
 
@@ -152,28 +106,9 @@ export default function Navbar() {
             </Link>
           ))}
           <SignInButton />
-          <form
-            onSubmit={handleSearchSubmit}
-            className="flex items-center space-x-2 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 shadow-sm"
-          >
-            <input
-              type="text"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              placeholder="Search posts"
-              className="bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none min-w-[160px]"
-            />
-            {searchValue && (
-              <button
-                type="button"
-                onClick={clearSearch}
-                className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                aria-label="Clear search"
-              >
-                ×
-              </button>
-            )}
-          </form>
+          <Suspense fallback={<div className="w-[160px] h-8" />}>
+            <DesktopSearch />
+          </Suspense>
           <button
             onClick={toggleDarkMode}
             className="ml-2 p-1.5 rounded-xl"
@@ -199,37 +134,9 @@ export default function Navbar() {
       {isMenuOpen && (
         <div className="md:hidden border-t border-gray-200 dark:border-gray-700/50">
           <div className="py-3 px-4 flex flex-col space-y-2">
-            <form onSubmit={handleSearchSubmit} className="flex flex-col space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-800">
-              <label htmlFor="mobile-search" className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                Search Posts
-              </label>
-              <div className="flex items-center space-x-2">
-                <input
-                  id="mobile-search"
-                  type="text"
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  placeholder="Search posts"
-                  className="flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none"
-                />
-                {searchValue && (
-                  <button
-                    type="button"
-                    onClick={clearSearch}
-                    className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-                    aria-label="Clear search"
-                  >
-                    ×
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  className="text-sm font-semibold text-orange-600 dark:text-orange-300"
-                >
-                  Go
-                </button>
-              </div>
-            </form>
+            <Suspense fallback={null}>
+              <MobileSearch onAction={() => setIsMenuOpen(false)} />
+            </Suspense>
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -277,5 +184,158 @@ export default function Navbar() {
 
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200 dark:bg-gray-700" />
     </nav>
+  );
+}
+
+function DesktopSearch() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [searchValue, setSearchValue] = useState("");
+  const paramsSnapshot = useRef("");
+
+  useEffect(() => {
+    setSearchValue(searchParams?.get("search") || "");
+    paramsSnapshot.current = searchParams?.toString() || "";
+  }, [searchParams]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const trimmed = searchValue.trim();
+      const params = new URLSearchParams(paramsSnapshot.current);
+      const currentSearch = params.get("search") || "";
+
+      if (trimmed === currentSearch) return;
+
+      if (trimmed) {
+        params.set("search", trimmed);
+      } else {
+        params.delete("search");
+      }
+
+      const query = params.toString();
+      router.push(query ? `/?${query}` : "/");
+    }, 350);
+
+    return () => clearTimeout(handler);
+  }, [searchValue, router]);
+
+  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+  };
+
+  const clearSearch = () => {
+    setSearchValue("");
+  };
+
+  return (
+    <form
+      onSubmit={handleSearchSubmit}
+      className="flex items-center space-x-2 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 shadow-sm"
+    >
+      <input
+        type="text"
+        value={searchValue}
+        onChange={(e) => setSearchValue(e.target.value)}
+        placeholder="Search posts"
+        className="bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none min-w-[160px]"
+      />
+      {searchValue && (
+        <button
+          type="button"
+          onClick={clearSearch}
+          className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+          aria-label="Clear search"
+        >
+          ×
+        </button>
+      )}
+    </form>
+  );
+}
+
+interface MobileSearchProps {
+  onAction?: () => void;
+}
+
+function MobileSearch({ onAction }: MobileSearchProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [searchValue, setSearchValue] = useState("");
+  const paramsSnapshot = useRef("");
+
+  useEffect(() => {
+    setSearchValue(searchParams?.get("search") || "");
+    paramsSnapshot.current = searchParams?.toString() || "";
+  }, [searchParams]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      const trimmed = searchValue.trim();
+      const params = new URLSearchParams(paramsSnapshot.current);
+      const currentSearch = params.get("search") || "";
+
+      if (trimmed === currentSearch) return;
+
+      if (trimmed) {
+        params.set("search", trimmed);
+      } else {
+        params.delete("search");
+      }
+
+      const query = params.toString();
+      router.push(query ? `/?${query}` : "/");
+    }, 350);
+
+    return () => clearTimeout(handler);
+  }, [searchValue, router]);
+
+  const handleSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    onAction?.();
+  };
+
+  const clearSearch = () => {
+    setSearchValue("");
+    onAction?.();
+  };
+
+  return (
+    <form
+      onSubmit={handleSearchSubmit}
+      className="flex flex-col space-y-2 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 bg-white dark:bg-slate-800"
+    >
+      <label
+        htmlFor="mobile-search"
+        className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide"
+      >
+        Search Posts
+      </label>
+      <div className="flex items-center space-x-2">
+        <input
+          id="mobile-search"
+          type="text"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          placeholder="Search posts"
+          className="flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none"
+        />
+        {searchValue && (
+          <button
+            type="button"
+            onClick={clearSearch}
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
+        <button
+          type="submit"
+          className="text-sm font-semibold text-orange-600 dark:text-orange-300"
+        >
+          Go
+        </button>
+      </div>
+    </form>
   );
 }
