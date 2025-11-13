@@ -7,9 +7,7 @@ import { usePathname } from "next/navigation";
 import SignInButton from "./SignInButton";
 
 const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "Blog", href: "/blog" },
-  { label: "About", href: "/about" }
+  { label: "Blog", href: "/" }
 ];
 
 export default function Navbar() {

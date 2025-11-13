@@ -161,10 +161,31 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-12">
-      <div className="max-w-5xl mx-auto px-4 space-y-12">
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-8 max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Your Profile</h1>
-        
+      <div className="max-w-5xl mx-auto px-4 space-y-10">
+        <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.4em] text-orange-500">Settings</p>
+            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
+              Profile & Access
+            </h1>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="px-3 py-1 rounded-full bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-gray-200">
+              {session?.user?.email}
+            </span>
+            {isAdmin ? (
+              <span className="px-3 py-1 rounded-full bg-green-100 text-green-700">
+                Admin
+              </span>
+            ) : (
+              <span className="px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                Member
+              </span>
+            )}
+          </div>
+        </header>
+
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-8">
         {session?.user?.status === "pending" && (
           <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 text-yellow-700 dark:text-yellow-300">
             Your account is pending approval. You can update your profile information while you wait.
@@ -186,119 +207,111 @@ export default function ProfilePage() {
         )}
         
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            {/* Avatar Upload Component */}
-            <div className="mb-6">
-              
-              <AvatarUpload
-                currentAvatar={avatarUrl}
-                onAvatarChange={handleAvatarChange}
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email (cannot be changed)
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={session?.user?.email || ""}
-                disabled
-                className="w-full px-3 py-2 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Full Name*
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-              />
-            </div>
-            
-            <div>
-        <label htmlFor="handle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          Username*
-        </label>
-        <input
-          type="text"
-          id="handle"
-          value={handle}
-          onChange={handleHandleChange} // Use the validation function
-          required
-          className={`w-full px-3 py-2 bg-white dark:bg-slate-700 border ${handleError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600`}
-        />
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          This will be your URL: HALQA.XYZ/{handle}
-        </p>
-        {handleError && (
-          <p className="mt-1 text-sm text-red-600 dark:text-red-400">{handleError}</p>
-        )}
-      </div>
-            
-            <div>
-              <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Bio
-              </label>
-              <textarea
-                id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                rows={4}
-                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="website" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Website URL
-              </label>
-              <input
-                type="url"
-                id="website"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-                placeholder="https://"
-              />
-            </div>
-            
-            <div className="pt-2">
-            <button
-  type="submit"
-  disabled={isSaving || !handleValid || (!isAdmin && handle.length < 4)}
-                className="w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSaving ? 'Saving...' : 'Save Profile'}
-              </button>
+          <div className="space-y-6">
+            <div className="space-y-6">
+              <div className="grid gap-6">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={session?.user?.email || ""}
+                      disabled
+                      className="w-full px-3 py-2 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-700 dark:text-gray-300 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Full Name*
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="handle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Username*
+                    </label>
+                    <input
+                      type="text"
+                      id="handle"
+                      value={handle}
+                      onChange={handleHandleChange}
+                      required
+                      className={`w-full px-3 py-2 bg-white dark:bg-slate-700 border ${handleError ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-slate-600'} rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600`}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Your URL will be halqa.xyz/{handle || 'username'}
+                    </p>
+                    {handleError && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{handleError}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-3 items-start">
+                  <div className="flex justify-center md:justify-start">
+                    <AvatarUpload
+                      currentAvatar={avatarUrl}
+                      onAvatarChange={handleAvatarChange}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Bio
+                    </label>
+                    <textarea
+                      id="bio"
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      rows={4}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
+                    />
+                  </div>
+
+                  <div className="space-y-4">
+                    <label htmlFor="website" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Website URL
+                    </label>
+                    <input
+                      type="url"
+                      id="website"
+                      value={website}
+                      onChange={(e) => setWebsite(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
+                      placeholder="https://"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isSaving || !handleValid || (!isAdmin && handle.length < 4)}
+                      className="w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSaving ? 'Saving...' : 'Save Profile'}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </form>
       </div>
 
-      {isAdmin && (
-        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-          <div className="mb-6">
-            <p className="text-sm uppercase tracking-[0.3em] text-orange-500 mb-2">
-              Admin
-            </p>
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              Publishing Workspace
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">
-              Create, edit, publish, and archive posts without leaving your settings page.
-            </p>
-          </div>
-          <AdminPostManager />
-        </div>
-      )}
+        {isAdmin && (
+          <section className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+            <AdminPostManager />
+          </section>
+        )}
       </div>
     </div>
   );
