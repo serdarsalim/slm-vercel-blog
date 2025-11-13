@@ -270,7 +270,7 @@ const filteredPosts = useMemo(() => {
             initial={{ opacity: 0.9, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative flex flex-col sm:flex-row gap-5 sm:gap-6 items-start text-left mb-6"
+            className="relative flex flex-row flex-wrap sm:flex-nowrap gap-4 sm:gap-6 items-start text-left mb-6"
           >
             <div className="flex-shrink-0">
               <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-xl ring-2 ring-orange-200 dark:ring-slate-700 bg-orange-100/50">
