@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-interface QuillEditorProps {
+interface EditorProps {
   value: string;
   onChange: (value: string) => void;
   height?: number;
@@ -10,87 +10,101 @@ interface QuillEditorProps {
 
 declare global {
   interface Window {
-    Quill?: any;
+    tinymce?: any;
   }
 }
 
-async function ensureQuillLoaded() {
-  if (typeof window === "undefined") return;
-  if (window.Quill) return;
+const TINYMCE_SCRIPT_ID = "tinymce-cdn-script";
+const TINYMCE_CDN =
+  "https://cdnjs.cloudflare.com/ajax/libs/tinymce/8.1.2/tinymce.min.js";
 
-  await new Promise<void>((resolve) => {
-    const existingScript = document.getElementById("quill-script");
-    if (existingScript) {
-      existingScript.addEventListener("load", () => resolve(), { once: true });
+async function ensureTinyMCELoaded() {
+  if (typeof window === "undefined") return;
+  if (window.tinymce) return;
+
+  await new Promise<void>((resolve, reject) => {
+    const existing = document.getElementById(TINYMCE_SCRIPT_ID);
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(), { once: true });
       return;
     }
 
     const script = document.createElement("script");
-    script.id = "quill-script";
-    script.src = "https://cdn.quilljs.com/1.3.7/quill.js";
-    script.onload = () => resolve();
+    script.id = TINYMCE_SCRIPT_ID;
+    script.src = TINYMCE_CDN;
+    script.referrerPolicy = "origin";
+    script.addEventListener("load", () => resolve(), { once: true });
+    script.addEventListener("error", () => reject(), { once: true });
     document.body.appendChild(script);
   });
 }
 
-function ensureStyles() {
-  if (document.getElementById("quill-style")) return;
-  const link = document.createElement("link");
-  link.id = "quill-style";
-  link.rel = "stylesheet";
-  link.href = "https://cdn.quilljs.com/1.3.7/quill.snow.css";
-  document.head.appendChild(link);
-}
-
-export default function QuillEditor({ value, onChange, height = 320 }: QuillEditorProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const quillInstance = useRef<any>(null);
+export default function QuillEditor({
+  value = "",
+  onChange,
+  height = 320,
+}: EditorProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<any>(null);
+  const latestValueRef = useRef<string>(value || "");
 
   useEffect(() => {
     let cancelled = false;
 
-    const setupQuill = async () => {
-      if (!containerRef.current) return;
-      await ensureQuillLoaded();
-      if (cancelled || !containerRef.current || !window.Quill) return;
-      ensureStyles();
+    const initTinyMCE = async () => {
+      if (!textareaRef.current) return;
+      textareaRef.current.value = latestValueRef.current;
+      await ensureTinyMCELoaded();
+      if (cancelled || !window.tinymce) return;
 
-      if (!quillInstance.current) {
-          quillInstance.current = new window.Quill(containerRef.current, {
-            theme: "snow",
-            modules: {
-              toolbar: [
-                [{ header: [1, 2, 3, false] }],
-                ["bold", "italic", "underline", "strike"],
-                [{ list: "ordered" }, { list: "bullet" }],
-                ["link", "blockquote", "code-block"],
-                [{ color: [] }, { background: [] }],
-                ["clean"],
-              ],
-            },
+      window.tinymce.init({
+        target: textareaRef.current,
+        height,
+        menubar: false,
+        branding: false,
+        license_key: "gpl",
+        plugins: ["link", "lists", "code", "autoresize"],
+        toolbar:
+          "undo redo | blocks | bold italic underline | bullist numlist | link | alignleft aligncenter alignright | code",
+        autoresize_bottom_margin: 16,
+        setup(editor: any) {
+          editorRef.current = editor;
+          editor.on("init", () => {
+            editor.setContent(latestValueRef.current);
           });
-
-        quillInstance.current.root.innerHTML = value || "";
-
-        quillInstance.current.on("text-change", () => {
-          const html = quillInstance.current.root.innerHTML;
-          onChange(html);
-        });
-      } else if (value !== quillInstance.current.root.innerHTML) {
-        quillInstance.current.root.innerHTML = value || "";
-      }
+          editor.on(
+            "change keyup undo redo",
+            () => !cancelled && onChange(editor.getContent())
+          );
+        },
+      });
     };
 
-    setupQuill();
+    initTinyMCE();
 
     return () => {
       cancelled = true;
-      if (quillInstance.current) {
-        quillInstance.current.off("text-change");
-        quillInstance.current = null;
+      if (editorRef.current) {
+        editorRef.current.remove();
+        editorRef.current = null;
       }
     };
-  }, [value, onChange]);
+  }, [height, onChange]);
 
-  return <div ref={containerRef} style={{ minHeight: height, height }} />;
+  useEffect(() => {
+    latestValueRef.current = value || "";
+    if (!editorRef.current) return;
+    const currentContent = editorRef.current.getContent();
+    if (currentContent === latestValueRef.current) return;
+    editorRef.current.setContent(latestValueRef.current);
+  }, [value]);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      defaultValue={value}
+      style={{ visibility: "hidden" }}
+    />
+  );
 }
