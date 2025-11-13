@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from 'react';
-import type { BlogPost } from '@/app/types/blogpost';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import type { BlogPost } from "@/app/types/blogpost";
 
 type AdminPost = BlogPost & { published?: boolean };
 
@@ -22,15 +22,15 @@ type FormState = {
 };
 
 const defaultFormState = (): FormState => ({
-  title: '',
-  slug: '',
-  excerpt: '',
-  content: '',
-  categories: '',
+  title: "",
+  slug: "",
+  excerpt: "",
+  content: "",
+  categories: "",
   date: new Date().toISOString().slice(0, 10),
-  featuredImage: '',
-  author: 'HALQA',
-  author_handle: 'halqa',
+  featuredImage: "",
+  author: "HALQA",
+  author_handle: "halqa",
   featured: false,
   comment: true,
   socmed: true,
@@ -38,29 +38,59 @@ const defaultFormState = (): FormState => ({
 });
 
 function formatCategories(post?: AdminPost) {
-  if (!post?.categories) return '';
-  return Array.isArray(post.categories) ? post.categories.join(', ') : '';
+  if (!post?.categories) return "";
+  return Array.isArray(post.categories) ? post.categories.join(", ") : "";
 }
 
-interface PostManagerProps {
-  initialPosts: AdminPost[];
+interface AdminPostManagerProps {
+  initialPosts?: AdminPost[];
 }
 
-export default function PostManager({ initialPosts }: PostManagerProps) {
+export default function AdminPostManager({
+  initialPosts = [],
+}: AdminPostManagerProps) {
   const [posts, setPosts] = useState<AdminPost[]>(initialPosts);
   const [form, setForm] = useState<FormState>(defaultFormState);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'drafts'>('all');
-  const [loadingState, setLoadingState] = useState<'idle' | 'saving' | 'deleting' | 'refreshing'>('idle');
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "published" | "drafts"
+  >("all");
+  const [loadingState, setLoadingState] = useState<
+    "idle" | "saving" | "deleting" | "refreshing"
+  >("idle");
+  const [message, setMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  const refreshPosts = useCallback(async () => {
+    setLoadingState("refreshing");
+    try {
+      const response = await fetch("/api/admin/posts", { cache: "no-store" });
+      if (!response.ok) throw new Error("Failed to refresh posts");
+      const data = await response.json();
+      setPosts(data.posts ?? []);
+    } catch (error) {
+      console.error(error);
+      setMessage({ type: "error", text: "Could not load posts" });
+    } finally {
+      setLoadingState("idle");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (initialPosts.length === 0) {
+      refreshPosts();
+    }
+  }, [initialPosts.length, refreshPosts]);
 
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
       const matchesFilter =
-        statusFilter === 'all' ||
-        (statusFilter === 'published' && post.published) ||
-        (statusFilter === 'drafts' && !post.published);
+        statusFilter === "all" ||
+        (statusFilter === "published" && post.published) ||
+        (statusFilter === "drafts" && !post.published);
 
       const matchesSearch =
         !search ||
@@ -81,13 +111,15 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
     setForm({
       title: post.title,
       slug: post.slug,
-      excerpt: post.excerpt ?? '',
+      excerpt: post.excerpt ?? "",
       content: post.content,
       categories: formatCategories(post),
-      date: post.date ? post.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
-      featuredImage: post.featuredImage ?? '',
-      author: post.author ?? 'HALQA',
-      author_handle: post.author_handle ?? 'halqa',
+      date: post.date
+        ? post.date.slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+      featuredImage: post.featuredImage ?? "",
+      author: post.author ?? "HALQA",
+      author_handle: post.author_handle ?? "halqa",
       featured: post.featured ?? false,
       comment: post.comment ?? true,
       socmed: post.socmed ?? true,
@@ -95,24 +127,9 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
     });
   };
 
-  const refreshPosts = async () => {
-    setLoadingState('refreshing');
-    try {
-      const response = await fetch('/api/admin/posts');
-      if (!response.ok) throw new Error('Failed to refresh posts');
-      const data = await response.json();
-      setPosts(data.posts ?? []);
-    } catch (error) {
-      console.error(error);
-      setMessage({ type: 'error', text: 'Could not load posts' });
-    } finally {
-      setLoadingState('idle');
-    }
-  };
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setLoadingState('saving');
+    setLoadingState("saving");
     setMessage(null);
 
     const payload = {
@@ -122,88 +139,105 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
 
     try {
       const response = await fetch(
-        editingId ? `/api/admin/posts/${editingId}` : '/api/admin/posts',
+        editingId ? `/api/admin/posts/${editingId}` : "/api/admin/posts",
         {
-          method: editingId ? 'PATCH' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: editingId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         }
       );
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to save post');
+        throw new Error(data.error || "Failed to save post");
       }
 
-      setMessage({ type: 'success', text: editingId ? 'Post updated' : 'Post created' });
+      setMessage({
+        type: "success",
+        text: editingId ? "Post updated" : "Post created",
+      });
       resetForm();
       await refreshPosts();
     } catch (error) {
       console.error(error);
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to save post' });
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to save post",
+      });
     } finally {
-      setLoadingState('idle');
+      setLoadingState("idle");
     }
   };
 
   const deletePost = async (id: string) => {
-    if (!confirm('Delete this post? This cannot be undone.')) return;
-    setLoadingState('deleting');
+    if (!confirm("Delete this post? This cannot be undone.")) return;
+    setLoadingState("deleting");
     setMessage(null);
 
     try {
-      const response = await fetch(`/api/admin/posts/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/admin/posts/${id}`, {
+        method: "DELETE",
+      });
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to delete post');
+        throw new Error(data.error || "Failed to delete post");
       }
-      setMessage({ type: 'success', text: 'Post deleted' });
+      setMessage({ type: "success", text: "Post deleted" });
       if (editingId === id) resetForm();
       await refreshPosts();
     } catch (error) {
       console.error(error);
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to delete post' });
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to delete post",
+      });
     } finally {
-      setLoadingState('idle');
+      setLoadingState("idle");
     }
   };
 
   const togglePublish = async (post: AdminPost) => {
-    setLoadingState('saving');
+    setLoadingState("saving");
     setMessage(null);
 
     try {
       const response = await fetch(`/api/admin/posts/${post.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ published: !post.published }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to update publish status');
+        throw new Error(data.error || "Failed to update publish status");
       }
 
-      setMessage({ type: 'success', text: !post.published ? 'Post published' : 'Post unpublished' });
+      setMessage({
+        type: "success",
+        text: !post.published ? "Post published" : "Post unpublished",
+      });
       await refreshPosts();
     } catch (error) {
       console.error(error);
-      setMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update status' });
+      setMessage({
+        type: "error",
+        text:
+          error instanceof Error ? error.message : "Failed to update status",
+      });
     } finally {
-      setLoadingState('idle');
+      setLoadingState("idle");
     }
   };
 
   const onInputChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value, type, checked } = event.target;
     setForm((prev) => ({
       ...prev,
-      [name]:
-        type === 'checkbox'
-          ? checked
-          : value,
+      [name]: type === "checkbox" ? checked : value,
     }));
   };
 
@@ -212,9 +246,9 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
       {message && (
         <div
           className={`rounded-md px-4 py-3 text-sm ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
+            message.type === "success"
+              ? "bg-green-50 text-green-700 border border-green-200"
+              : "bg-red-50 text-red-700 border border-red-200"
           }`}
         >
           {message.text}
@@ -223,17 +257,19 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap gap-2">
-          {(['all', 'published', 'drafts'] as const).map((filter) => (
+          {(["all", "published", "drafts"] as const).map((filter) => (
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
               className={`px-3 py-1.5 rounded-full text-sm border transition ${
                 statusFilter === filter
-                  ? 'bg-orange-500 text-white border-orange-500'
-                  : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
+                  ? "bg-orange-500 text-white border-orange-500"
+                  : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
               }`}
             >
-              {filter === 'drafts' ? 'Drafts' : filter.charAt(0).toUpperCase() + filter.slice(1)}
+              {filter === "drafts"
+                ? "Drafts"
+                : filter.charAt(0).toUpperCase() + filter.slice(1)}
             </button>
           ))}
         </div>
@@ -247,10 +283,10 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
           />
           <button
             onClick={refreshPosts}
-            disabled={loadingState === 'refreshing'}
+            disabled={loadingState === "refreshing"}
             className="px-3 py-2 rounded-md bg-gray-900 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
           >
-            {loadingState === 'refreshing' ? 'Refreshing...' : 'Refresh'}
+            {loadingState === "refreshing" ? "Refreshing..." : "Refresh"}
           </button>
         </div>
       </div>
@@ -258,7 +294,9 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
       <div className="grid gap-8 lg:grid-cols-2">
         <section className="space-y-4">
           {filteredPosts.length === 0 ? (
-            <p className="text-sm text-gray-500">No posts match your filters.</p>
+            <p className="text-sm text-gray-500">
+              No posts match your filters.
+            </p>
           ) : (
             filteredPosts.map((post) => (
               <article
@@ -275,11 +313,11 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
                       <span
                         className={`px-2 py-0.5 rounded-full ${
                           post.published
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
+                            ? "bg-green-100 text-green-700"
+                            : "bg-yellow-100 text-yellow-700"
                         }`}
                       >
-                        {post.published ? 'Published' : 'Draft'}
+                        {post.published ? "Published" : "Draft"}
                       </span>
                       {post.featured && (
                         <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
@@ -299,7 +337,7 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
                       onClick={() => togglePublish(post)}
                       className="text-xs px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600"
                     >
-                      {post.published ? 'Unpublish' : 'Publish'}
+                      {post.published ? "Unpublish" : "Publish"}
                     </button>
                     <button
                       onClick={() => deletePost(post.id)}
@@ -318,11 +356,11 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-semibold">
-                {editingId ? 'Edit Post' : 'Create New Post'}
+                {editingId ? "Edit Post" : "Create New Post"}
               </h2>
               {editingId && (
                 <p className="text-xs text-gray-500">
-                  Editing existing entry.{' '}
+                  Editing existing entry.{" "}
                   <button
                     onClick={resetForm}
                     className="underline text-blue-600 dark:text-blue-400"
@@ -380,7 +418,9 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Author Handle</label>
+                <label className="block text-sm font-medium mb-1">
+                  Author Handle
+                </label>
                 <input
                   name="author_handle"
                   value={form.author_handle}
@@ -415,7 +455,9 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium mb-1">Categories</label>
+                <label className="block text-sm font-medium mb-1">
+                  Categories
+                </label>
                 <input
                   name="categories"
                   value={form.categories}
@@ -425,7 +467,9 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Featured Image URL</label>
+                <label className="block text-sm font-medium mb-1">
+                  Featured Image URL
+                </label>
                 <input
                   name="featuredImage"
                   value={form.featuredImage}
@@ -481,14 +525,14 @@ export default function PostManager({ initialPosts }: PostManagerProps) {
             <div className="flex items-center gap-3">
               <button
                 type="submit"
-                disabled={loadingState === 'saving'}
+                disabled={loadingState === "saving"}
                 className="px-4 py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
               >
-                {loadingState === 'saving'
-                  ? 'Saving...'
+                {loadingState === "saving"
+                  ? "Saving..."
                   : editingId
-                  ? 'Save changes'
-                  : 'Create post'}
+                  ? "Save changes"
+                  : "Create post"}
               </button>
               {editingId && (
                 <button

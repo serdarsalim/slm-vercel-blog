@@ -3,6 +3,18 @@ import { supabase } from './supabase';
 import type { Post } from './supabase';
 import type { BlogPost } from '@/app/types/blogpost';
 
+const PUBLISHED_FILTER = 'published.eq.true,published.is.null';
+
+type QueryBuilder<T> = (filterPublished: boolean) => any;
+
+async function runPostsQuery<T>(build: QueryBuilder<T>) {
+  let { data, error } = await build(true);
+  if (error && (error.code === '42703' || error.message?.includes('published'))) {
+    ({ data, error } = await build(false));
+  }
+  return { data, error };
+}
+
 /**
  * Fetch all blog posts with enhanced logging
  */
@@ -26,13 +38,20 @@ export async function getAllPosts(): Promise<Post[]> {
     
     console.log(`✅ Supabase connection successful! Found approximately ${postCount} total posts`);
     
+    const publishedFilter = 'published.eq.true,published.is.null';
+
     // Check what posts we have
-    const { data: allPosts, error: allPostsError } = await supabase
-      .from('posts')
-      .select('id, title, slug')
-      .eq('published', true)
-      .order('position', { ascending: false })
-      .order('date', { ascending: false });
+    const { data: allPosts, error: allPostsError } = await runPostsQuery((filter) => {
+      let query = supabase
+        .from('posts')
+        .select('id, title, slug')
+        .order('position', { ascending: false })
+        .order('date', { ascending: false });
+      if (filter) {
+        query = query.or(PUBLISHED_FILTER);
+      }
+      return query;
+    });
     
     if (allPostsError) {
       console.error('⚠️ Error fetching all posts:', allPostsError);
@@ -45,11 +64,16 @@ export async function getAllPosts(): Promise<Post[]> {
     }
     
     // Get all posts (our main query)
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('published', true)
-      .order('position', { ascending: false });
+    const { data, error } = await runPostsQuery((filter) => {
+      let query = supabase
+        .from('posts')
+        .select('*')
+        .order('position', { ascending: false });
+      if (filter) {
+        query = query.or(PUBLISHED_FILTER);
+      }
+      return query;
+    });
   
   // If no position or as fallback, still keep the date order
   if (data?.length && data.some(post => post.position === null || post.position === undefined)) {
@@ -109,12 +133,18 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   
   try {
     // First check if the post exists
-    const { data: existCheck, error: existError } = await supabase
-      .from('posts')
-      .select('id, title, slug')
-      .eq('slug', slug)
-      .eq('published', true)
-      .maybeSingle();
+    const publishedFilter = 'published.eq.true,published.is.null';
+
+    const { data: existCheck, error: existError } = await runPostsQuery((filter) => {
+      let query = supabase
+        .from('posts')
+        .select('id, title, slug')
+        .eq('slug', slug);
+      if (filter) {
+        query = query.or(PUBLISHED_FILTER);
+      }
+      return query.maybeSingle();
+    });
     
     if (existError) {
       console.error(`❌ Error checking if post "${slug}" exists:`, existError);
@@ -125,12 +155,16 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
     }
     
     // Now get the full post data
-    const { data, error } = await supabase
-      .from('posts')
-      .select('*')
-      .eq('slug', slug)
-      .eq('published', true)
-      .maybeSingle();
+    const { data, error } = await runPostsQuery((filter) => {
+      let query = supabase
+        .from('posts')
+        .select('*')
+        .eq('slug', slug);
+      if (filter) {
+        query = query.or(PUBLISHED_FILTER);
+      }
+      return query.maybeSingle();
+    });
     
     if (error) {
       console.error(`❌ Error loading post "${slug}":`, error);
@@ -187,13 +221,19 @@ export async function getPostBySlugServer(slug: string): Promise<BlogPost | null
  */
 export async function getFeaturedPosts(): Promise<Post[]> {
   console.log("🌟 Getting featured posts from Supabase");
-  const { data, error } = await supabase
-    .from('posts')
-    .select('*')
-    .eq('published', true)
-    .eq('featured', true)
-    .order('position', { ascending: false })
-    .order('date', { ascending: false });
+  const publishedFilter = 'published.eq.true,published.is.null';
+  const { data, error } = await runPostsQuery((filter) => {
+    let query = supabase
+      .from('posts')
+      .select('*')
+      .eq('featured', true)
+      .order('position', { ascending: false })
+      .order('date', { ascending: false });
+    if (filter) {
+      query = query.or(PUBLISHED_FILTER);
+    }
+    return query;
+  });
   
   if (error) {
     console.error('❌ Error loading featured posts:', error);

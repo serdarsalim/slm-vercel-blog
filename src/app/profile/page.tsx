@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import AvatarUpload from "../components/AvatarUpload";
+import AdminPostManager from "../components/AdminPostManager";
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
@@ -160,7 +161,8 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-12">
-      <div className="max-w-md mx-auto bg-white dark:bg-slate-800 rounded-lg shadow-md p-8">
+      <div className="max-w-5xl mx-auto px-4 space-y-12">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-8 max-w-2xl">
         <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Your Profile</h1>
         
         {session?.user?.status === "pending" && (
@@ -279,6 +281,24 @@ export default function ProfilePage() {
             </div>
           </div>
         </form>
+      </div>
+
+      {isAdmin && (
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+          <div className="mb-6">
+            <p className="text-sm uppercase tracking-[0.3em] text-orange-500 mb-2">
+              Admin
+            </p>
+            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              Publishing Workspace
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">
+              Create, edit, publish, and archive posts without leaving your settings page.
+            </p>
+          </div>
+          <AdminPostManager />
+        </div>
+      )}
       </div>
     </div>
   );

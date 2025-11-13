@@ -15,8 +15,8 @@ import { getCategoryArray } from '@/app/utils/categoryHelpers';
 
 
 interface BlogClientContentProps {
-  initialPosts: BlogPost[];
-  initialFeaturedPosts: BlogPost[];
+  initialPosts?: BlogPost[];
+  initialFeaturedPosts?: BlogPost[];
 }
 
 // Debounce hook for search
@@ -37,8 +37,8 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function BlogClientContent({
-  initialPosts,
-  initialFeaturedPosts,
+  initialPosts = [],
+  initialFeaturedPosts = [],
 }: BlogClientContentProps) {
   // Modern approach - preload all but render incrementally
   const [renderedCount, setRenderedCount] = useState(8);
@@ -57,7 +57,7 @@ export default function BlogClientContent({
   const [selectedCategories, setSelectedCategories] = useState(["all"]);
   
   // Use server-provided posts directly
-  const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
+  const [posts, setPosts] = useState<BlogPost[]>(Array.isArray(initialPosts) ? initialPosts : []);
   const [isBrowser, setIsBrowser] = useState(false);
 
   // Track if the component is mounted
@@ -113,7 +113,7 @@ const filteredPosts = useMemo(() => {
     return fuse.search(searchTerm).map((result) => result.item);
   }
 
-  return posts.filter((p) => {
+  return (posts ?? []).filter((p) => {
     // Show all posts if "all" is selected
     if (selectedCategories.includes("all")) return true;
 

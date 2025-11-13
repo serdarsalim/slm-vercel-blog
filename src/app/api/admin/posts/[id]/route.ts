@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { getServerSession } from 'next-auth';
 import { adminSupabase } from '@/lib/admin-supabase';
-import { isAdminRequest } from '@/lib/admin-auth';
+import { authOptions, getServiceRoleClient } from '@/lib/auth-config';
 
 function normalizeCategories(input: unknown): string[] | undefined {
   if (input === undefined) return undefined;
@@ -22,6 +23,26 @@ function normalizeCategories(input: unknown): string[] | undefined {
   return [];
 }
 
+async function ensureAdmin() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+
+  const client = getServiceRoleClient();
+  const { data: author } = await client
+    .from('authors')
+    .select('id, role')
+    .eq('email', session.user.email)
+    .maybeSingle();
+
+  if (!author || author.role !== 'admin') {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+  }
+
+  return { author };
+}
+
 async function triggerRevalidation(slug?: string) {
   try {
     revalidateTag('posts');
@@ -39,9 +60,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!isAdminRequest(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const adminCheck = await ensureAdmin();
+  if ('error' in adminCheck) return adminCheck.error;
 
   const { id } = params;
   if (!id) {
@@ -108,9 +128,8 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  if (!isAdminRequest(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const adminCheck = await ensureAdmin();
+  if ('error' in adminCheck) return adminCheck.error;
 
   const { id } = params;
   if (!id) {

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { getServerSession } from 'next-auth';
 import { adminSupabase } from '@/lib/admin-supabase';
-import { isAdminRequest } from '@/lib/admin-auth';
+import { authOptions, getServiceRoleClient } from '@/lib/auth-config';
 
 function normalizeCategories(input: unknown): string[] {
   if (Array.isArray(input)) {
@@ -20,6 +21,26 @@ function normalizeCategories(input: unknown): string[] {
   return [];
 }
 
+async function ensureAdmin() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+
+  const client = getServiceRoleClient();
+  const { data: author } = await client
+    .from('authors')
+    .select('id, role, handle, name, author_id')
+    .eq('email', session.user.email)
+    .maybeSingle();
+
+  if (!author || author.role !== 'admin') {
+    return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
+  }
+
+  return { author };
+}
+
 async function triggerRevalidation(slug?: string) {
   try {
     revalidateTag('posts');
@@ -33,10 +54,9 @@ async function triggerRevalidation(slug?: string) {
   }
 }
 
-export async function GET(request: NextRequest) {
-  if (!isAdminRequest(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+export async function GET() {
+  const adminCheck = await ensureAdmin();
+  if ('error' in adminCheck) return adminCheck.error;
 
   const { data, error } = await adminSupabase
     .from('posts')
@@ -52,9 +72,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAdminRequest(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const adminCheck = await ensureAdmin();
+  if ('error' in adminCheck) return adminCheck.error;
+  const { author } = adminCheck;
 
   try {
     const body = await request.json();
@@ -75,8 +95,8 @@ export async function POST(request: NextRequest) {
       date: body.date || now,
       categories: normalizeCategories(body.categories),
       featured: Boolean(body.featured),
-      author: body.author?.trim() || 'HALQA',
-      author_handle: body.author_handle?.trim() || 'halqa',
+      author: body.author?.trim() || author?.name || 'HALQA',
+      author_handle: body.author_handle?.trim() || author?.handle || 'halqa',
       featuredImage: body.featuredImage?.trim() || '',
       comment: body.comment ?? true,
       socmed: body.socmed ?? true,
