@@ -38,7 +38,7 @@ export default function AdminLoginPage() {
       }
       
       // Redirect to admin dashboard
-      router.push('/admin/authors');
+      router.push('/admin');
       router.refresh(); // Refresh to update auth state
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
@@ -119,4 +119,3 @@ export default function AdminLoginPage() {
     </div>
   );
 }
-

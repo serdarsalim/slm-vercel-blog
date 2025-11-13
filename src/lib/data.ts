@@ -30,6 +30,7 @@ export async function getAllPosts(): Promise<Post[]> {
     const { data: allPosts, error: allPostsError } = await supabase
       .from('posts')
       .select('id, title, slug')
+      .eq('published', true)
       .order('position', { ascending: false })
       .order('date', { ascending: false });
     
@@ -45,12 +46,13 @@ export async function getAllPosts(): Promise<Post[]> {
     
     // Get all posts (our main query)
     const { data, error } = await supabase
-    .from('posts')
-    .select('*')
-    .order('position', { ascending: false });  // Order by position first
+      .from('posts')
+      .select('*')
+      .eq('published', true)
+      .order('position', { ascending: false });
   
   // If no position or as fallback, still keep the date order
-  if (data?.length && data.some(post => post.position === null)) {
+  if (data?.length && data.some(post => post.position === null || post.position === undefined)) {
     console.log('⚠️ Some posts missing position values, also using date for ordering');
     data.sort((a, b) => {
       // First by position (if available)
@@ -92,6 +94,8 @@ export async function loadBlogPostsServer(): Promise<BlogPost[]> {
     featuredImage: post.featuredImage || '',
     comment: post.comment !== undefined ? post.comment : true,
     socmed: post.socmed !== undefined ? post.socmed : true,
+    published: post.published ?? false,
+    position: post.position ?? null,
     created_at: post.created_at,
     updated_at: post.updated_at
   }));
@@ -109,6 +113,7 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
       .from('posts')
       .select('id, title, slug')
       .eq('slug', slug)
+      .eq('published', true)
       .maybeSingle();
     
     if (existError) {
@@ -124,6 +129,7 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
       .from('posts')
       .select('*')
       .eq('slug', slug)
+      .eq('published', true)
       .maybeSingle();
     
     if (error) {
@@ -169,6 +175,8 @@ export async function getPostBySlugServer(slug: string): Promise<BlogPost | null
     featuredImage: post.featuredImage || '',
     comment: post.comment !== undefined ? post.comment : true,
     socmed: post.socmed !== undefined ? post.socmed : true,
+    published: post.published ?? false,
+    position: post.position ?? null,
     created_at: post.created_at,
     updated_at: post.updated_at
   };
@@ -182,6 +190,7 @@ export async function getFeaturedPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')
     .select('*')
+    .eq('published', true)
     .eq('featured', true)
     .order('position', { ascending: false })
     .order('date', { ascending: false });

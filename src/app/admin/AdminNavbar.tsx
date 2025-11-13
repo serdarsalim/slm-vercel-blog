@@ -41,16 +41,10 @@ export default function AdminNavbar() {
             </div>
             <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
               <Link 
-                href="/admin/authors"
+                href="/admin"
                 className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-500"
               >
-                Authors
-              </Link>
-              <Link 
-                href="/admin/settings"
-                className="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-500"
-              >
-                Settings
+                Dashboard
               </Link>
               <Link 
                 href="/"
@@ -105,18 +99,11 @@ export default function AdminNavbar() {
       >
         <div className="pt-2 pb-3 space-y-1">
           <Link
-            href="/admin/authors"
+            href="/admin"
             className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-gray-300 dark:hover:border-gray-500"
             onClick={() => setIsMobileMenuOpen(false)}
           >
-            Authors
-          </Link>
-          <Link
-            href="/admin/settings"
-            className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-700 hover:border-gray-300 dark:hover:border-gray-500"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            Settings
+            Dashboard
           </Link>
           <Link
             href="/"

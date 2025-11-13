@@ -30,7 +30,8 @@ export async function GET(request) {
     // Fetch data
     const { data: posts = [] } = await serviceRoleClient
       .from("posts")
-      .select("slug, updated_at");
+      .select("slug, updated_at")
+      .eq('published', true);
     
     // Format date without milliseconds
     const formatDate = (dateString) => {

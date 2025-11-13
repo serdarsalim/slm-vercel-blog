@@ -24,7 +24,8 @@ async function generateSitemap() {
     // Fetch posts
     const { data: posts = [] } = await supabase
       .from('posts')
-      .select('slug, updated_at');
+      .select('slug, updated_at')
+      .eq('published', true);
 
     // Start XML with declaration
     let xml = `<?xml version="1.0" encoding="UTF-8"?>

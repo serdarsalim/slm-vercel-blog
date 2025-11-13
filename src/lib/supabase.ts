@@ -16,6 +16,8 @@ export type Post = {
   author_handle: string; // Add this line to match your BlogPost interface
   comment: boolean;
   socmed: boolean;
+  published: boolean;
+  position?: number | null;
   created_at: string;
   updated_at: string;
 };
