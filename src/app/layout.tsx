@@ -34,28 +34,28 @@ const merriweather = Merriweather({
 export const metadata: Metadata = {
   metadataBase: new URL('https://halqa.xyz'),
   title: {
-    default: "HALQA – Tools, insights, and ideas that matter.",
-    template: "%s | HALQA"
+    default: "Serdar Salim Domurcuk – Digital notes on my interests",
+    template: "%s | Serdar Salim Domurcuk"
   },
-  description: "Stories that help us seek problems worth solving, build human-centered solutions, and implement them without unintended consequences.",
+  description: "Writing, research notes, and product experiments by Serdar Salim Domurcuk covering design, technology, publishing systems, and self-directed work.",
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://halqa.xyz',
-    siteName: 'HALQA',
-    title: 'HALQA – Tools, insights, and ideas that matter.',
-    description: 'Stories that transform challenges into solutions for humanity - seeking what matters, building what works, implementing what helps.',
+    siteName: 'Serdar Salim Domurcuk',
+    title: 'Serdar Salim Domurcuk – Digital notes on my interests',
+    description: 'Essays and field notes on design, technology, publishing workflows, and independent creative practice by Serdar Salim Domurcuk.',
     images: [{
       url: '/og-image.jpg',
       width: 1200,
       height: 630,
-      alt: 'HALQA – Tools, insights, and ideas that matter.',
+      alt: 'Serdar Salim Domurcuk – Digital notes on my interests',
     }]
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'HALQA – Tools, insights, and ideas that matter.',
-    description: 'Stories that transform challenges into solutiWeons for humanity - seeking what matters, building what works, implementing what helps.',
+    title: 'Serdar Salim Domurcuk – Digital notes on my interests',
+    description: 'Daily notes, essays, and product experiments on design, systems thinking, and digital publishing by Serdar Salim Domurcuk.',
     images: ['/og-image.jpg'],
   },
   alternates: {
@@ -64,7 +64,7 @@ export const metadata: Metadata = {
       'application/rss+xml': 'https://halqa.xyz/feed.xml',
     },
   },
-  keywords: 'problem solving, human-centered design, ethical technology, storytelling, innovation, solutions, community',
+  keywords: 'Serdar Salim Domurcuk, personal blog, independent publishing, product design, technology, digital notes, research, essays',
 };
 
 // Add this line to your layout.tsx

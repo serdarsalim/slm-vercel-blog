@@ -11,7 +11,6 @@ function SchemaContent() {
   
   // Function to convert relative URLs to absolute URLs
   const getAbsoluteUrl = (relativeUrl) => {
-    // Updated base URL for the site (removed www. as requested)
     const baseUrl = "https://halqa.xyz";
     
     // Check if the URL is already absolute
@@ -30,8 +29,8 @@ function SchemaContent() {
   const blogSchema = {
     "@context": "https://schema.org",
     "@type": "Blog",
-    "name": "Halqa",
-    "description": "Join the Circle. Not your typical blog.",
+    "name": "Serdar Salim Domurcuk",
+    "description": "Digital notes, essays, and research on design, technology, and independent publishing by Serdar Salim Domurcuk.",
     "url": "https://halqa.xyz",
     "mainEntity": {
       "@type": "ItemList",
@@ -46,7 +45,7 @@ function SchemaContent() {
           "datePublished": post.date,
           "author": {
             "@type": "Person",
-            "name": post.author
+            "name": post.author || "Serdar Salim Domurcuk"
           },
           "url": `https://halqa.xyz/posts/${post.slug}`
         }
@@ -54,11 +53,11 @@ function SchemaContent() {
     }
   };
 
-  // Organization schema for your brand
+  // Identity schema for the site owner
   const organizationSchema = {
     "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Halqa", 
+    "@type": "Person",
+    "name": "Serdar Salim Domurcuk", 
     "url": "https://halqa.xyz",
     "logo": {
       "@type": "ImageObject",
@@ -69,7 +68,7 @@ function SchemaContent() {
     "sameAs": [
       // Add your social links here
     ],
-    "description": "Tools, insights, and ideas that matter."
+    "description": "Writer, designer, and systems thinker sharing experiments at the intersection of publishing, technology, and independent work."
   };
 
   // WebSite schema for better SEO
@@ -77,8 +76,8 @@ function SchemaContent() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "url": "https://halqa.xyz",
-    "name": "Halqa",
-    "description": "Tools, insights, and ideas that matter.",
+    "name": "Serdar Salim Domurcuk",
+    "description": "Digital notes on design, technology, and self-directed work by Serdar Salim Domurcuk.",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
@@ -95,12 +94,12 @@ function SchemaContent() {
     "@type": "WebPage",
     "url": `https://halqa.xyz${pathname}`,
     "name": pathname === "/" 
-      ? "Join the Circle" 
-      : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | Halqa`,
-    "description": "Tools, insights, and ideas that matter.",
+      ? "Serdar Salim Domurcuk" 
+      : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | Serdar Salim Domurcuk`,
+    "description": "Writing, research notes, and product experiments on design, technology, and publishing.",
     "isPartOf": {
       "@type": "WebSite",
-      "name": "Halqa",
+      "name": "Serdar Salim Domurcuk",
       "url": "https://halqa.xyz"
     }
   };
