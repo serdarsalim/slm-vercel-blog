@@ -313,14 +313,13 @@ export default function AdminPostManager({
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-800 shadow-sm">
-        <table className="w-full text-sm text-left">
+        <table className="w-full min-w-[900px] text-sm text-left">
           <thead className="bg-gray-50 dark:bg-slate-900">
             <tr className="text-xs uppercase text-gray-500 dark:text-gray-400">
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Slug</th>
+              <th className="px-4 py-3 w-1/3">Title</th>
               <th className="px-4 py-3">Updated</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
+              <th className="px-4 py-3 w-[280px]">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -337,7 +336,6 @@ export default function AdminPostManager({
                   className="border-t border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100"
                 >
                   <td className="px-4 py-3 font-medium">{post.title}</td>
-                  <td className="px-4 py-3 text-gray-500">{post.slug}</td>
                   <td className="px-4 py-3 text-gray-500">
                     {post.updated_at ? new Date(post.updated_at).toLocaleString() : "-"}
                   </td>
@@ -350,12 +348,13 @@ export default function AdminPostManager({
                       {post.published ? "Published" : "Draft"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 space-x-2">
-                    <button
-                      onClick={() => selectPostForEditing(post)}
-                      className="text-xs px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600"
-                    >
-                      Edit
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => selectPostForEditing(post)}
+                        className="text-xs px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600"
+                      >
+                        Edit
                     </button>
                     <button
                       onClick={() => togglePublish(post)}
@@ -365,10 +364,11 @@ export default function AdminPostManager({
                     </button>
                     <button
                       onClick={() => deletePost(post.id)}
-                      className="text-xs px-3 py-1 rounded-md border border-red-300 text-red-600"
-                    >
-                      Delete
-                    </button>
+                        className="text-xs px-3 py-1 rounded-md border border-red-300 text-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -397,7 +397,7 @@ export default function AdminPostManager({
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Title</label>
                   <input
@@ -418,9 +418,6 @@ export default function AdminPostManager({
                     required
                   />
                 </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
                 <div>
                   <label className="block text-sm font-medium mb-1">Date</label>
                   <input
@@ -440,8 +437,11 @@ export default function AdminPostManager({
                     className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
                   />
                 </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Author Handle</label>
+                  <label className="block text-sm font-medium mb-1">Handle</label>
                   <input
                     name="author_handle"
                     value={form.author_handle}
@@ -449,10 +449,7 @@ export default function AdminPostManager({
                     className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
                   />
                 </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Excerpt</label>
                   <textarea
                     name="excerpt"
@@ -472,16 +469,15 @@ export default function AdminPostManager({
                     className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Featured Image URL</label>
-                <input
-                  name="featuredImage"
-                  value={form.featuredImage}
-                  onChange={onInputChange}
-                  className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                />
+                <div>
+                  <label className="block text-sm font-medium mb-1">Featured Image URL</label>
+                  <input
+                    name="featuredImage"
+                    value={form.featuredImage}
+                    onChange={onInputChange}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
+                  />
+                </div>
               </div>
 
               <div>
