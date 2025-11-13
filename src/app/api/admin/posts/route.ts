@@ -23,16 +23,19 @@ function normalizeCategories(input: unknown): string[] {
 
 async function ensureAdmin() {
   const session = await getServerSession(authOptions);
+  console.log('ensureAdmin session user:', session?.user?.email);
   if (!session?.user?.email) {
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }
 
   const client = getServiceRoleClient();
-  const { data: author } = await client
+  const { data: author, error } = await client
     .from('authors')
-    .select('id, role, handle, name, author_id')
+    .select('id, role, handle, name')
     .eq('email', session.user.email)
     .maybeSingle();
+
+  console.log('ensureAdmin lookup result:', { author, error });
 
   if (!author || author.role !== 'admin') {
     return { error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) };
