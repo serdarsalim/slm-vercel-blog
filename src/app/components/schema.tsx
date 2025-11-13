@@ -48,7 +48,7 @@ function SchemaContent() {
             "@type": "Person",
             "name": post.author
           },
-          "url": `https://halqa.xyz/${post.author_handle}/${post.slug}`
+          "url": `https://halqa.xyz/posts/${post.slug}`
         }
       }))
     }

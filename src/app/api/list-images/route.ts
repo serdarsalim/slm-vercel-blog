@@ -5,12 +5,12 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { list } from '@vercel/blob';
+import { getRequiredEnvVar } from '@/lib/env';
+
+const secretToken = getRequiredEnvVar('REVALIDATION_SECRET');
 
 export async function GET(request: NextRequest) {
   console.log('Processing list images request');
-
-  // Use your environment variable or a fallback for the secret token
-  const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
 
   try {
     // Check authorization with Bearer token

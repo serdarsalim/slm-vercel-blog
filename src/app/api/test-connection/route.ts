@@ -1,12 +1,12 @@
 // src/app/api/test-connection/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getRequiredEnvVar } from '@/lib/env';
+
+const secretToken = getRequiredEnvVar('REVALIDATION_SECRET');
 
 export async function POST(request: NextRequest) {
   try {
-    // Get the secret token from env vars
-    const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
-    
     const body = await request.json();
     
     // Validate request

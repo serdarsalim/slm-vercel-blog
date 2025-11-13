@@ -81,10 +81,10 @@ export default function BlogPostCard({
 
   return (
     <Link
-  href={`/${post.author_handle}/${post.slug}`}
-  prefetch={index < 3}
-  className="w-full h-full block cursor-pointer touch-action-manipulation group"
->
+      href={`/posts/${post.slug}`}
+      prefetch={index < 3}
+      className="w-full h-full block cursor-pointer touch-action-manipulation group"
+    >
       <div
         className="bg-white dark:bg-slate-800 
           rounded-xl overflow-hidden 

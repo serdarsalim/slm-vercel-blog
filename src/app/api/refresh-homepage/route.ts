@@ -4,10 +4,11 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { loadBlogPostsServer } from '@/lib/data';
+import { getRequiredEnvVar } from '@/lib/env';
+
+const secretToken = getRequiredEnvVar('REVALIDATION_SECRET');
 
 export async function POST(request: NextRequest) {
-  const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
-
   try {
     const body = await request.json();
     
@@ -23,22 +24,18 @@ export async function POST(request: NextRequest) {
     revalidatePath('/blog', 'page');
     
     // NEW: Add specific post revalidation if this is a post update
-    if (body.handle && body.slug) {
-      console.log(`Revalidating specific post: ${body.handle}/${body.slug}`);
+    if (body.slug) {
+      console.log(`Revalidating specific post slug: ${body.slug}`);
       
-      // Use these safer path-based revalidations:
-      revalidatePath(`/${body.handle}/${body.slug}`, 'page'); // Revalidate post page
-      revalidatePath(`/${body.handle}`, 'page');              // Revalidate author page
-      revalidatePath('/', 'page');                            // Revalidate home page
-      
-      // Add this line for content-specific updates:
-      revalidateTag(`post-${body.handle}-${body.slug}`);
+      revalidatePath(`/posts/${body.slug}`, 'page');
+      revalidatePath('/', 'page');
+      revalidateTag(`post-${body.slug}`);
       
       // IMPORTANT: Add a forced refetch of the post data
       try {
         // This forces the data to be refetched from the database
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL;
-        const postUrl = `${baseUrl}/${body.handle}/${body.slug}?fresh=${Date.now()}`;
+        const postUrl = `${baseUrl}/posts/${body.slug}?fresh=${Date.now()}`;
         
         console.log(`Forcing fresh post data: ${postUrl}`);
         await fetch(postUrl, { 
@@ -80,8 +77,8 @@ export async function POST(request: NextRequest) {
       console.log(`Homepage warmed with status: ${response.status}`);
       
       // NEW: Also warm the specific post page if we have handle/slug
-      if (body.handle && body.slug) {
-        const postUrl = `${baseUrl}/${body.handle}/${body.slug}?refresh=${timestamp}`;
+      if (body.slug) {
+        const postUrl = `${baseUrl}/posts/${body.slug}?refresh=${timestamp}`;
         console.log(`Warming post page: ${postUrl}`);
         
         const postResponse = await fetch(postUrl, {

@@ -8,9 +8,6 @@
     "postbuild": "node scripts/generate-sitemap.js",
     "start": "next start",
     "lint": "next lint",
-    "fetch-blog-data": "node scripts/fetch-blog-data.js",
-    "prebuild": "npm run fetch-blog-data",
-    "warm-cache": "node scripts/warm-cache.js",
     "migrate": "node scripts/migrate-to-supabase.js"
   },
   "dependencies": {

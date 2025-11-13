@@ -25,19 +25,12 @@ export async function GET(request) {
     }
     
     const serviceRoleClient = getServiceRoleClient();
-    const baseUrl = 'https://halqa.co';
+    const baseUrl = 'https://halqa.xyz';
     
     // Fetch data
-    const { data: authors = [] } = await serviceRoleClient
-      .from("authors")
-      .select("handle, updated_at");
-      
     const { data: posts = [] } = await serviceRoleClient
       .from("posts")
-      .select("slug, author_handle, updated_at");
-
-    // Exclude non-author files (e.g., verification HTML)
-    const filteredAuthors = authors.filter(author => !author.handle.endsWith('.html'));
+      .select("slug, updated_at");
     
     // Format date without milliseconds
     const formatDate = (dateString) => {
@@ -55,21 +48,10 @@ export async function GET(request) {
     <priority>1.0</priority>
   </url>`;
     
-    // Add authors and posts...
-    for (const author of filteredAuthors) {
-      xml += `
-  <url>
-    <loc>${baseUrl}/${author.handle}</loc>
-    <lastmod>${formatDate(author.updated_at)}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>`;
-    }
-    
     for (const post of posts) {
       xml += `
   <url>
-    <loc>${baseUrl}/${post.author_handle}/${post.slug}</loc>
+    <loc>${baseUrl}/posts/${post.slug}</loc>
     <lastmod>${formatDate(post.updated_at)}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>

@@ -4,13 +4,13 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
+import { getRequiredEnvVar } from '@/lib/env';
+
+const secretToken = getRequiredEnvVar('REVALIDATION_SECRET');
 
 // GET handler – for direct API access and testing
 export async function GET(request: NextRequest) {
   console.log('GET request to /api/revalidate');
-  
-  // Use your environment variable or a fallback for the secret token
-  const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
   
   // Get the token from the request
   const token = request.nextUrl.searchParams.get('token');
@@ -33,17 +33,16 @@ export async function GET(request: NextRequest) {
     // Step 1: Revalidate tags - affects all post-related pages
     console.log('Revalidating tags: posts');
     revalidateTag('posts');
-    revalidateTag('authors'); // Add this line
 
     // Step 2: Revalidate specific paths for comprehensive coverage
     console.log('Revalidating common paths');
     revalidatePath('/', 'page');              // Home page
-    revalidatePath('/authors', 'page'); // Add this line
+    revalidatePath('/blog', 'page'); 
 
     // Step 3: If a specific slug and handle are provided, handle that explicitly
-    if (slug && handle) {
-      console.log(`Specifically revalidating: /${handle}/${slug}`);
-      revalidatePath(`/${handle}/${slug}`, 'page');
+    if (slug) {
+      console.log(`Specifically revalidating slug: ${slug}`);
+      revalidatePath(`/posts/${slug}`, 'page');
     } else if (path !== '/') {
       // If a custom path is provided and it's not one we already revalidated
       console.log(`Revalidating custom path: ${path}`);
@@ -52,8 +51,8 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       revalidated: true,
-      message: slug && handle 
-        ? `Revalidated post: ${slug} for author: ${handle} and related paths` 
+      message: slug 
+        ? `Revalidated post: ${slug} and related paths` 
         : `Revalidated ${path} and related paths`,
       timestamp: new Date().toISOString(),
       warning: "Newly added content may take a moment to become available as pages regenerate"
@@ -71,9 +70,6 @@ export async function GET(request: NextRequest) {
 // POST handler – for server-to-server API calls
 export async function POST(request: NextRequest) {
   console.log('POST request to /api/revalidate');
-
-  // Use your environment variable or a fallback for the secret token
-  const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
 
   try {
     const body = await request.json();
@@ -109,16 +105,15 @@ export async function POST(request: NextRequest) {
     // Step 1: Revalidate tags - affects all post-related pages
     console.log('Revalidating tags: posts');
     revalidateTag('posts');
-    revalidateTag('authors');
     // Step 2: Revalidate specific paths for comprehensive coverage
     console.log('Revalidating common paths');
     revalidatePath('/', 'page');              // Home page
-    revalidatePath('/authors', 'page'); 
+    revalidatePath('/blog', 'page'); 
     // Step 3: If a specific slug and handle are provided, handle that explicitly
-    if (slug && handle) {
-      console.log(`Specifically revalidating: /${handle}/${slug}`);
-      revalidatePath(`/${handle}/${slug}`, 'page');
-    } else if (path !== '/') {
+    if (slug) {
+      console.log(`Specifically revalidating slug: ${slug}`);
+      revalidatePath(`/posts/${slug}`, 'page');
+    } else if (path && path !== '/') {
       // If a custom path is provided and it's not one we already revalidated
       console.log(`Revalidating custom path: ${path}`);
       revalidatePath(path, 'page');
@@ -126,8 +121,8 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      message: slug && handle 
-        ? `Revalidated post: ${slug} for author: ${handle} and related paths` 
+      message: slug 
+        ? `Revalidated post: ${slug} and related paths` 
         : `Revalidated ${path} and related paths`,
       timestamp: new Date().toISOString(),
       warning: "Newly added content may take a moment to become available as pages regenerate"

@@ -1,6 +1,9 @@
 // app/api/revalidate-post/route.js
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextResponse } from 'next/server';
+import { getRequiredEnvVar } from '@/lib/env';
+
+const secretToken = getRequiredEnvVar('REVALIDATION_SECRET');
 
 export async function POST(request) {
   console.log('==== 🔄 REVALIDATION REQUEST RECEIVED ====');
@@ -33,7 +36,6 @@ export async function POST(request) {
   }
 
   // Verify the secret token
-  const secretToken = process.env.REVALIDATION_SECRET || 'your_default_secret';
   if (payload.secret !== secretToken) {
     console.error('🚫 Invalid revalidation token');
     return NextResponse.json({ 

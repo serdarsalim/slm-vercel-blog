@@ -8,7 +8,7 @@ async function generateSitemap() {
   // Load environment variables
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const baseUrl = 'https://halqa.co';
+  const baseUrl = 'https://halqa.xyz';
 
   if (!supabaseUrl || !supabaseKey) {
     console.error('❌ Supabase credentials not found in environment variables');
@@ -21,11 +21,10 @@ async function generateSitemap() {
   const formatDate = iso => iso.split('.')[0] + 'Z';
 
   try {
-    // Fetch authors and posts
-    const [{ data: authors = [] }, { data: posts = [] }] = await Promise.all([
-      supabase.from('authors').select('handle, updated_at'),
-      supabase.from('posts').select('slug, author_handle, updated_at')
-    ]);
+    // Fetch posts
+    const { data: posts = [] } = await supabase
+      .from('posts')
+      .select('slug, updated_at');
 
     // Start XML with declaration
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -46,27 +45,11 @@ async function generateSitemap() {
     xml += `  </url>
 `;
 
-    // Add each author
-    authors.forEach(({ handle, updated_at }) => {
-      xml += `  <url>
-`;
-      xml += `    <loc>${baseUrl}/${handle}</loc>
-`;
-      xml += `    <lastmod>${formatDate(new Date(updated_at).toISOString())}</lastmod>
-`;
-      xml += `    <changefreq>weekly</changefreq>
-`;
-      xml += `    <priority>0.8</priority>
-`;
-      xml += `  </url>
-`;
-    });
-
     // Add each post
-    posts.forEach(({ author_handle, slug, updated_at }) => {
+    posts.forEach(({ slug, updated_at }) => {
       xml += `  <url>
 `;
-      xml += `    <loc>${baseUrl}/${author_handle}/${slug}</loc>
+      xml += `    <loc>${baseUrl}/posts/${slug}</loc>
 `;
       xml += `    <lastmod>${formatDate(new Date(updated_at).toISOString())}</lastmod>
 `;
