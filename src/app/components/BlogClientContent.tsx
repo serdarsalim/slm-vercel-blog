@@ -12,6 +12,7 @@ import Fuse from "fuse.js";
 import BlogPostCard from "./BlogPostCard";
 import type { BlogPost } from "@/app/types/blogpost";
 import { getCategoryArray } from '@/app/utils/categoryHelpers';
+import { useRouter, useSearchParams } from "next/navigation";
 
 
 interface BlogClientContentProps {
@@ -40,6 +41,9 @@ export default function BlogClientContent({
   initialPosts = [],
   initialFeaturedPosts = [],
 }: BlogClientContentProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams?.get("search") || "";
   // Modern approach - preload all but render incrementally
   const [renderedCount, setRenderedCount] = useState(8);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -50,7 +54,7 @@ export default function BlogClientContent({
   const [showLoader, setShowLoader] = useState(false);
 
   // Search state
-  const [searchInput, setSearchInput] = useState("");
+  const [searchInput, setSearchInput] = useState(initialSearch);
   const debouncedSearchTerm = useDebounce(searchInput, 300);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -79,6 +83,22 @@ export default function BlogClientContent({
     // Reset render count when search changes
     setRenderedCount(8);
   }, [debouncedSearchTerm]);
+
+  useEffect(() => {
+    const nextTerm = searchParams?.get("search") || "";
+    setSearchInput(nextTerm);
+  }, [searchParams]);
+
+  const clearSearchFilters = useCallback(() => {
+    setSearchInput("");
+    setSearchTerm("");
+    setRenderedCount(8);
+
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    params.delete("search");
+    const query = params.toString();
+    router.push(query ? `/?${query}` : "/");
+  }, [router, searchParams]);
 
   // Create optimized Fuse instance for search
   const fuse = useMemo(() => {
@@ -362,42 +382,26 @@ const filteredPosts = useMemo(() => {
             ))}
           </div>
 
-          {/* Search bar */}
-          <div className="relative w-full mb-2">
-            <input
-              type="text"
-              placeholder="Search posts..."
-              className="w-full px-4 py-2 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-800 touch-element"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
-            {searchInput && (
-              <button
-                className="absolute right-4 top-3 cursor-pointer touch-element"
-                onClick={() => {
-                  setSearchInput("");
-                  setSearchTerm("");
-                }}
-              >
-                <span className="text-gray-400 dark:text-gray-500 text-lg">
-                  ×
-                </span>
-              </button>
-            )}
-          </div>
-
-          {/* Search results indicator */}
           {searchTerm && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center text-sm text-gray-500 dark:text-gray-400 mb-4"
+              className="w-full mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-200 dark:border-orange-900/40 bg-orange-50/80 dark:bg-slate-800/40 px-4 py-3 text-sm text-gray-700 dark:text-gray-300"
             >
-              {filteredPosts.length === 0
-                ? "No posts found matching your search"
-                : `Found ${filteredPosts.length} post${
-                    filteredPosts.length === 1 ? "" : "s"
-                  } matching "${searchTerm}"`}
+              <p>
+                Showing results for{" "}
+                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                  &ldquo;{searchTerm}&rdquo;
+                </span>{" "}
+                ({filteredPosts.length} match
+                {filteredPosts.length === 1 ? "" : "es"})
+              </p>
+              <button
+                onClick={clearSearchFilters}
+                className="text-sm font-medium text-orange-600 dark:text-orange-300 hover:underline whitespace-nowrap"
+              >
+                Clear search
+              </button>
             </motion.div>
           )}
         </div>
