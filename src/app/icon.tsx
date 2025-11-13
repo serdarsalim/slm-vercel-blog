@@ -8,7 +8,7 @@ export const size = {
 export const contentType = "image/png";
 
 export default function Icon() {
-  return new ImageResponse(
+  return ImageResponse(
     (
       <svg
         xmlns="http://www.w3.org/2000/svg"
