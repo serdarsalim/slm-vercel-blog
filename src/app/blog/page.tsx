@@ -1,6 +1,6 @@
 // src/app/blog/page.tsx - Now a Server Component
 import { Suspense } from "react";
-import { getAllPosts, getFeaturedPosts } from "@/lib/data"; // Update this import
+import { getAllPosts, getFeaturedPosts, getPrimaryAuthorProfile } from "@/lib/data"; // Update this import
 import BlogClientContent from "@/app/components/BlogClientContent";
 
 // Set ISR revalidation time (in seconds)
@@ -14,6 +14,8 @@ export default async function BlogPage() {
   // Either fetch featured posts directly or filter them
   // Option 1: Separate fetch for featured posts (more efficient)
   const featuredPosts = await getFeaturedPosts();
+  const primaryEmail = process.env.PRIMARY_AUTHOR_EMAIL || "serdar.dom@gmail.com";
+  const authorProfile = await getPrimaryAuthorProfile(primaryEmail);
 
   // Option 2: Filter locally (use this if you prefer the current approach)
   // const featuredPosts = posts.filter((post) => post.featured);
@@ -25,6 +27,7 @@ export default async function BlogPage() {
         <BlogClientContent
           initialPosts={posts} // Change from posts to initialPosts
           initialFeaturedPosts={featuredPosts} // Change from featuredPosts to initialFeaturedPosts
+          authorProfile={authorProfile || undefined}
         />
       </Suspense>
     </div>

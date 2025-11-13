@@ -90,8 +90,8 @@
 
 /* Post content styling - works with prose classes */
 .postContent {
-  font-size: 0.95rem;
-  line-height: 1.7;
+  font-size: calc(0.95rem + 1px);
+  line-height: calc(1.7em + 1px);
   font-weight: 400;
   font-family: Georgia, "Times New Roman", Times, serif;
   color: #333;
@@ -230,7 +230,7 @@
   }
   
   .postContent {
-    font-size: 1rem;
-    line-height: 1.7;
+    font-size: calc(1rem + 1px);
+    line-height: calc(1.7em + 1px);
   }
 }

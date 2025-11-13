@@ -2,6 +2,16 @@
 import { supabase } from './supabase';
 import type { Post } from './supabase';
 import type { BlogPost } from '@/app/types/blogpost';
+import { getServiceRoleClient } from './auth-config';
+
+export type PrimaryAuthorProfile = {
+  id?: string | number | null;
+  name?: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
+  website_url?: string | null;
+  email?: string | null;
+};
 
 const PUBLISHED_FILTER = 'published.eq.true,published.is.null';
 
@@ -13,6 +23,53 @@ async function runPostsQuery<T>(build: QueryBuilder<T>) {
     ({ data, error } = await build(false));
   }
   return { data, error };
+}
+
+export async function getPrimaryAuthorProfile(targetEmail?: string): Promise<PrimaryAuthorProfile | null> {
+  try {
+    if (targetEmail) {
+      try {
+        const serviceRoleClient = getServiceRoleClient();
+        const { data, error } = await serviceRoleClient
+          .from('authors')
+          .select('id, name, bio, avatar_url, website_url, email')
+          .ilike('email', targetEmail)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('❌ Error fetching author profile by email:', error);
+        }
+
+        if (data) {
+          return data as PrimaryAuthorProfile;
+        }
+      } catch (serviceError) {
+        console.error('❌ Service-role profile fetch failed, falling back to public view:', serviceError);
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('authors_public')
+      .select('id, name, bio, avatar_url, website_url')
+      .eq('listing_status', true)
+      .order('id', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('❌ Error fetching primary author profile:', error);
+      return null;
+    }
+
+    if (data) {
+      return data as PrimaryAuthorProfile;
+    }
+
+    return null;
+  } catch (e) {
+    console.error('💥 Unexpected error loading primary author profile:', e);
+    return null;
+  }
 }
 
 /**

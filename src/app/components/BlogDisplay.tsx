@@ -141,32 +141,6 @@ export default function BlogDisplay({
               {readingTime} min read
             </span>
 
-            {(post.author || post.author_handle) && (
-              <span className="flex items-center mb-1 sm:mb-0">
-                <svg
-                  className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5.121 17.804A9 9 0 0112 15a9 9 0 016.879 2.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                <span>
-                  {post.author ?? (post.author_handle ? `@${post.author_handle}` : 'Halqa')}
-                  {post.author && post.author_handle && (
-                    <span className="text-gray-400 dark:text-gray-500 ml-1">
-                      @{post.author_handle}
-                    </span>
-                  )}
-                </span>
-              </span>
-            )}
-            
             {/* Category labels */}
             {getCategoryArray(post.categories).map((category, idx) => (
               <motion.span
@@ -254,9 +228,6 @@ export default function BlogDisplay({
                     />
                   </svg>
                   Back to all posts
-                </span>
-                <span className="text-lg font-medium group-hover:underline">
-                  Continue exploring Halqa
                 </span>
               </Link>
 

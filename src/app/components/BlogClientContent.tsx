@@ -10,13 +10,24 @@ import { motion, AnimatePresence } from "framer-motion";
 import Fuse from "fuse.js";
 import BlogPostCard from "./BlogPostCard";
 import type { BlogPost } from "@/app/types/blogpost";
-import { getCategoryArray } from '@/app/utils/categoryHelpers';
+import { getCategoryArray } from "@/app/utils/categoryHelpers";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 
+
+const DEFAULT_CATEGORY = "personal";
+
+type AuthorProfile = {
+  name?: string | null;
+  bio?: string | null;
+  avatar_url?: string | null;
+  website_url?: string | null;
+};
 
 interface BlogClientContentProps {
   initialPosts?: BlogPost[];
   initialFeaturedPosts?: BlogPost[];
+  authorProfile?: AuthorProfile | null;
 }
 
 // Debounce hook for search
@@ -39,6 +50,7 @@ function useDebounce<T>(value: T, delay: number): T {
 export default function BlogClientContent({
   initialPosts = [],
   initialFeaturedPosts = [],
+  authorProfile = null,
 }: BlogClientContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -50,7 +62,17 @@ export default function BlogClientContent({
   const debouncedSearchTerm = useDebounce(searchInput, 300);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const [selectedCategories, setSelectedCategories] = useState(["all"]);
+  const initialHasDefaultCategory =
+    Array.isArray(initialPosts) &&
+    initialPosts.some((post) =>
+      getCategoryArray(post.categories).some(
+        (cat) => cat.toLowerCase().trim() === DEFAULT_CATEGORY
+      )
+    );
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    initialHasDefaultCategory ? [DEFAULT_CATEGORY] : ["all"]
+  );
   
   // Use server-provided posts directly
   const [posts, setPosts] = useState<BlogPost[]>(Array.isArray(initialPosts) ? initialPosts : []);
@@ -155,6 +177,22 @@ const filteredPosts = useMemo(() => {
     }, {} as Record<string, number>);
   }, [posts]);
 
+  const filterButtons = useMemo(() => {
+    const sorted = Object.entries(categoryCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    const personalIndex = sorted.findIndex(
+      ({ name }) => name === DEFAULT_CATEGORY
+    );
+    if (personalIndex > 0) {
+      const [personal] = sorted.splice(personalIndex, 1);
+      sorted.unshift(personal);
+    }
+
+    return [...sorted, { name: "all", count: posts.length }];
+  }, [categoryCounts, posts.length]);
+
   // Animation variants - simplified for better performance
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -172,6 +210,20 @@ const filteredPosts = useMemo(() => {
       transition: { duration: 0.2, ease: "easeOut" },
     },
   };
+
+  const bioText = authorProfile?.bio?.trim() || "Digital notes on my interests. 🧶";
+  const avatarUrl = authorProfile?.avatar_url?.trim();
+  const websiteUrl = authorProfile?.website_url?.trim();
+  const websiteHref = websiteUrl
+    ? websiteUrl.startsWith("http")
+      ? websiteUrl
+      : `https://${websiteUrl}`
+    : null;
+  const websiteLabel = websiteUrl
+    ? websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")
+    : null;
+  const avatarFallbackInitial =
+    ((authorProfile?.name || "SD").trim().charAt(0).toUpperCase()) || "S";
 
   return (
     <>
@@ -215,24 +267,50 @@ const filteredPosts = useMemo(() => {
       <section className="py-10 bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
         <div className="max-w-3xl mx-auto px-4">
           <motion.div
-            initial={{ opacity: 0.9 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0.9, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="relative text-center mb-6"
+            className="relative flex flex-col sm:flex-row gap-5 sm:gap-6 items-start text-left mb-6"
           >
-            <h2 className="text-lg text-gray-600 dark:text-gray-400 font-semibold mb-4 select-none">
-              Digital notes on my interests. 🧶
-            </h2>
+            <div className="flex-shrink-0">
+              <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-xl ring-2 ring-orange-200 dark:ring-slate-700 bg-orange-100/50">
+                {avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt={authorProfile?.name ? `${authorProfile.name} avatar` : "Author avatar"}
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                    priority
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-2xl font-semibold text-white">
+                    {avatarFallbackInitial}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex-1 space-y-3">
+              <p className="text-base sm:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+                {bioText}
+              </p>
+              {websiteHref && websiteLabel && (
+                <a
+                  href={websiteHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-sm font-medium text-orange-600 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-200 transition-colors"
+                >
+                  <span className="mr-2">🌐</span>
+                  {websiteLabel}
+                </a>
+              )}
+            </div>
           </motion.div>
 
           {/* Category filters */}
-          <div className="w-full flex flex-wrap justify-center gap-2 mb-6 select-none">
-            {[
-              { name: "all", count: posts.length },
-              ...Object.entries(categoryCounts)
-                .map(([name, count]) => ({ name, count }))
-                .sort((a, b) => b.count - a.count),
-            ].map(({ name, count }) => (
+          <div className="w-full flex flex-wrap justify-center md:justify-between lg:justify-start gap-2 lg:gap-3 mb-6 select-none">
+            {filterButtons.map(({ name, count }) => (
               <motion.button
                 key={name}
                 whileTap={{ scale: 0.95 }}
