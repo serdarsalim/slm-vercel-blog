@@ -4,7 +4,7 @@ import { getAllPosts, getFeaturedPosts, getPrimaryAuthorProfile } from "@/lib/da
 import BlogClientContent from "@/app/components/BlogClientContent";
 
 // Set ISR revalidation time (in seconds)
-export const revalidate = 3600; // Revalidate every hour
+export const revalidate = 60; // Revalidate every minute
 
 // Server Component (no "use client" directive)
 export default async function BlogPage() {

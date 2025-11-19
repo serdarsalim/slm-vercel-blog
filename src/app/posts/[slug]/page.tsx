@@ -3,7 +3,7 @@ import { getAllPosts, getPostBySlugServer } from '@/lib/data';
 import { processContent, extractTableOfContents, calculateReadingTime } from '@/lib/contentProcessor';
 import BlogDisplay from '@/app/components/BlogDisplay';
 
-export const revalidate = 3600;
+export const revalidate = 60; // Revalidate every minute
 
 export async function generateStaticParams() {
   const posts = await getAllPosts();

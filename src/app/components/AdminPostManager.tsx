@@ -40,7 +40,29 @@ const defaultFormState = (): FormState => ({
 
 function formatCategories(post?: AdminPost) {
   if (!post?.categories) return "";
-  return Array.isArray(post.categories) ? post.categories.join(", ") : "";
+
+  let categories = post.categories;
+
+  // If it's a string that looks like JSON, parse it
+  if (typeof categories === 'string') {
+    try {
+      // Try to parse as JSON in case it's a JSON-encoded string
+      const parsed = JSON.parse(categories);
+      if (Array.isArray(parsed)) {
+        categories = parsed;
+      }
+    } catch {
+      // If parsing fails, treat it as a regular string
+      // Already a plain string, keep as is
+    }
+  }
+
+  // Now handle the processed categories
+  if (Array.isArray(categories)) {
+    return categories.join(", ");
+  }
+
+  return String(categories);
 }
 
 interface AdminPostManagerProps {

@@ -65,10 +65,18 @@ export const metadata: Metadata = {
     },
   },
   keywords: 'Serdar Salim Domurcuk, personal blog, independent publishing, product design, technology, digital notes, research, essays',
+  icons: {
+    icon: [
+      { url: '/favicon-32x32.png?v=2', sizes: '32x32', type: 'image/png' },
+      { url: '/favicon-16x16.png?v=2', sizes: '16x16', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png?v=2',
+    other: [
+      { rel: 'icon', url: '/favicon.ico?v=2' },
+    ],
+  },
 };
 
-// Add this line to your layout.tsx
-export const scrollRestoration = 'manual'; // Let browser handle restoration
 export default function RootLayout({
   children,
 }: Readonly<{

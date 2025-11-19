@@ -425,6 +425,7 @@ const filteredPosts = useMemo(() => {
                         index={index}
                         cardVariants={cardVariants}
                         shouldAnimate={false}
+                        showCategories={selectedCategories.includes("all")}
                       />
                     </motion.div>
                   ))}

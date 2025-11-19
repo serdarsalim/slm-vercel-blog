@@ -48,13 +48,13 @@ export default function SignInButton({ isMobile = false, onNavigate }: SignInBut
       <>
         <Link
           href="/profile"
-          className="px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400"
+          className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-orange-600 dark:hover:text-orange-400"
         >
           Settings
         </Link>
         <button
           onClick={() => signOut()}
-          className="px-3 py-1.5 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
+          className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
         >
           Sign out
         </button>

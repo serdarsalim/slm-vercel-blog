@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState, useRef, Suspense, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -48,15 +49,17 @@ export default function Navbar() {
     <nav className="sticky top-0 left-0 right-0 z-50 py-2 px-4 bg-white dark:bg-slate-900 shadow-sm">
       <div className="flex w-full items-center justify-between gap-4">
         <Link href="/" className="group flex items-center space-x-3 relative flex-shrink-0">
-          <div className="relative h-9 w-9 rounded-full bg-gradient-to-br from-orange-600 via-orange-700 to-amber-700 shadow-[0_6px_18px_rgba(194,65,12,0.45)] flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.5),transparent)]" />
-            <div className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-white/50 blur-sm" />
-            <span className="text-xs font-semibold tracking-wide text-white/95 drop-shadow">
-              SD
-            </span>
+          <div className="relative h-7 w-12 rounded-lg overflow-hidden">
+            <Image
+              src="/app-logo.png"
+              alt="Logo"
+              fill
+              className="object-contain"
+              priority
+            />
           </div>
           <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-orange-200">
-            Serdar Salim Domurcuk
+            Serdar Salim
           </span>
         </Link>
 

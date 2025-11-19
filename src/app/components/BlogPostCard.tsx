@@ -11,6 +11,7 @@ interface BlogPostCardProps {
   index: number;
   cardVariants: any;
   shouldAnimate?: boolean;
+  showCategories?: boolean;
 }
 
 export default function BlogPostCard({
@@ -18,6 +19,7 @@ export default function BlogPostCard({
   index,
   cardVariants,
   shouldAnimate = false,
+  showCategories = true,
 }: BlogPostCardProps) {
   const [isMounted, setIsMounted] = useState(false);
 
@@ -132,16 +134,18 @@ export default function BlogPostCard({
               </div>
 
               {/* Categories display */}
-              <div className="flex flex-wrap gap-1">
-                {getCategoryArray(post.categories).map((category, i) => (
-                  <span
-                    key={`cat-${i}`}
-                    className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs font-medium bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-200"
-                  >
-                    {category}
-                  </span>
-                ))}
-              </div>
+              {showCategories && (
+                <div className="flex flex-wrap gap-1">
+                  {getCategoryArray(post.categories).map((category, i) => (
+                    <span
+                      key={`cat-${i}`}
+                      className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs font-medium bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-200"
+                    >
+                      {category}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

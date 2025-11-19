@@ -61,7 +61,7 @@ function SchemaContent() {
     "url": "https://halqa.xyz",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://halqa.xyz/logo.png",
+      "url": "https://halqa.xyz/app-logo.png",
       "width": "180",
       "height": "180"
     }, 
