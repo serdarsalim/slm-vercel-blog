@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useMemo,
   useCallback,
+  useRef,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Fuse from "fuse.js";
@@ -16,6 +17,7 @@ import Image from "next/image";
 
 
 const DEFAULT_CATEGORY = "personal";
+const CATEGORY_STORAGE_KEY = "blogCategoryFilter";
 
 type AuthorProfile = {
   name?: string | null;
@@ -77,11 +79,46 @@ export default function BlogClientContent({
   // Use server-provided posts directly
   const [posts, setPosts] = useState<BlogPost[]>(Array.isArray(initialPosts) ? initialPosts : []);
   const [isBrowser, setIsBrowser] = useState(false);
+  const hasRestoredCategory = useRef(false);
+
+  // Get category counts for filter buttons
+  const categoryCounts = useMemo(() => {
+    return posts.reduce((acc, post) => {
+      // Use the helper to get clean category array
+      const categories = getCategoryArray(post.categories);
+  
+      categories.forEach((cat) => {
+        if (cat) {
+          const lowerCat = cat.toLowerCase().trim();
+          acc[lowerCat] = (acc[lowerCat] || 0) + 1;
+        }
+      });
+      return acc;
+    }, {} as Record<string, number>);
+  }, [posts]);
 
   // Set browser state for hydration safety
   useEffect(() => {
     setIsBrowser(true);
   }, []);
+
+  useEffect(() => {
+    if (hasRestoredCategory.current) return;
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(CATEGORY_STORAGE_KEY);
+    const available = new Set(Object.keys(categoryCounts).concat("all"));
+    const normalized = saved?.toLowerCase().trim();
+    if (normalized && available.has(normalized)) {
+      setSelectedCategories([normalized]);
+    }
+    hasRestoredCategory.current = true;
+  }, [categoryCounts]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const nextCategory = selectedCategories[0] || "all";
+    window.localStorage.setItem(CATEGORY_STORAGE_KEY, nextCategory);
+  }, [selectedCategories]);
 
   // Apply debounced search
   useEffect(() => {
@@ -160,22 +197,6 @@ const filteredPosts = useMemo(() => {
 
   // All posts rendered at once
   const visiblePosts = sortedPosts;
-
-  // Get category counts for filter buttons
-  const categoryCounts = useMemo(() => {
-    return posts.reduce((acc, post) => {
-      // Use the helper to get clean category array
-      const categories = getCategoryArray(post.categories);
-  
-      categories.forEach((cat) => {
-        if (cat) {
-          const lowerCat = cat.toLowerCase().trim();
-          acc[lowerCat] = (acc[lowerCat] || 0) + 1;
-        }
-      });
-      return acc;
-    }, {} as Record<string, number>);
-  }, [posts]);
 
   const filterButtons = useMemo(() => {
     const sorted = Object.entries(categoryCounts)

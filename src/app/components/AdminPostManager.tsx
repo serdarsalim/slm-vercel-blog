@@ -38,6 +38,15 @@ const defaultFormState = (): FormState => ({
   published: false,
 });
 
+const createSlug = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 function formatCategories(post?: AdminPost) {
   if (!post?.categories) return "";
 
@@ -231,8 +240,10 @@ export default function AdminPostManager({
     setLoadingState("saving");
     setMessage(null);
 
+    const slug = editingId ? form.slug : form.slug || createSlug(form.title);
     const payload = {
       ...form,
+      slug,
       date: form.date ? new Date(form.date).toISOString() : undefined,
     };
 
@@ -365,10 +376,20 @@ export default function AdminPostManager({
         ? target.checked
         : value;
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: nextValue,
-    }));
+    setForm((prev) => {
+      if (name === "title" && typeof nextValue === "string") {
+        return {
+          ...prev,
+          title: nextValue,
+          slug: createSlug(nextValue),
+        };
+      }
+
+      return {
+        ...prev,
+        [name]: nextValue,
+      };
+    });
   };
 
   return (
@@ -665,21 +686,11 @@ export default function AdminPostManager({
 
             <form className="space-y-4" onSubmit={handleSubmit}>
               <div className="grid gap-4 md:grid-cols-4">
-                <div>
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Title</label>
                   <input
                     name="title"
                     value={form.title}
-                    onChange={onInputChange}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Slug</label>
-                  <input
-                    name="slug"
-                    value={form.slug}
                     onChange={onInputChange}
                     className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
                     required
@@ -707,15 +718,6 @@ export default function AdminPostManager({
               </div>
 
               <div className="grid gap-4 md:grid-cols-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Handle</label>
-                  <input
-                    name="author_handle"
-                    value={form.author_handle}
-                    onChange={onInputChange}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                  />
-                </div>
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium mb-1">Excerpt</label>
                   <textarea
