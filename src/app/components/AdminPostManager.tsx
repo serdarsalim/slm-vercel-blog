@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { BlogPost } from "@/app/types/blogpost";
 import QuillEditor from "./QuillEditor";
 
@@ -73,15 +73,18 @@ export default function AdminPostManager({
   initialPosts = [],
 }: AdminPostManagerProps) {
   const [posts, setPosts] = useState<AdminPost[]>(initialPosts);
+  const [categoryDrafts, setCategoryDrafts] = useState<Record<string, string>>({});
   const [form, setForm] = useState<FormState>(defaultFormState);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "drafts">("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [loadingState, setLoadingState] = useState<"idle" | "saving" | "deleting" | "refreshing">("idle");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleContentChange = useCallback((value: string) => {
     setForm((prev) => ({ ...prev, content: value }));
@@ -107,6 +110,24 @@ export default function AdminPostManager({
       refreshPosts();
     }
   }, [initialPosts.length, refreshPosts]);
+
+  useEffect(() => {
+    if (isSearchExpanded) {
+      searchInputRef.current?.focus();
+    }
+  }, [isSearchExpanded]);
+
+  useEffect(() => {
+    setCategoryDrafts((prev) => {
+      const next = { ...prev };
+      posts.forEach((post) => {
+        if (!next[post.id]) {
+          next[post.id] = formatCategories(post);
+        }
+      });
+      return next;
+    });
+  }, [posts]);
 
   const filteredPosts = useMemo(() => {
     return posts.filter((post) => {
@@ -250,6 +271,45 @@ export default function AdminPostManager({
     }
   };
 
+  const saveCategories = async (post: AdminPost) => {
+    const draft = (categoryDrafts[post.id] ?? "").trim();
+    const current = formatCategories(post);
+
+    if (draft === current) return;
+
+    setLoadingState("saving");
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/admin/posts/${post.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ categories: draft }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update categories");
+      }
+
+      const data = await response.json();
+      setPosts((prev) => prev.map((item) => (item.id === post.id ? data.post : item)));
+      setCategoryDrafts((prev) => ({
+        ...prev,
+        [post.id]: formatCategories(data.post),
+      }));
+      setMessage({ type: "success", text: "Categories updated" });
+    } catch (error) {
+      console.error(error);
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Failed to update categories",
+      });
+    } finally {
+      setLoadingState("idle");
+    }
+  };
+
   const onInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -281,7 +341,7 @@ export default function AdminPostManager({
       )}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-3 flex-nowrap">
           {(["all", "published", "drafts"] as const).map((filter) => (
             <button
               key={filter}
@@ -295,33 +355,61 @@ export default function AdminPostManager({
               {filter === "drafts" ? "Drafts" : filter.charAt(0).toUpperCase() + filter.slice(1)}
             </button>
           ))}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 whitespace-nowrap">
             <label className="text-sm text-gray-500">From</label>
             <input
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-sm bg-white dark:bg-slate-800"
+              className="w-36 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-sm bg-white dark:bg-slate-800"
             />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 whitespace-nowrap">
             <label className="text-sm text-gray-500">To</label>
             <input
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-sm bg-white dark:bg-slate-800"
+              className="w-36 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-sm bg-white dark:bg-slate-800"
             />
           </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <input
-            type="search"
-            placeholder="Search posts..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full sm:w-64 px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 text-sm"
-          />
+          {!isSearchExpanded ? (
+            <button
+              type="button"
+              onClick={() => setIsSearchExpanded(true)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300"
+              aria-label="Search posts"
+              title="Search posts"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.5-3.5" />
+              </svg>
+            </button>
+          ) : (
+            <input
+              ref={searchInputRef}
+              type="search"
+              placeholder="Search posts..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onBlur={() => {
+                if (!search.trim()) setIsSearchExpanded(false);
+              }}
+              className="w-full sm:w-44 px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-slate-800 text-sm"
+            />
+          )}
           <div className="flex gap-2">
             <button
               onClick={refreshPosts}
@@ -344,16 +432,17 @@ export default function AdminPostManager({
         <table className="w-full min-w-[900px] text-sm text-left">
           <thead className="bg-gray-50 dark:bg-slate-900">
             <tr className="text-xs uppercase text-gray-500 dark:text-gray-400">
-              <th className="px-4 py-3 w-1/3">Title</th>
+              <th className="px-4 py-3 w-2/5">Title</th>
+              <th className="px-4 py-3">Categories</th>
               <th className="px-4 py-3">Updated</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 w-[280px]">Actions</th>
+              <th className="px-4 py-3 w-[120px]">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredPosts.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
+                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
                   No posts match your filters.
                 </td>
               </tr>
@@ -363,7 +452,37 @@ export default function AdminPostManager({
                   key={post.id}
                   className="border-t border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100"
                 >
-                  <td className="px-4 py-3 font-medium">{post.title}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <button
+                      type="button"
+                      onClick={() => selectPostForEditing(post)}
+                      className="text-left hover:underline"
+                    >
+                      {post.title}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <input
+                      type="text"
+                      value={categoryDrafts[post.id] ?? ""}
+                      onChange={(event) =>
+                        setCategoryDrafts((prev) => ({
+                          ...prev,
+                          [post.id]: event.target.value,
+                        }))
+                      }
+                      onBlur={() => saveCategories(post)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          saveCategories(post);
+                          (event.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      className="w-full rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-sm bg-white dark:bg-slate-800"
+                      placeholder="e.g. finance, tools"
+                    />
+                  </td>
                   <td className="px-4 py-3 text-gray-500">
                     {post.updated_at ? new Date(post.updated_at).toLocaleString() : "-"}
                   </td>
@@ -376,26 +495,72 @@ export default function AdminPostManager({
                       {post.published ? "Published" : "Draft"}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => selectPostForEditing(post)}
-                        className="text-xs px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600"
-                      >
-                        Edit
-                    </button>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
                     <button
                       onClick={() => togglePublish(post)}
-                      className="text-xs px-3 py-1 rounded-md border border-gray-300 dark:border-gray-600"
+                      aria-label={post.published ? "Unpublish post" : "Publish post"}
+                      title={post.published ? "Unpublish post" : "Publish post"}
+                      className={`text-xs px-2 py-1 rounded-md border ${
+                        post.published
+                          ? "border-green-200 bg-green-100 text-green-700"
+                          : "border-gray-300 dark:border-gray-600"
+                      }`}
                     >
-                      {post.published ? "Unpublish" : "Publish"}
+                      {post.published ? (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      ) : (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-4 w-4"
+                          aria-hidden="true"
+                        >
+                          <path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z" />
+                          <circle cx="12" cy="12" r="3" />
+                          <path d="M3 3l18 18" />
+                        </svg>
+                      )}
                     </button>
                     <button
                       onClick={() => deletePost(post.id)}
-                        className="text-xs px-3 py-1 rounded-md border border-red-300 text-red-600"
+                      aria-label="Delete post"
+                      title="Delete post"
+                      className="inline-flex items-center justify-center rounded-md border border-red-300 px-2 py-1 text-red-600"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4"
+                        aria-hidden="true"
                       >
-                        Delete
-                      </button>
+                        <path d="M3 6h18" />
+                        <path d="M8 6V4h8v2" />
+                        <path d="M19 6l-1 14H6L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                      </svg>
+                    </button>
                     </div>
                   </td>
                 </tr>
