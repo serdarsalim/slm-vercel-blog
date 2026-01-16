@@ -79,6 +79,8 @@ export default function AdminPostManager({
   const [search, setSearch] = useState("");
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "drafts">("all");
+  const [sortKey, setSortKey] = useState<"title" | "categories" | "updated">("updated");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [loadingState, setLoadingState] = useState<"idle" | "saving" | "deleting" | "refreshing">("idle");
@@ -112,6 +114,19 @@ export default function AdminPostManager({
   }, [initialPosts.length, refreshPosts]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem("adminPostStatusFilter");
+    if (saved === "all" || saved === "published" || saved === "drafts") {
+      setStatusFilter(saved);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("adminPostStatusFilter", statusFilter);
+  }, [statusFilter]);
+
+  useEffect(() => {
     if (isSearchExpanded) {
       searchInputRef.current?.focus();
     }
@@ -130,7 +145,7 @@ export default function AdminPostManager({
   }, [posts]);
 
   const filteredPosts = useMemo(() => {
-    return posts.filter((post) => {
+    const filtered = posts.filter((post) => {
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "published" && post.published) ||
@@ -148,7 +163,37 @@ export default function AdminPostManager({
 
       return matchesStatus && matchesSearch && matchesDate;
     });
-  }, [posts, statusFilter, search, dateFrom, dateTo]);
+
+    const direction = sortDirection === "asc" ? 1 : -1;
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortKey === "updated") {
+        const aDate = a.updated_at ?? a.date ?? "";
+        const bDate = b.updated_at ?? b.date ?? "";
+        const aTime = Number.isNaN(Date.parse(aDate)) ? 0 : new Date(aDate).getTime();
+        const bTime = Number.isNaN(Date.parse(bDate)) ? 0 : new Date(bDate).getTime();
+        return (aTime - bTime) * direction;
+      }
+
+      const aValue =
+        sortKey === "title" ? a.title ?? "" : formatCategories(a).toLowerCase();
+      const bValue =
+        sortKey === "title" ? b.title ?? "" : formatCategories(b).toLowerCase();
+
+      return aValue.localeCompare(bValue) * direction;
+    });
+
+    return sorted;
+  }, [posts, statusFilter, search, dateFrom, dateTo, sortKey, sortDirection]);
+
+  const toggleSort = (key: "title" | "categories" | "updated") => {
+    if (key === sortKey) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(key);
+    setSortDirection(key === "updated" ? "desc" : "asc");
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -432,9 +477,48 @@ export default function AdminPostManager({
         <table className="w-full min-w-[900px] text-sm text-left">
           <thead className="bg-gray-50 dark:bg-slate-900">
             <tr className="text-xs uppercase text-gray-500 dark:text-gray-400">
-              <th className="px-4 py-3 w-2/5">Title</th>
-              <th className="px-4 py-3">Categories</th>
-              <th className="px-4 py-3">Updated</th>
+              <th className="px-4 py-3 w-2/5">
+                <button
+                  type="button"
+                  onClick={() => toggleSort("title")}
+                  className="flex items-center gap-2 text-left"
+                >
+                  <span>Title</span>
+                  {sortKey === "title" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? "▲" : "▼"}
+                    </span>
+                  )}
+                </button>
+              </th>
+              <th className="px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => toggleSort("categories")}
+                  className="flex items-center gap-2 text-left"
+                >
+                  <span>Categories</span>
+                  {sortKey === "categories" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? "▲" : "▼"}
+                    </span>
+                  )}
+                </button>
+              </th>
+              <th className="px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => toggleSort("updated")}
+                  className="flex items-center gap-2 text-left"
+                >
+                  <span>Updated</span>
+                  {sortKey === "updated" && (
+                    <span className="text-gray-400">
+                      {sortDirection === "asc" ? "▲" : "▼"}
+                    </span>
+                  )}
+                </button>
+              </th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 w-[120px]">Actions</th>
             </tr>
