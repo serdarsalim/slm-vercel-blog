@@ -6,7 +6,7 @@ import { useEffect, useState, useRef, Suspense, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 export default function Navbar() {
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -15,9 +15,9 @@ export default function Navbar() {
     const savedTheme = localStorage.getItem("theme");
 
     if (!savedTheme) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setDarkMode(true);
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+      setDarkMode(false);
       return;
     }
 
@@ -58,9 +58,7 @@ export default function Navbar() {
               priority
             />
           </div>
-          <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-orange-200">
-            Serdar Salim
-          </span>
+          <span className="sr-only">Serdar Salim's Blog</span>
         </Link>
 
         <button
@@ -151,12 +149,20 @@ function DesktopSearch() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchValue, setSearchValue] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const paramsSnapshot = useRef("");
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setSearchValue(searchParams?.get("search") || "");
     paramsSnapshot.current = searchParams?.toString() || "";
   }, [searchParams]);
+
+  useEffect(() => {
+    if (isOpen) {
+      inputRef.current?.focus();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -187,24 +193,52 @@ function DesktopSearch() {
     setSearchValue("");
   };
 
+  if (!isOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        className="flex items-center justify-center w-9 h-9 rounded-xl bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+        aria-label="Open search"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35m1.35-5.15a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </button>
+    );
+  }
+
   return (
     <form
       onSubmit={handleSearchSubmit}
       className="flex items-center space-x-2 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5 bg-white dark:bg-slate-800 shadow-sm"
     >
       <input
+        ref={inputRef}
         type="text"
         value={searchValue}
         onChange={(e) => setSearchValue(e.target.value)}
         placeholder="Search posts"
         className="bg-transparent text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 focus:outline-none min-w-[160px]"
+        onBlur={() => {
+          if (!searchValue.trim()) setIsOpen(false);
+        }}
       />
-      {searchValue && (
+      {searchValue ? (
         <button
           type="button"
           onClick={clearSearch}
           className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
           aria-label="Clear search"
+        >
+          ×
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsOpen(false)}
+          className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+          aria-label="Close search"
         >
           ×
         </button>

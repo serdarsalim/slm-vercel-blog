@@ -214,6 +214,7 @@ const filteredPosts = useMemo(() => {
   const bioText = authorProfile?.bio?.trim() || "Digital notes on my interests. 🧶";
   const avatarUrl = authorProfile?.avatar_url?.trim();
   const websiteUrl = authorProfile?.website_url?.trim();
+  const displayName = authorProfile?.name?.trim() || "Serdar Salim";
   const websiteHref = websiteUrl
     ? websiteUrl.startsWith("http")
       ? websiteUrl
@@ -264,52 +265,62 @@ const filteredPosts = useMemo(() => {
       `}</style>
 
       {/* Hero Section */}
-      <section className="py-10 bg-gradient-to-b from-orange-50/50 to-white dark:from-slate-900 dark:to-slate-900 select-none">
-        <div className="max-w-3xl mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0.9, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="relative flex flex-row flex-wrap sm:flex-nowrap gap-4 sm:gap-6 items-start text-left mb-6"
-          >
-            <div className="flex-shrink-0">
-              <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-xl ring-2 ring-orange-200 dark:ring-slate-700 bg-orange-100/50">
-                {avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt={authorProfile?.name ? `${authorProfile.name} avatar` : "Author avatar"}
-                    fill
-                    sizes="96px"
-                    className="object-cover"
-                    priority
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-2xl font-semibold text-white">
-                    {avatarFallbackInitial}
-                  </div>
-                )}
+      <section className="pt-20 pb-10 select-none">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="relative">
+            <motion.div
+              initial={{ opacity: 0.9, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="relative px-5 sm:px-6 pt-14 sm:pt-16 pb-6"
+            >
+              <div className="absolute left-1/2 -translate-x-1/2 -top-10 sm:-top-12">
+                <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-full ring-4 ring-white dark:ring-slate-900 shadow-lg">
+                  {avatarUrl ? (
+                    <Image
+                      src={avatarUrl}
+                      alt={authorProfile?.name ? `${authorProfile.name} avatar` : "Author avatar"}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                      priority
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-2xl font-semibold text-white">
+                      {avatarFallbackInitial}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-            <div className="flex-1 space-y-3">
-              <p className="text-base sm:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
-                {bioText}
-              </p>
-              {websiteHref && websiteLabel && (
-                <a
-                  href={websiteHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-sm font-medium text-orange-600 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-200 transition-colors"
-                >
-                  <span className="mr-2">🌐</span>
-                  {websiteLabel}
-                </a>
-              )}
-            </div>
-          </motion.div>
+
+              <div className="flex flex-col gap-4 sm:gap-5 items-center text-center">
+                <div className="text-center max-w-2xl">
+                  <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
+                    {displayName}
+                  </h1>
+                  <p className="mt-2 text-base text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {bioText}
+                  </p>
+                  {websiteHref && websiteLabel && (
+                    <a
+                      href={websiteHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 inline-flex items-center text-sm font-medium text-orange-600 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-200 transition-colors"
+                    >
+                      <span className="mr-2">🌐</span>
+                      {websiteLabel}
+                    </a>
+                  )}
+                </div>
+
+                
+              </div>
+            </motion.div>
+          </div>
 
           {/* Category filters */}
-          <div className="w-full flex flex-wrap justify-center md:justify-between lg:justify-start gap-2 lg:gap-3 mb-6 select-none">
+          <div className="w-full flex flex-wrap justify-center gap-2 lg:gap-3 mb-6 select-none">
             {filterButtons.map(({ name, count }) => (
               <motion.button
                 key={name}
@@ -335,23 +346,25 @@ const filteredPosts = useMemo(() => {
               >
                 <span>
                   {name === "all"
-                    ? "All Posts"
+                    ? "All"
                     : name.charAt(0).toUpperCase() + name.slice(1)}
-                  <span
-                    className={`
-                      ml-1
-                      inline-flex items-center justify-center 
-                      w-4 h-4 
-                      rounded-full text-[10px] font-medium
-                      ${
-                        selectedCategories.includes(name)
-                          ? "bg-white text-orange-500 dark:bg-orange-800 dark:text-orange-200"
-                          : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
-                      }
-                    `}
-                  >
-                    {count}
-                  </span>
+                  {name === "all" && (
+                    <span
+                      className={`
+                        ml-2
+                        inline-flex items-center justify-center 
+                        px-2 h-5
+                        rounded-full text-[10px] font-medium
+                        ${
+                          selectedCategories.includes(name)
+                            ? "bg-white text-orange-500 dark:bg-orange-800 dark:text-orange-200"
+                            : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
+                        }
+                      `}
+                    >
+                      {count}
+                    </span>
+                  )}
                 </span>
               </motion.button>
             ))}
@@ -385,9 +398,9 @@ const filteredPosts = useMemo(() => {
       {/* Blog Posts */}
       <section
         id="blog"
-        className="py-10 bg-white dark:bg-slate-900 -mt-14 relative w-full"
+        className="pt-10 pb-32 bg-transparent -mt-14 relative w-full"
       >
-        <div className="w-full px-4 mb-20 sm:max-w-3xl sm:mx-auto">
+        <div className="w-full px-4 mb-8 sm:max-w-3xl sm:mx-auto">
           {sortedPosts.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
