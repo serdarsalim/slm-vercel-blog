@@ -519,14 +519,13 @@ export default function AdminPostManager({
                   )}
                 </button>
               </th>
-              <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 w-[120px]">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredPosts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
+                <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
                   No posts match your filters.
                 </td>
               </tr>
@@ -569,15 +568,6 @@ export default function AdminPostManager({
                   </td>
                   <td className="px-4 py-3 text-gray-500">
                     {post.updated_at ? new Date(post.updated_at).toLocaleString() : "-"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        post.published ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                      }`}
-                    >
-                      {post.published ? "Published" : "Draft"}
-                    </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-2">
