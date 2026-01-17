@@ -17,6 +17,27 @@ export default function PrivacyPolicy() {
 function PrivacyContent() {
   return (
     <main className="relative z-10 flex flex-col items-center justify-center text-center px-6 py-24 min-h-[28vh] select-none">
+      <div className="absolute top-6 right-6">
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-orange-400 hover:text-orange-600 transition-colors"
+          aria-label="Back to home"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M18 6l-12 12" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </Link>
+      </div>
       <motion.div
         className="relative z-10 max-w-4xl mb-12"
         initial={{ opacity: 0 }}

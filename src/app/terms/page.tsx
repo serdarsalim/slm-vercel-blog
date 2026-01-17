@@ -27,6 +27,27 @@ export default function Terms() {
 function TermsContent() {
   return (
     <main className="relative z-10 flex flex-col items-center justify-center px-6 py-24">
+      <div className="absolute top-6 right-6">
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center w-10 h-10 rounded-full border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-orange-400 hover:text-orange-600 transition-colors"
+          aria-label="Back to home"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M18 6l-12 12" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </Link>
+      </div>
       <motion.div
         className="relative z-10 max-w-4xl mb-12"
         initial={{ opacity: 0 }}
@@ -61,7 +82,7 @@ function TermsContent() {
         <section>
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-300 mb-4">1. Google Services Disclaimer</h2>
           <p className="mb-4 text-gray-700 dark:text-gray-200">
-           HALQA.XYZ is not affiliated with, endorsed by, sponsored by, or connected to Google LLC in any way. 
+           serdarsalim.com is not affiliated with, endorsed by, sponsored by, or connected to Google LLC in any way. 
             Google Sheets™, Google Drive™, and related marks and logos are trademarks of Google LLC. Our templates 
             are independently created and maintained to work with Google's services.
           </p>
@@ -118,7 +139,7 @@ function TermsContent() {
         <section>
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-gray-300 mb-4">6. Limitation of Liability</h2>
           <p className="mb-4 text-gray-700 dark:text-gray-200">
-            HALQA.XYZ shall not be liable for any indirect, incidental, special, consequential, or punitive 
+            serdarsalim.com shall not be liable for any indirect, incidental, special, consequential, or punitive 
             damages resulting from the use or inability to use our templates.
           </p>
         </section>

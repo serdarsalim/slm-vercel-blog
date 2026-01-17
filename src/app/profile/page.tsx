@@ -122,12 +122,25 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-12">
       <div className="max-w-5xl mx-auto px-4 space-y-10">
         <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-orange-500">Settings</p>
-            <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
-              Profile & Access
-            </h1>
-          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="self-start md:self-auto inline-flex items-center gap-2 rounded-full border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:border-orange-400 hover:text-orange-600 transition-colors"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+              aria-hidden="true"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+            Back to profile
+          </button>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="px-3 py-1 rounded-full bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-gray-200">
               {session?.user?.email}

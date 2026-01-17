@@ -58,12 +58,17 @@ export default function BlogPostCard({
       ? post.categories
       : null;
 
-  // Truncate excerpt once
   const truncatedExcerpt = React.useMemo(() => {
-    return post.excerpt && post.excerpt.length > 220
-      ? `${post.excerpt.substring(0, 200).trim()}...`
-      : post.excerpt;
-  }, [post.excerpt]);
+    const rawContent = post.content || "";
+    const plainContent = rawContent
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const base = plainContent || post.excerpt || "";
+
+    return base.length > 220 ? `${base.substring(0, 200).trim()}...` : base;
+  }, [post.content, post.excerpt]);
 
   // Get image source with thumbnail optimization - KEEPING EXACTLY AS IS
   const defaultImage =

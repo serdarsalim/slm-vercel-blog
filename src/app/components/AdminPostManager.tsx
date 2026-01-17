@@ -673,11 +673,6 @@ export default function AdminPostManager({
                 <h2 className="text-xl font-semibold">
                   {editingId ? "Edit Post" : "Create New Post"}
                 </h2>
-                {editingId && (
-                  <button onClick={resetForm} className="text-xs text-blue-600 dark:text-blue-400 underline">
-                    Start fresh
-                  </button>
-                )}
               </div>
               <button onClick={resetForm} className="text-gray-500 hover:text-gray-800">
                 ✕
@@ -685,72 +680,54 @@ export default function AdminPostManager({
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Title</label>
+              <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_140px_200px_180px]">
+                <div>
+                  <label className="sr-only">Title</label>
                   <input
                     name="title"
                     value={form.title}
                     onChange={onInputChange}
+                    placeholder="Title"
                     className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Date</label>
+                  <label className="sr-only">Date</label>
                   <input
                     type="date"
                     name="date"
                     value={form.date}
                     onChange={onInputChange}
+                    aria-label="Date"
+                    placeholder="Date"
                     className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Author</label>
-                  <input
-                    name="author"
-                    value={form.author}
-                    onChange={onInputChange}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Excerpt</label>
-                  <textarea
-                    name="excerpt"
-                    value={form.excerpt}
-                    onChange={onInputChange}
-                    rows={3}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Categories</label>
+                  <label className="sr-only">Categories</label>
                   <input
                     name="categories"
                     value={form.categories}
                     onChange={onInputChange}
-                    placeholder="e.g. finance, tools"
+                    placeholder="Categories"
                     className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Featured Image URL</label>
+                  <label className="sr-only">Featured image URL</label>
                   <input
                     name="featuredImage"
                     value={form.featuredImage}
                     onChange={onInputChange}
+                    placeholder="Featured image URL"
                     className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">Content</label>
+                <label className="sr-only">Content</label>
                 <div className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-900">
                   <QuillEditor value={form.content} onChange={handleContentChange} />
                 </div>

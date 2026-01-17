@@ -9,22 +9,18 @@ export default function Footer() {
 
   return (
     <footer className="relative mt-0 border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-slate-900 text-sm text-gray-600 dark:text-gray-300">
-      <div className="mx-auto flex max-w-4xl flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-center">
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <Link href="/about" className="hover:text-gray-900 dark:hover:text-white">
-            About
-          </Link>
+      <div className="mx-auto flex max-w-4xl flex-col gap-3 px-6 py-6 sm:flex-row sm:items-center sm:justify-center">
+        <div className="flex flex-wrap items-center justify-center gap-4 text-sm sm:contents">
+          <SignInButton />
+          <DarkModeToggle />
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-4 text-sm sm:contents">
           <Link href="/terms" className="hover:text-gray-900 dark:hover:text-white">
             Terms
           </Link>
           <Link href="/privacy" className="hover:text-gray-900 dark:hover:text-white">
             Privacy
           </Link>
-          <div className="hidden sm:block h-4 w-px bg-gray-300 dark:bg-gray-700" />
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-            <SignInButton />
-            <DarkModeToggle />
-          </div>
         </div>
       </div>
 

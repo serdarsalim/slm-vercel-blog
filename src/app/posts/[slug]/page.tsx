@@ -5,6 +5,16 @@ import BlogDisplay from '@/app/components/BlogDisplay';
 
 export const revalidate = 60; // Revalidate every minute
 
+const buildExcerpt = (content: string, fallback: string) => {
+  const plain = content
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const base = plain || fallback;
+  return base.length > 180 ? `${base.slice(0, 170).trim()}...` : base;
+};
+
 export async function generateStaticParams() {
   const posts = await getAllPosts();
   return posts.map((post) => ({ slug: post.slug }));
@@ -21,13 +31,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 
   const url = `https://halqa.xyz/posts/${post.slug}`;
+  const description = buildExcerpt(post.content || "", post.excerpt || `${post.title} on Halqa`);
 
   return {
     title: `${post.title} | Halqa`,
-    description: post.excerpt || `${post.title} on Halqa`,
+    description,
     openGraph: {
       title: post.title,
-      description: post.excerpt || `${post.title} on Halqa`,
+      description,
       url,
       images: post.featuredImage ? [{ url: post.featuredImage }] : undefined,
       type: 'article',
@@ -36,7 +47,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     twitter: {
       card: 'summary_large_image',
       title: post.title,
-      description: post.excerpt || `${post.title} on Halqa`,
+      description,
       images: post.featuredImage ? [post.featuredImage] : undefined,
     },
   };
