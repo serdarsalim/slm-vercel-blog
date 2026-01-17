@@ -25,7 +25,7 @@ export async function GET(request) {
     }
     
     const serviceRoleClient = getServiceRoleClient();
-    const baseUrl = 'https://halqa.xyz';
+    const baseUrl = 'https://blog.serdarsalim.com';
     
     // Fetch data
     const { data: posts = [] } = await serviceRoleClient

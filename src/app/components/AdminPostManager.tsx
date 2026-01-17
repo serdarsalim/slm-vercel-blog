@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import type { BlogPost } from "@/app/types/blogpost";
 import QuillEditor from "./QuillEditor";
@@ -87,10 +88,16 @@ function formatCategories(post?: AdminPost) {
 
 interface AdminPostManagerProps {
   initialPosts?: AdminPost[];
+  initialSlug?: string | null;
+  autoOpenEditor?: boolean;
+  hideManagerUI?: boolean;
 }
 
 export default function AdminPostManager({
   initialPosts = [],
+  initialSlug = null,
+  autoOpenEditor = false,
+  hideManagerUI = false,
 }: AdminPostManagerProps) {
   const [posts, setPosts] = useState<AdminPost[]>(initialPosts);
   const [categoryDrafts, setCategoryDrafts] = useState<Record<string, string>>({});
@@ -123,6 +130,8 @@ export default function AdminPostManager({
   const [imageTarget, setImageTarget] = useState<"content" | "featured">("content");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const editorRef = useRef<any>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleContentChange = useCallback((value: string) => {
     setForm((prev) => ({ ...prev, content: value }));
@@ -410,6 +419,28 @@ export default function AdminPostManager({
     setIsModalOpen(true);
   };
 
+  useEffect(() => {
+    if (!autoOpenEditor) return;
+    if (!initialSlug) return;
+    if (posts.length === 0) return;
+
+    const match = posts.find((post) => post.slug === initialSlug);
+    if (!match) return;
+    selectPostForEditing(match);
+  }, [autoOpenEditor, initialSlug, posts]);
+
+  useEffect(() => {
+    const editSlug = searchParams?.get("edit");
+    if (!editSlug) return;
+    if (posts.length === 0) return;
+
+    const match = posts.find((post) => post.slug === editSlug);
+    if (!match) return;
+
+    selectPostForEditing(match);
+    router.replace("/profile");
+  }, [posts, router, searchParams]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoadingState("saving");
@@ -568,7 +599,7 @@ export default function AdminPostManager({
 
   return (
     <div className="space-y-8">
-      {message && (
+      {!hideManagerUI && message && (
         <div
           className={`rounded-md px-4 py-3 text-sm ${
             message.type === "success"
@@ -580,6 +611,7 @@ export default function AdminPostManager({
         </div>
       )}
 
+      {!hideManagerUI && (
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex items-center gap-3 flex-nowrap">
           {(["all", "published", "drafts"] as const).map((filter) => (
@@ -660,7 +692,9 @@ export default function AdminPostManager({
           </div>
         </div>
       </div>
+      )}
 
+      {!hideManagerUI && (
       <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-800 shadow-sm">
         <table className="w-full min-w-[900px] text-sm text-left">
           <thead className="bg-gray-50 dark:bg-slate-900">
@@ -831,6 +865,7 @@ export default function AdminPostManager({
           </tbody>
         </table>
       </div>
+      )}
 
       {isModalOpen && portalTarget
         ? createPortal(

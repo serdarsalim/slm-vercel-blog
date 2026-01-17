@@ -31,7 +31,7 @@ const merriweather = Merriweather({
 
 // Update your metadata in layout.tsx
 export const metadata: Metadata = {
-  metadataBase: new URL('https://halqa.xyz'),
+  metadataBase: new URL('https://blog.serdarsalim.com'),
   title: {
     default: "Serdar Salim Domurcuk – Digital notes on my interests",
     template: "%s | Serdar Salim Domurcuk"
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://halqa.xyz',
+    url: 'https://blog.serdarsalim.com',
     siteName: 'Serdar Salim Domurcuk',
     title: 'Serdar Salim Domurcuk – Digital notes on my interests',
     description: 'Essays and field notes on design, technology, publishing workflows, and independent creative practice by Serdar Salim Domurcuk.',
@@ -58,9 +58,9 @@ export const metadata: Metadata = {
     images: ['/og-image.jpg'],
   },
   alternates: {
-    canonical: 'https://halqa.xyz',
+    canonical: 'https://blog.serdarsalim.com',
     types: {
-      'application/rss+xml': 'https://halqa.xyz/feed.xml',
+      'application/rss+xml': 'https://blog.serdarsalim.com/feed.xml',
     },
   },
   keywords: 'Serdar Salim Domurcuk, personal blog, independent publishing, product design, technology, digital notes, research, essays',

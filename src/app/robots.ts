@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/admin/', '/_next/', '/static/'],
     },
-    sitemap: 'https://halqa.xyz/sitemap.xml',
+    sitemap: 'https://blog.serdarsalim.com/sitemap.xml',
   }
 }

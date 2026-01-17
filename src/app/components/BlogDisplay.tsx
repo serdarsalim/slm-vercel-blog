@@ -5,6 +5,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import AdminPostManager from "./AdminPostManager";
 import ReadingBar from './blog/ReadingBar';
 import CommentSection from './blog/CommentSection';
 import ShareButtons from './blog/ShareButtons';
@@ -34,6 +36,9 @@ export default function BlogDisplay({
   readingTime 
 }: BlogDisplayProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const { data: session } = useSession();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isInlineEditorOpen, setIsInlineEditorOpen] = useState(false);
   const [fontStyle, setFontStyle] = useState('serif');
   const [tocExpanded, setTocExpanded] = useState(false);
   // Detect dark mode
@@ -57,6 +62,28 @@ export default function BlogDisplay({
     observer.observe(document.documentElement, { attributes: true });
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadRole = async () => {
+      if (!session?.user?.email) return;
+      try {
+        const response = await fetch("/api/profile");
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) setIsAdmin(data?.profile?.role === "admin");
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    };
+
+    loadRole();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.email]);
   
   // Fetch font preferences
   useEffect(() => {
@@ -135,6 +162,15 @@ export default function BlogDisplay({
                 {category}
               </motion.span>
             ))}
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setIsInlineEditorOpen(true)}
+                className="px-2 py-0.5 sm:px-3 sm:py-1 text-xs font-medium border border-gray-300 dark:border-gray-700 rounded-full text-gray-600 dark:text-gray-300 hover:text-orange-600 hover:border-orange-400 transition-colors"
+              >
+                Edit
+              </button>
+            )}
           </motion.div>
         </div>
         <TableOfContents items={tableOfContents} />
@@ -221,6 +257,15 @@ export default function BlogDisplay({
           {/* Comments section */}
           {post.comment && <CommentSection slug={post.slug} />}
         </div>
+
+        {isAdmin && isInlineEditorOpen && (
+          <AdminPostManager
+            initialPosts={[post]}
+            initialSlug={post.slug}
+            autoOpenEditor
+            hideManagerUI
+          />
+        )}
       </div>
 
       {/* Back to top button */}

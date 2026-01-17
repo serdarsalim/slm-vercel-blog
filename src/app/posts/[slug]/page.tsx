@@ -25,16 +25,19 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
   if (!post) {
     return {
-      title: 'Post not found | Halqa',
+      title: 'Post not found | Serdar Salim',
       description: 'The requested post could not be found.',
     };
   }
 
-  const url = `https://halqa.xyz/posts/${post.slug}`;
-  const description = buildExcerpt(post.content || "", post.excerpt || `${post.title} on Halqa`);
+  const url = `https://blog.serdarsalim.com/posts/${post.slug}`;
+  const description = buildExcerpt(
+    post.content || "",
+    post.excerpt || `${post.title} on Serdar Salim`
+  );
 
   return {
-    title: `${post.title} | Halqa`,
+    title: `${post.title} | Serdar Salim`,
     description,
     openGraph: {
       title: post.title,

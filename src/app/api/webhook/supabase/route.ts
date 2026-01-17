@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
     // Generate new sitemap
     const serviceRoleClient = getServiceRoleClient();
-    const baseUrl = 'https://halqa.xyz';
+    const baseUrl = 'https://blog.serdarsalim.com';
 
     // Fetch data
     const { data: posts = [] } = await serviceRoleClient

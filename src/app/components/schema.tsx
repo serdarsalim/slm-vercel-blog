@@ -11,7 +11,7 @@ function SchemaContent() {
   
   // Function to convert relative URLs to absolute URLs
   const getAbsoluteUrl = (relativeUrl) => {
-    const baseUrl = "https://halqa.xyz";
+    const baseUrl = "https://blog.serdarsalim.com";
     
     // Check if the URL is already absolute
     if (!relativeUrl || relativeUrl.startsWith('http://') || relativeUrl.startsWith('https://')) {
@@ -31,7 +31,7 @@ function SchemaContent() {
     "@type": "Blog",
     "name": "Serdar Salim Domurcuk",
     "description": "Digital notes, essays, and research on design, technology, and independent publishing by Serdar Salim Domurcuk.",
-    "url": "https://halqa.xyz",
+    "url": "https://blog.serdarsalim.com",
     "mainEntity": {
       "@type": "ItemList",
       "itemListElement": posts.map((post, index) => ({
@@ -47,7 +47,7 @@ function SchemaContent() {
             "@type": "Person",
             "name": post.author || "Serdar Salim Domurcuk"
           },
-          "url": `https://halqa.xyz/posts/${post.slug}`
+          "url": `https://blog.serdarsalim.com/posts/${post.slug}`
         }
       }))
     }
@@ -58,10 +58,10 @@ function SchemaContent() {
     "@context": "https://schema.org",
     "@type": "Person",
     "name": "Serdar Salim Domurcuk", 
-    "url": "https://halqa.xyz",
+    "url": "https://blog.serdarsalim.com",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://halqa.xyz/app-logo.png",
+      "url": "https://blog.serdarsalim.com/app-logo.png",
       "width": "180",
       "height": "180"
     }, 
@@ -75,14 +75,14 @@ function SchemaContent() {
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "url": "https://halqa.xyz",
+    "url": "https://blog.serdarsalim.com",
     "name": "Serdar Salim Domurcuk",
     "description": "Digital notes on design, technology, and self-directed work by Serdar Salim Domurcuk.",
     "potentialAction": {
       "@type": "SearchAction",
       "target": {
         "@type": "EntryPoint",
-        "urlTemplate": "https://halqa.xyz/?search={search_term_string}"
+        "urlTemplate": "https://blog.serdarsalim.com/?search={search_term_string}"
       },
       "query-input": "required name=search_term_string"
     }
@@ -92,7 +92,7 @@ function SchemaContent() {
   const webpageSchema = {
     "@context": "https://schema.org",
     "@type": "WebPage",
-    "url": `https://halqa.xyz${pathname}`,
+    "url": `https://blog.serdarsalim.com${pathname}`,
     "name": pathname === "/" 
       ? "Serdar Salim Domurcuk" 
       : `${pathname.substring(1).charAt(0).toUpperCase() + pathname.substring(2)} | Serdar Salim Domurcuk`,
@@ -100,7 +100,7 @@ function SchemaContent() {
     "isPartOf": {
       "@type": "WebSite",
       "name": "Serdar Salim Domurcuk",
-      "url": "https://halqa.xyz"
+      "url": "https://blog.serdarsalim.com"
     }
   };
 
