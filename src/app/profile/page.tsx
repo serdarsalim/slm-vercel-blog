@@ -139,7 +139,7 @@ export default function ProfilePage() {
             >
               <path d="M15 18l-6-6 6-6" />
             </svg>
-            Back to profile
+            Back to blog
           </button>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="px-3 py-1 rounded-full bg-gray-200 dark:bg-slate-800 text-gray-700 dark:text-gray-200">

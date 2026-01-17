@@ -437,7 +437,6 @@ export default function AdminPostManager({
       }
 
       setMessage({ type: "success", text: editingId ? "Post updated" : "Post created" });
-      resetForm();
       await refreshPosts();
     } catch (error) {
       console.error(error);
@@ -655,13 +654,6 @@ export default function AdminPostManager({
           )}
           <div className="flex gap-2">
             <button
-              onClick={refreshPosts}
-              disabled={loadingState === "refreshing"}
-              className="px-3 py-2 rounded-md bg-gray-900 text-white text-sm hover:bg-gray-700 disabled:opacity-50"
-            >
-              {loadingState === "refreshing" ? "Refreshing..." : "Refresh"}
-            </button>
-            <button
               onClick={openModal}
               className="px-3 py-2 rounded-md bg-orange-500 text-white text-sm hover:bg-orange-600"
             >
@@ -844,8 +836,14 @@ export default function AdminPostManager({
 
       {isModalOpen && portalTarget
         ? createPortal(
-          <div className="fixed inset-0 z-[2147483647] bg-black/80 overflow-y-auto pointer-events-auto">
-            <div className="relative w-full max-w-7xl mx-auto my-6 rounded-2xl bg-white dark:bg-slate-900 p-6 md:p-10">
+          <div
+            className="fixed inset-0 z-[2147483647] bg-black/80 overflow-y-auto pointer-events-auto"
+            onClick={resetForm}
+          >
+            <div
+              className="relative w-full max-w-7xl mx-auto my-6 rounded-2xl bg-white dark:bg-slate-900 p-6 md:p-10"
+              onClick={(event) => event.stopPropagation()}
+            >
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold">
@@ -1005,8 +1003,14 @@ export default function AdminPostManager({
             </form>
 
             {isImageManagerOpen && (
-              <div className="fixed inset-0 z-[10000] bg-black/95 flex items-center justify-center p-4">
-                <div className="relative w-full max-w-5xl max-h-[90vh] min-h-[60vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6">
+              <div
+                className="fixed inset-0 z-[10000] bg-black/95 flex items-center justify-center p-4"
+                onClick={() => setIsImageManagerOpen(false)}
+              >
+                <div
+                  className="relative w-full max-w-5xl max-h-[90vh] min-h-[60vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-semibold">Pexels image manager</h3>
