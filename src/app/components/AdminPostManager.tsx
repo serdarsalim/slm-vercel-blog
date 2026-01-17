@@ -107,6 +107,7 @@ export default function AdminPostManager({
   const [search, setSearch] = useState("");
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "published" | "drafts">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<"title" | "categories" | "updated">("updated");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [dateFrom, setDateFrom] = useState("");
@@ -352,6 +353,14 @@ export default function AdminPostManager({
         (statusFilter === "published" && post.published) ||
         (statusFilter === "drafts" && !post.published);
 
+      const categories = formatCategories(post)
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean);
+      const matchesCategory =
+        categoryFilter === "all" ||
+        categories.includes(categoryFilter.toLowerCase());
+
       const matchesSearch =
         !search ||
         post.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -362,7 +371,7 @@ export default function AdminPostManager({
         (!dateFrom || (postDate && postDate >= new Date(dateFrom))) &&
         (!dateTo || (postDate && postDate <= new Date(dateTo)));
 
-      return matchesStatus && matchesSearch && matchesDate;
+      return matchesStatus && matchesCategory && matchesSearch && matchesDate;
     });
 
     const direction = sortDirection === "asc" ? 1 : -1;
@@ -384,7 +393,26 @@ export default function AdminPostManager({
     });
 
     return sorted;
-  }, [posts, statusFilter, search, dateFrom, dateTo, sortKey, sortDirection]);
+  }, [posts, statusFilter, categoryFilter, search, dateFrom, dateTo, sortKey, sortDirection]);
+
+  const categoryFilters = useMemo(() => {
+    const counts = posts.reduce((acc, post) => {
+      formatCategories(post)
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter(Boolean)
+        .forEach((category) => {
+          acc[category] = (acc[category] || 0) + 1;
+        });
+      return acc;
+    }, {} as Record<string, number>);
+
+    const sorted = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
+
+    return [{ name: "all", count: posts.length }, ...sorted];
+  }, [posts]);
 
   const toggleSort = (key: "title" | "categories" | "updated") => {
     if (key === sortKey) {
@@ -620,8 +648,8 @@ export default function AdminPostManager({
       )}
 
       {!hideManagerUI && (
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex items-center gap-3 flex-nowrap">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {(["all", "published", "drafts"] as const).map((filter) => (
             <button
               key={filter}
@@ -653,8 +681,7 @@ export default function AdminPostManager({
               className="w-36 rounded-md border border-gray-200 dark:border-gray-700 px-2 py-1 text-sm bg-white dark:bg-slate-800"
             />
           </div>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           {!isSearchExpanded ? (
             <button
               type="button"
@@ -698,6 +725,25 @@ export default function AdminPostManager({
               New Post
             </button>
           </div>
+        </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {categoryFilters.map((category) => (
+            <button
+              key={category.name}
+              type="button"
+              onClick={() => setCategoryFilter(category.name)}
+              className={`px-3 py-1 rounded-full text-xs border transition ${
+                categoryFilter === category.name
+                  ? "bg-orange-100 text-orange-700 border-orange-300"
+                  : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
+              }`}
+            >
+              {category.name === "all"
+                ? "All categories"
+                : category.name.charAt(0).toUpperCase() + category.name.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
       )}
