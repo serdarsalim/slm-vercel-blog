@@ -123,24 +123,6 @@ export default function BlogDisplay({
               {formattedDate}
             </span>
             
-            {/* Reading time display */}
-            <span className="flex items-center mb-1 sm:mb-0">
-              <svg
-                className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {readingTime} min read
-            </span>
-
             {/* Category labels */}
             {getCategoryArray(post.categories).map((category, idx) => (
               <motion.span
@@ -165,8 +147,8 @@ export default function BlogDisplay({
             transition={{ duration: 0.8, delay: 0.3 }}
             className={`
               prose prose-base dark:prose-invert
-              prose-p:text-[17px] prose-p:leading-[1.65] sm:prose-p:text-lg
-              prose-li:text-[17px] sm:prose-li:text-lg
+              prose-p:text-[19px] prose-p:leading-[1.65] sm:prose-p:text-[19px]
+              prose-li:text-[19px] sm:prose-li:text-[19px]
               prose-h2:text-[22px] sm:prose-h2:text-2xl
               prose-h3:text-[19px] sm:prose-h3:text-xl
               
