@@ -112,6 +112,7 @@ export default function AdminPostManager({
   const [imageResults, setImageResults] = useState<PexelsPhoto[]>([]);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [imageTarget, setImageTarget] = useState<"content" | "featured">("content");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const editorRef = useRef<any>(null);
 
@@ -131,6 +132,20 @@ export default function AdminPostManager({
       ...prev,
       content: `${prev.content}<p><img src="${url}" alt="${alt.replace(/\"/g, "&quot;")}" /></p>`,
     }));
+  };
+
+  const handlePexelsSelect = (photo: PexelsPhoto) => {
+    const alt = photo.alt || "Pexels image";
+    if (imageTarget === "featured") {
+      setForm((prev) => ({
+        ...prev,
+        featuredImage: photo.src.large,
+      }));
+      setIsImageManagerOpen(false);
+      return;
+    }
+
+    insertImageIntoEditor(photo.src.large, alt);
   };
 
   const searchPexels = async () => {
@@ -746,7 +761,7 @@ export default function AdminPostManager({
       {isModalOpen && portalTarget
         ? createPortal(
           <div className="fixed inset-0 z-[2147483647] bg-black/80 overflow-y-auto pointer-events-auto">
-            <div className="relative w-full max-w-5xl mx-auto my-6 rounded-2xl bg-white dark:bg-slate-900 p-6 md:p-10">
+            <div className="relative w-full max-w-7xl mx-auto my-6 rounded-2xl bg-white dark:bg-slate-900 p-6 md:p-10">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold">
@@ -759,129 +774,154 @@ export default function AdminPostManager({
             </div>
 
             <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_140px_200px_180px]">
-                <div>
-                  <label className="sr-only">Title</label>
-                  <input
-                    name="title"
-                    value={form.title}
-                    onChange={onInputChange}
-                    placeholder="Title"
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="sr-only">Date</label>
-                  <input
-                    type="date"
-                    name="date"
-                    value={form.date}
-                    onChange={onInputChange}
-                    aria-label="Date"
-                    placeholder="Date"
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="sr-only">Categories</label>
-                  <input
-                    name="categories"
-                    value={form.categories}
-                    onChange={onInputChange}
-                    placeholder="Categories"
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="sr-only">Featured image URL</label>
-                  <input
-                    name="featuredImage"
-                    value={form.featuredImage}
-                    onChange={onInputChange}
-                    placeholder="Featured image URL"
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                  />
-                </div>
-              </div>
+              <div className="flex flex-col gap-6 lg:flex-row">
+                <aside className="lg:w-80 lg:shrink-0">
+                  <div className="space-y-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-4 sticky top-6">
+                    <div className="space-y-3">
+                      <label className="sr-only">Title</label>
+                      <input
+                        name="title"
+                        value={form.title}
+                        onChange={onInputChange}
+                        placeholder="Title"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
+                        required
+                      />
+                      <label className="sr-only">Date</label>
+                      <input
+                        type="date"
+                        name="date"
+                        value={form.date}
+                        onChange={onInputChange}
+                        aria-label="Date"
+                        placeholder="Date"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
+                      />
+                      <label className="sr-only">Categories</label>
+                      <input
+                        name="categories"
+                        value={form.categories}
+                        onChange={onInputChange}
+                        placeholder="Categories"
+                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
+                      />
+                    </div>
 
-              <div>
-                <label className="sr-only">Content</label>
-                <div className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-900">
-                  <QuillEditor
-                    value={form.content}
-                    onChange={handleContentChange}
-                    onEditorReady={(editor) => {
-                      editorRef.current = editor;
-                    }}
-                    onOpenImageManager={() => setIsImageManagerOpen(true)}
-                  />
+                    <div className="space-y-2">
+                      <label className="sr-only">Featured image</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImageTarget("featured");
+                          setIsImageManagerOpen(true);
+                        }}
+                        className="w-full rounded-md border border-dashed border-gray-300 dark:border-gray-700 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 hover:border-orange-400 hover:text-orange-600 transition-colors"
+                      >
+                        {form.featuredImage ? "Change featured image" : "Pick featured image"}
+                      </button>
+                      {form.featuredImage && (
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={form.featuredImage}
+                            alt="Featured"
+                            className="h-12 w-16 rounded-md object-cover border border-gray-200 dark:border-gray-700"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm((prev) => ({ ...prev, featuredImage: "" }))
+                            }
+                            className="text-xs text-gray-500 hover:text-red-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          name="published"
+                          checked={form.published}
+                          onChange={onInputChange}
+                          className="rounded border-gray-300"
+                        />
+                        Published
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          name="featured"
+                          checked={form.featured}
+                          onChange={onInputChange}
+                          className="rounded border-gray-300"
+                        />
+                        Featured
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          name="comment"
+                          checked={form.comment}
+                          onChange={onInputChange}
+                          className="rounded border-gray-300"
+                        />
+                        Comments
+                      </label>
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          name="socmed"
+                          checked={form.socmed}
+                          onChange={onInputChange}
+                          className="rounded border-gray-300"
+                        />
+                        Social share
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="submit"
+                        disabled={loadingState === "saving"}
+                        className="px-4 py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
+                      >
+                        {loadingState === "saving" ? "Saving..." : editingId ? "Save changes" : "Create post"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetForm}
+                        className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </aside>
+
+                <div className="flex-1 min-w-0">
+                  <label className="sr-only">Content</label>
+                  <div className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-900">
+                    <QuillEditor
+                      value={form.content}
+                      onChange={handleContentChange}
+                      onEditorReady={(editor) => {
+                        editorRef.current = editor;
+                      }}
+                      onOpenImageManager={() => {
+                        setImageTarget("content");
+                        setIsImageManagerOpen(true);
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-4">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="published"
-                    checked={form.published}
-                    onChange={onInputChange}
-                    className="rounded border-gray-300"
-                  />
-                  Published
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="featured"
-                    checked={form.featured}
-                    onChange={onInputChange}
-                    className="rounded border-gray-300"
-                  />
-                  Featured
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="comment"
-                    checked={form.comment}
-                    onChange={onInputChange}
-                    className="rounded border-gray-300"
-                  />
-                  Comments
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="socmed"
-                    checked={form.socmed}
-                    onChange={onInputChange}
-                    className="rounded border-gray-300"
-                  />
-                  Social share
-                </label>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  type="submit"
-                  disabled={loadingState === "saving"}
-                  className="px-4 py-2 rounded-md bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
-                >
-                  {loadingState === "saving" ? "Saving..." : editingId ? "Save changes" : "Create post"}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700"
-                >
-                  Cancel
-                </button>
               </div>
             </form>
 
             {isImageManagerOpen && (
-              <div className="fixed inset-0 z-[10000] bg-black/70 flex items-center justify-center p-4">
+              <div className="fixed inset-0 z-[10000] bg-black/95 flex items-center justify-center p-4">
                 <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6">
                   <div className="flex items-center justify-between gap-4">
                     <div>
@@ -929,7 +969,7 @@ export default function AdminPostManager({
                           <button
                             type="button"
                             key={photo.id}
-                            onClick={() => insertImageIntoEditor(photo.src.large, photo.alt || "Pexels image")}
+                            onClick={() => handlePexelsSelect(photo)}
                             className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 text-left"
                           >
                             <img
