@@ -29,6 +29,7 @@ type PexelsPhoto = {
   alt: string;
   photographer: string;
   src: {
+    small: string;
     medium: string;
     large: string;
   };
@@ -119,6 +120,8 @@ export default function AdminPostManager({
   const [imageResults, setImageResults] = useState<PexelsPhoto[]>([]);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [imagePage, setImagePage] = useState(1);
+  const [imageHasMore, setImageHasMore] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [imageTab, setImageTab] = useState<"pexels" | "upload">("pexels");
@@ -165,20 +168,25 @@ export default function AdminPostManager({
     insertImageIntoEditor(photo.src.large, alt);
   };
 
-  const searchPexels = async () => {
+  const searchPexels = async (page = 1) => {
     const trimmed = imageQuery.trim();
     if (!trimmed) return;
     setImageLoading(true);
     setImageError(null);
 
     try {
-      const response = await fetch(`/api/pexels/search?query=${encodeURIComponent(trimmed)}`);
+      const response = await fetch(
+        `/api/pexels/search?query=${encodeURIComponent(trimmed)}&per_page=60&page=${page}`
+      );
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || "Failed to search Pexels");
       }
       const data = await response.json();
-      setImageResults(data.photos ?? []);
+      const photos = data.photos ?? [];
+      setImageResults((prev) => (page === 1 ? photos : [...prev, ...photos]));
+      setImagePage(page);
+      setImageHasMore(photos.length > 0);
     } catch (error) {
       setImageError(error instanceof Error ? error.message : "Failed to search Pexels");
     } finally {
@@ -1116,7 +1124,7 @@ export default function AdminPostManager({
                           />
                           <button
                             type="button"
-                            onClick={searchPexels}
+                            onClick={() => searchPexels(1)}
                             disabled={imageLoading}
                             className="px-3 py-2 rounded-md bg-gray-900 text-white text-sm disabled:opacity-60"
                           >
@@ -1129,7 +1137,7 @@ export default function AdminPostManager({
                         )}
 
                         {imageResults.length > 0 && (
-                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
                             {imageResults.map((photo) => (
                               <button
                                 type="button"
@@ -1138,16 +1146,24 @@ export default function AdminPostManager({
                                 className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 text-left"
                               >
                                 <img
-                                  src={photo.src.medium}
+                                  src={photo.src.small}
                                   alt={photo.alt || "Pexels image"}
-                                  className="h-36 w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                  className="h-24 w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
                                 />
-                                <div className="p-2 text-xs text-gray-600 dark:text-gray-300">
-                                  <span className="block truncate">{photo.photographer}</span>
-                                  <span className="text-orange-500">Click to insert</span>
-                                </div>
                               </button>
                             ))}
+                          </div>
+                        )}
+                        {imageResults.length > 0 && (
+                          <div className="flex justify-center">
+                            <button
+                              type="button"
+                              onClick={() => searchPexels(imagePage + 1)}
+                              disabled={imageLoading || !imageHasMore}
+                              className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm disabled:opacity-50"
+                            >
+                              {imageLoading ? "Loading..." : "Load more"}
+                            </button>
                           </div>
                         )}
                       </div>
