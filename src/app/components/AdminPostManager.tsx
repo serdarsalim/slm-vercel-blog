@@ -23,6 +23,16 @@ type FormState = {
   published: boolean;
 };
 
+type PexelsPhoto = {
+  id: number;
+  alt: string;
+  photographer: string;
+  src: {
+    medium: string;
+    large: string;
+  };
+};
+
 const defaultFormState = (): FormState => ({
   title: "",
   slug: "",
@@ -97,11 +107,52 @@ export default function AdminPostManager({
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [portalTarget, setPortalTarget] = useState<Element | null>(null);
+  const [isImageManagerOpen, setIsImageManagerOpen] = useState(false);
+  const [imageQuery, setImageQuery] = useState("");
+  const [imageResults, setImageResults] = useState<PexelsPhoto[]>([]);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const editorRef = useRef<any>(null);
 
   const handleContentChange = useCallback((value: string) => {
     setForm((prev) => ({ ...prev, content: value }));
   }, []);
+
+  const insertImageIntoEditor = (url: string, alt: string) => {
+    if (editorRef.current) {
+      editorRef.current.insertContent(
+        `<img src="${url}" alt="${alt.replace(/\"/g, "&quot;")}" />`
+      );
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      content: `${prev.content}<p><img src="${url}" alt="${alt.replace(/\"/g, "&quot;")}" /></p>`,
+    }));
+  };
+
+  const searchPexels = async () => {
+    const trimmed = imageQuery.trim();
+    if (!trimmed) return;
+    setImageLoading(true);
+    setImageError(null);
+
+    try {
+      const response = await fetch(`/api/pexels/search?query=${encodeURIComponent(trimmed)}`);
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to search Pexels");
+      }
+      const data = await response.json();
+      setImageResults(data.photos ?? []);
+    } catch (error) {
+      setImageError(error instanceof Error ? error.message : "Failed to search Pexels");
+    } finally {
+      setImageLoading(false);
+    }
+  };
 
   const refreshPosts = useCallback(async () => {
     setLoadingState("refreshing");
@@ -757,7 +808,14 @@ export default function AdminPostManager({
               <div>
                 <label className="sr-only">Content</label>
                 <div className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-slate-900">
-                  <QuillEditor value={form.content} onChange={handleContentChange} />
+                  <QuillEditor
+                    value={form.content}
+                    onChange={handleContentChange}
+                    onEditorReady={(editor) => {
+                      editorRef.current = editor;
+                    }}
+                    onOpenImageManager={() => setIsImageManagerOpen(true)}
+                  />
                 </div>
               </div>
 
@@ -821,8 +879,78 @@ export default function AdminPostManager({
                 </button>
               </div>
             </form>
-            </div>
-          </div>,
+
+            {isImageManagerOpen && (
+              <div className="fixed inset-0 z-[10000] bg-black/70 flex items-center justify-center p-4">
+                <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-lg font-semibold">Pexels image manager</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Search and click an image to insert it at the cursor.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsImageManagerOpen(false)}
+                      className="text-gray-500 hover:text-gray-800"
+                      aria-label="Close image manager"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="mt-4 space-y-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="text"
+                        value={imageQuery}
+                        onChange={(event) => setImageQuery(event.target.value)}
+                        placeholder="Search Pexels..."
+                        className="flex-1 min-w-[200px] rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-slate-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={searchPexels}
+                        disabled={imageLoading}
+                        className="px-3 py-2 rounded-md bg-gray-900 text-white text-sm disabled:opacity-60"
+                      >
+                        {imageLoading ? "Searching..." : "Search"}
+                      </button>
+                    </div>
+
+                    {imageError && (
+                      <p className="text-sm text-red-600">{imageError}</p>
+                    )}
+
+                    {imageResults.length > 0 && (
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {imageResults.map((photo) => (
+                          <button
+                            type="button"
+                            key={photo.id}
+                            onClick={() => insertImageIntoEditor(photo.src.large, photo.alt || "Pexels image")}
+                            className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 text-left"
+                          >
+                            <img
+                              src={photo.src.medium}
+                              alt={photo.alt || "Pexels image"}
+                              className="h-36 w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                            />
+                            <div className="p-2 text-xs text-gray-600 dark:text-gray-300">
+                              <span className="block truncate">{photo.photographer}</span>
+                              <span className="text-orange-500">Click to insert</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>,
           portalTarget
         )
         : null}

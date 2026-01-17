@@ -190,49 +190,8 @@ export default function ProfilePage() {
                     />
                   </div>
 
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      value={session?.user?.email || ""}
-                      disabled
-                      className="w-full px-3 py-2 bg-gray-100 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-700 dark:text-gray-300 cursor-not-allowed"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Full Name*
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="website" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Website URL
-                    </label>
-                    <input
-                      type="url"
-                      id="website"
-                      value={website}
-                      onChange={(e) => setWebsite(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
-                      placeholder="https://"
-                    />
-                  </div>
-
                   <div className="md:col-start-2 md:col-span-2">
-                    <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label htmlFor="bio" className="sr-only">
                       Bio
                     </label>
                     <textarea
@@ -240,17 +199,47 @@ export default function ProfilePage() {
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                       rows={4}
+                      placeholder="Bio"
                       className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
                     />
                   </div>
 
-                  <div className="space-y-4 md:col-start-4">
+                  <div className="space-y-3 md:col-start-4">
+                    <div>
+                      <label htmlFor="name" className="sr-only">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        id="name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Full name"
+                        required
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="website" className="sr-only">
+                        Website URL
+                      </label>
+                      <input
+                        type="url"
+                        id="website"
+                        value={website}
+                        onChange={(e) => setWebsite(e.target.value)}
+                        placeholder="Website URL"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-md text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 dark:focus:ring-orange-600"
+                      />
+                    </div>
+
                     <button
                       type="submit"
                       disabled={isSaving}
                       className="w-full py-2 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isSaving ? 'Saving...' : 'Save Profile'}
+                      {isSaving ? 'Saving...' : 'Save'}
                     </button>
                   </div>
                 </div>

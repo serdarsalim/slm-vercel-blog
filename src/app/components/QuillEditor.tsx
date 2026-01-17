@@ -6,6 +6,8 @@ interface EditorProps {
   value: string;
   onChange: (value: string) => void;
   height?: number;
+  onEditorReady?: (editor: any) => void;
+  onOpenImageManager?: () => void;
 }
 
 declare global {
@@ -44,6 +46,8 @@ export default function QuillEditor({
   value = "",
   onChange,
   height = 320,
+  onEditorReady,
+  onOpenImageManager,
 }: EditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<any>(null);
@@ -66,12 +70,20 @@ export default function QuillEditor({
         license_key: "gpl",
         plugins: ["link", "lists", "code", "autoresize"],
         toolbar:
-          "undo redo | blocks | bold italic underline | bullist numlist | link | alignleft aligncenter alignright | code",
+          "undo redo | blocks | bold italic underline | bullist numlist | link | alignleft aligncenter alignright | pexelsImage | code",
         autoresize_bottom_margin: 16,
         setup(editor: any) {
           editorRef.current = editor;
+          editor.ui.registry.addButton("pexelsImage", {
+            icon: "image",
+            tooltip: "Insert image",
+            onAction: () => {
+              if (onOpenImageManager) onOpenImageManager();
+            },
+          });
           editor.on("init", () => {
             editor.setContent(latestValueRef.current);
+            if (onEditorReady) onEditorReady(editor);
           });
           editor.on(
             "change keyup undo redo",
@@ -90,7 +102,7 @@ export default function QuillEditor({
         editorRef.current = null;
       }
     };
-  }, [height, onChange]);
+  }, [height, onChange, onEditorReady, onOpenImageManager]);
 
   useEffect(() => {
     latestValueRef.current = value || "";
