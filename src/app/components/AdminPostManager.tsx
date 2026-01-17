@@ -238,13 +238,11 @@ export default function AdminPostManager({
       if (imageTarget === "featured") {
         setForm((prev) => ({ ...prev, featuredImage: url }));
         setIsImageManagerOpen(false);
-        setImageTab("library");
         fetchLibraryImages();
         return;
       }
 
       insertImageIntoEditor(url, file.name || "Uploaded image");
-      setImageTab("library");
       fetchLibraryImages();
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Failed to upload image");
