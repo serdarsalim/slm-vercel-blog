@@ -45,7 +45,7 @@ async function ensureTinyMCELoaded() {
 export default function QuillEditor({
   value = "",
   onChange,
-  height = 320,
+  height = 1000,
   onEditorReady,
   onOpenImageManager,
 }: EditorProps) {
@@ -68,10 +68,12 @@ export default function QuillEditor({
         menubar: false,
         branding: false,
         license_key: "gpl",
-        plugins: ["link", "lists", "code", "autoresize"],
+        plugins: ["link", "lists", "code"],
         toolbar:
           "undo redo | blocks | bold italic underline | bullist numlist | link | alignleft aligncenter alignright | pexelsImage | code",
-        autoresize_bottom_margin: 16,
+        toolbar_sticky: true,
+        toolbar_sticky_offset: 0,
+        resize: false,
         setup(editor: any) {
           editorRef.current = editor;
           editor.ui.registry.addButton("pexelsImage", {
@@ -113,10 +115,23 @@ export default function QuillEditor({
   }, [value]);
 
   return (
-    <textarea
-      ref={textareaRef}
-      defaultValue={value}
-      style={{ visibility: "hidden" }}
-    />
+    <div className="tinymce-wrapper">
+      <style jsx global>{`
+        .tinymce-wrapper .tox-editor-header {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          background: inherit;
+        }
+        .tinymce-wrapper .tox-tinymce {
+          overflow: visible;
+        }
+      `}</style>
+      <textarea
+        ref={textareaRef}
+        defaultValue={value}
+        style={{ visibility: "hidden" }}
+      />
+    </div>
   );
 }
