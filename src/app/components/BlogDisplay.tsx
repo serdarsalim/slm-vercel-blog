@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import AdminPostManager from "./AdminPostManager";
-import ReadingBar from './blog/ReadingBar';
 import CommentSection from './blog/CommentSection';
 import ShareButtons from './blog/ShareButtons';
 import { getCategoryArray } from '@/app/utils/categoryHelpers';
@@ -112,7 +111,6 @@ export default function BlogDisplay({
   return (
     <article className="bg-white dark:bg-slate-900 relative">
       {/* Reading progress bar */}
-      <ReadingBar />
 
       <div className="container mx-auto px-4 py-10">
         {/* Header Section */}
