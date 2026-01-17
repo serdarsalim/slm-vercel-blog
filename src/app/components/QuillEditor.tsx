@@ -85,6 +85,16 @@ export default function QuillEditor({
         toolbar_sticky: true,
         toolbar_sticky_offset: 0,
         resize: false,
+        content_style: `
+          h1:empty::before {
+            content: "Type title here";
+            color: #9ca3af;
+          }
+          h1:empty {
+            border-left: 3px solid #f59e0b;
+            padding-left: 12px;
+          }
+        `,
         setup(editor: any) {
           editorRef.current = editor;
           editor.ui.registry.addButton("pexelsImage", {

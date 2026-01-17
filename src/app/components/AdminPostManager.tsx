@@ -60,6 +60,36 @@ const createSlug = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+const buildEditorContent = (title: string, content: string) => {
+  const trimmed = content.trim();
+  if (trimmed.startsWith("<h1")) return content;
+  const safeTitle = title || "";
+  return `<h1>${safeTitle}</h1>${trimmed ? `\n${trimmed}` : ""}`;
+};
+
+const extractTitleFromContent = (content: string) => {
+  if (!content) return "";
+  try {
+    const doc = new DOMParser().parseFromString(content, "text/html");
+    const h1 = doc.querySelector("h1");
+    return h1?.textContent?.trim() || "";
+  } catch {
+    return "";
+  }
+};
+
+const stripTitleFromContent = (content: string) => {
+  if (!content) return "";
+  try {
+    const doc = new DOMParser().parseFromString(content, "text/html");
+    const h1 = doc.querySelector("h1");
+    if (h1) h1.remove();
+    return doc.body.innerHTML.trim();
+  } catch {
+    return content;
+  }
+};
+
 function formatCategories(post?: AdminPost) {
   if (!post?.categories) return "";
 
@@ -138,7 +168,15 @@ export default function AdminPostManager({
   const searchParams = useSearchParams();
 
   const handleContentChange = useCallback((value: string) => {
-    setForm((prev) => ({ ...prev, content: value }));
+    setForm((prev) => {
+      const titleFromContent = extractTitleFromContent(value);
+      return {
+        ...prev,
+        content: value,
+        title: titleFromContent || prev.title,
+        slug: titleFromContent ? createSlug(titleFromContent) : prev.slug,
+      };
+    });
   }, []);
 
   const insertImageIntoEditor = (url: string, alt: string) => {
@@ -432,6 +470,10 @@ export default function AdminPostManager({
 
   const openModal = () => {
     resetForm();
+    setForm((prev) => ({
+      ...prev,
+      content: buildEditorContent(prev.title, prev.content),
+    }));
     setIsModalOpen(true);
   };
 
@@ -441,7 +483,7 @@ export default function AdminPostManager({
       title: post.title,
       slug: post.slug,
       excerpt: post.excerpt ?? "",
-      content: post.content,
+      content: buildEditorContent(post.title, post.content),
       categories: formatCategories(post),
       date: post.date ? post.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
       featuredImage: post.featuredImage ?? "",
@@ -485,6 +527,7 @@ export default function AdminPostManager({
     const slug = editingId ? form.slug : form.slug || createSlug(form.title);
     const payload = {
       ...form,
+      content: stripTitleFromContent(form.content),
       slug,
       date: form.date ? new Date(form.date).toISOString() : undefined,
     };
@@ -947,15 +990,6 @@ export default function AdminPostManager({
                 <aside className="lg:w-80 lg:shrink-0">
                   <div className="space-y-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-slate-900 p-4 sticky top-6">
                     <div className="space-y-3">
-                      <label className="sr-only">Title</label>
-                      <input
-                        name="title"
-                        value={form.title}
-                        onChange={onInputChange}
-                        placeholder="Title"
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-700 px-3 py-2 bg-white dark:bg-slate-900"
-                        required
-                      />
                       <label className="sr-only">Date</label>
                       <input
                         type="date"
