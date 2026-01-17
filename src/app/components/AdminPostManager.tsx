@@ -112,6 +112,14 @@ export default function AdminPostManager({
   const [imageResults, setImageResults] = useState<PexelsPhoto[]>([]);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [imageTab, setImageTab] = useState<"pexels" | "upload">("pexels");
+  const [libraryImages, setLibraryImages] = useState<
+    { name: string; url: string }[]
+  >([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
   const [imageTarget, setImageTarget] = useState<"content" | "featured">("content");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const editorRef = useRef<any>(null);
@@ -166,6 +174,82 @@ export default function AdminPostManager({
       setImageError(error instanceof Error ? error.message : "Failed to search Pexels");
     } finally {
       setImageLoading(false);
+    }
+  };
+
+  const fetchLibraryImages = async () => {
+    setLibraryLoading(true);
+    setLibraryError(null);
+    try {
+      const response = await fetch("/api/images/list");
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to load images");
+      }
+      const data = await response.json();
+      setLibraryImages(data.images ?? []);
+    } catch (error) {
+      setLibraryError(error instanceof Error ? error.message : "Failed to load images");
+    } finally {
+      setLibraryLoading(false);
+    }
+  };
+
+  const deleteLibraryImage = async (path: string) => {
+    if (!confirm("Delete this image? This cannot be undone.")) return;
+    try {
+      const response = await fetch("/api/images/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete image");
+      }
+      setLibraryImages((prev) => prev.filter((item) => item.name !== path));
+    } catch (error) {
+      setLibraryError(error instanceof Error ? error.message : "Failed to delete image");
+    }
+  };
+
+  const uploadImage = async (file: File) => {
+    if (!file) return;
+    setUploadLoading(true);
+    setUploadError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/upload/post-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to upload image");
+      }
+
+      const data = await response.json();
+      const url = data.url as string;
+      if (!url) throw new Error("Upload succeeded but no URL returned");
+
+      if (imageTarget === "featured") {
+        setForm((prev) => ({ ...prev, featuredImage: url }));
+        setIsImageManagerOpen(false);
+        setImageTab("library");
+        fetchLibraryImages();
+        return;
+      }
+
+      insertImageIntoEditor(url, file.name || "Uploaded image");
+      setImageTab("library");
+      fetchLibraryImages();
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Failed to upload image");
+    } finally {
+      setUploadLoading(false);
     }
   };
 
@@ -922,7 +1006,7 @@ export default function AdminPostManager({
 
             {isImageManagerOpen && (
               <div className="fixed inset-0 z-[10000] bg-black/95 flex items-center justify-center p-4">
-                <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6">
+                <div className="relative w-full max-w-5xl max-h-[90vh] min-h-[60vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 p-6">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-semibold">Pexels image manager</h3>
@@ -941,48 +1025,145 @@ export default function AdminPostManager({
                   </div>
 
                   <div className="mt-4 space-y-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <input
-                        type="text"
-                        value={imageQuery}
-                        onChange={(event) => setImageQuery(event.target.value)}
-                        placeholder="Search Pexels..."
-                        className="flex-1 min-w-[200px] rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-slate-800"
-                      />
-                      <button
-                        type="button"
-                        onClick={searchPexels}
-                        disabled={imageLoading}
-                        className="px-3 py-2 rounded-md bg-gray-900 text-white text-sm disabled:opacity-60"
-                      >
-                        {imageLoading ? "Searching..." : "Search"}
-                      </button>
+                    <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-3 text-sm">
+                      {(["pexels", "upload"] as const).map((tab) => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => {
+                            setImageTab(tab);
+                            if (tab === "upload") fetchLibraryImages();
+                          }}
+                          className={`px-3 py-1.5 rounded-full border transition ${
+                            imageTab === tab
+                              ? "border-orange-400 bg-orange-100 text-orange-700"
+                              : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300"
+                          }`}
+                        >
+                          {tab === "pexels" && "Pexels"}
+                          {tab === "upload" && "Upload"}
+                        </button>
+                      ))}
                     </div>
 
-                    {imageError && (
-                      <p className="text-sm text-red-600">{imageError}</p>
+                    {imageTab === "upload" && (
+                      <div className="space-y-6">
+                        <label className="inline-flex items-center gap-2 rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0];
+                              if (file) uploadImage(file);
+                              event.currentTarget.value = "";
+                            }}
+                          />
+                          {uploadLoading ? "Uploading..." : "Upload image"}
+                        </label>
+                        {uploadError && (
+                          <p className="text-sm text-red-600">{uploadError}</p>
+                        )}
+                      </div>
                     )}
 
-                    {imageResults.length > 0 && (
-                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {imageResults.map((photo) => (
+                    {imageTab === "pexels" && (
+                      <div className="space-y-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            type="text"
+                            value={imageQuery}
+                            onChange={(event) => setImageQuery(event.target.value)}
+                            placeholder="Search Pexels..."
+                            className="flex-1 min-w-[200px] rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-slate-800"
+                          />
                           <button
                             type="button"
-                            key={photo.id}
-                            onClick={() => handlePexelsSelect(photo)}
-                            className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 text-left"
+                            onClick={searchPexels}
+                            disabled={imageLoading}
+                            className="px-3 py-2 rounded-md bg-gray-900 text-white text-sm disabled:opacity-60"
                           >
-                            <img
-                              src={photo.src.medium}
-                              alt={photo.alt || "Pexels image"}
-                              className="h-36 w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-                            />
-                            <div className="p-2 text-xs text-gray-600 dark:text-gray-300">
-                              <span className="block truncate">{photo.photographer}</span>
-                              <span className="text-orange-500">Click to insert</span>
-                            </div>
+                            {imageLoading ? "Searching..." : "Search"}
                           </button>
-                        ))}
+                        </div>
+
+                        {imageError && (
+                          <p className="text-sm text-red-600">{imageError}</p>
+                        )}
+
+                        {imageResults.length > 0 && (
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {imageResults.map((photo) => (
+                              <button
+                                type="button"
+                                key={photo.id}
+                                onClick={() => handlePexelsSelect(photo)}
+                                className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 text-left"
+                              >
+                                <img
+                                  src={photo.src.medium}
+                                  alt={photo.alt || "Pexels image"}
+                                  className="h-36 w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                />
+                                <div className="p-2 text-xs text-gray-600 dark:text-gray-300">
+                                  <span className="block truncate">{photo.photographer}</span>
+                                  <span className="text-orange-500">Click to insert</span>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {imageTab === "upload" && (
+                      <div className="space-y-3">
+                        {libraryError && (
+                          <p className="text-sm text-red-600">{libraryError}</p>
+                        )}
+                        {libraryLoading ? (
+                          <p className="text-sm text-gray-500">Loading images...</p>
+                        ) : libraryImages.length === 0 ? (
+                          <p className="text-sm text-gray-500">No uploaded images yet.</p>
+                        ) : (
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {libraryImages.map((image) => (
+                              <div
+                                key={image.name}
+                                className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700"
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handlePexelsSelect({
+                                      id: 0,
+                                      alt: image.name,
+                                      photographer: "",
+                                      src: { medium: image.url, large: image.url },
+                                    } as PexelsPhoto)
+                                  }
+                                  className="block w-full text-left"
+                                >
+                                  <img
+                                    src={image.url}
+                                    alt={image.name}
+                                    className="h-36 w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                  />
+                                </button>
+                                <div className="flex items-center justify-between gap-2 px-2 py-2 text-xs text-gray-600 dark:text-gray-300">
+                                  <span className="truncate">{image.name.split("/").pop()}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteLibraryImage(image.name)}
+                                    className="text-red-500 hover:text-red-600"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

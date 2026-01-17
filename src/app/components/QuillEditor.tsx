@@ -52,6 +52,16 @@ export default function QuillEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editorRef = useRef<any>(null);
   const latestValueRef = useRef<string>(value || "");
+  const onEditorReadyRef = useRef(onEditorReady);
+  const onOpenImageManagerRef = useRef(onOpenImageManager);
+
+  useEffect(() => {
+    onEditorReadyRef.current = onEditorReady;
+  }, [onEditorReady]);
+
+  useEffect(() => {
+    onOpenImageManagerRef.current = onOpenImageManager;
+  }, [onOpenImageManager]);
 
   useEffect(() => {
     let cancelled = false;
@@ -68,9 +78,10 @@ export default function QuillEditor({
         menubar: false,
         branding: false,
         license_key: "gpl",
-        plugins: ["link", "lists", "code"],
+        plugins: ["link", "lists", "code", "contextmenu", "table"],
         toolbar:
-          "undo redo | blocks | bold italic underline | bullist numlist | link | alignleft aligncenter alignright | pexelsImage | code",
+          "undo redo | blocks | bold italic underline | bullist numlist | link | alignleft aligncenter alignright | table | pexelsImage | code",
+        contextmenu: "link | table | bold italic underline | bullist numlist | alignleft aligncenter alignright",
         toolbar_sticky: true,
         toolbar_sticky_offset: 0,
         resize: false,
@@ -80,12 +91,14 @@ export default function QuillEditor({
             icon: "image",
             tooltip: "Insert image",
             onAction: () => {
-              if (onOpenImageManager) onOpenImageManager();
+              const handler = onOpenImageManagerRef.current;
+              if (handler) handler();
             },
           });
           editor.on("init", () => {
             editor.setContent(latestValueRef.current);
-            if (onEditorReady) onEditorReady(editor);
+            const handler = onEditorReadyRef.current;
+            if (handler) handler(editor);
           });
           editor.on(
             "change keyup undo redo",
@@ -104,7 +117,7 @@ export default function QuillEditor({
         editorRef.current = null;
       }
     };
-  }, [height, onChange, onEditorReady, onOpenImageManager]);
+  }, [height, onChange]);
 
   useEffect(() => {
     latestValueRef.current = value || "";
@@ -125,6 +138,11 @@ export default function QuillEditor({
         }
         .tinymce-wrapper .tox-tinymce {
           overflow: visible;
+        }
+        .tox-tinymce-aux,
+        .tox .tox-menu,
+        .tox .tox-collection {
+          z-index: 2147483647 !important;
         }
       `}</style>
       <textarea
