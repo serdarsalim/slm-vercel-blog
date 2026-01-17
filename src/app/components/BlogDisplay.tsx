@@ -183,12 +183,13 @@ export default function BlogDisplay({
             transition={{ duration: 0.8, delay: 0.3 }}
             className={`
               prose prose-base dark:prose-invert
-              prose-p:text-[19px] prose-p:leading-[1.65] prose-p:font-normal sm:prose-p:text-[19px]
-              prose-li:text-[19px] prose-li:font-normal sm:prose-li:text-[19px]
+              prose-p:text-[18px] prose-p:leading-[1.65] prose-p:font-[400] sm:prose-p:text-[18px]
+              prose-li:text-[18px] prose-li:font-[400] sm:prose-li:text-[18px]
               prose-h2:text-[22px] sm:prose-h2:text-2xl
               prose-h3:text-[19px] sm:prose-h3:text-xl
               
-              ${fontStyle === "sans-serif" ? "font-sans" : "font-serif"}
+              font-sans font-normal
+              [font-weight:400] [-webkit-font-smoothing:antialiased]
               px-0 md:px-10 lg:px-9
                     
               [&>ul>li::marker]:text-slate-800 dark:[&>ul>li::marker]:text-gray-200
