@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { BlogPost } from "@/app/types/blogpost";
 import QuillEditor from "./QuillEditor";
 
@@ -95,6 +96,7 @@ export default function AdminPostManager({
   const [loadingState, setLoadingState] = useState<"idle" | "saving" | "deleting" | "refreshing">("idle");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [portalTarget, setPortalTarget] = useState<Element | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleContentChange = useCallback((value: string) => {
@@ -140,6 +142,31 @@ export default function AdminPostManager({
       searchInputRef.current?.focus();
     }
   }, [isSearchExpanded]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setPortalTarget(document.body);
+  }, []);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalBodyPosition = document.body.style.position;
+    const originalBodyWidth = document.body.style.width;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      document.body.style.position = originalBodyPosition;
+      document.body.style.width = originalBodyWidth;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+    };
+  }, [isModalOpen]);
 
   useEffect(() => {
     setCategoryDrafts((prev) => {
@@ -665,9 +692,10 @@ export default function AdminPostManager({
         </table>
       </div>
 
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
-          <div className="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-4">
+      {isModalOpen && portalTarget
+        ? createPortal(
+          <div className="fixed inset-0 z-[2147483647] bg-black/80 overflow-y-auto pointer-events-auto">
+            <div className="relative w-full max-w-5xl mx-auto my-6 rounded-2xl bg-white dark:bg-slate-900 p-6 md:p-10">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold">
@@ -793,9 +821,11 @@ export default function AdminPostManager({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          portalTarget
+        )
+        : null}
     </div>
   );
 }
