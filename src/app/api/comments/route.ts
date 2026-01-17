@@ -68,13 +68,21 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const client = getServiceRoleClient();
+  const { data: author } = await client
+    .from("authors")
+    .select("role")
+    .eq("email", session.user.email)
+    .maybeSingle();
+
+  const isAdmin = author?.role === "admin";
+
   const body = await request.json();
   const id = (body?.id as string | undefined)?.trim();
   if (!id) {
     return NextResponse.json({ error: "Missing comment id" }, { status: 400 });
   }
 
-  const client = getServiceRoleClient();
   const { data: comment, error: fetchError } = await client
     .from(TABLE)
     .select("id, author_email")
@@ -85,7 +93,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Comment not found" }, { status: 404 });
   }
 
-  if (comment.author_email !== session.user.email) {
+  if (!isAdmin && comment.author_email !== session.user.email) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

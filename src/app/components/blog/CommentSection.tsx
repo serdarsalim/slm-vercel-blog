@@ -24,6 +24,7 @@ export default function CommentSection({ slug }: CommentSectionProps) {
   const [draft, setDraft] = useState("");
   const [posting, setPosting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +55,30 @@ export default function CommentSection({ slug }: CommentSectionProps) {
       cancelled = true;
     };
   }, [slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadRole = async () => {
+      if (!session?.user?.email) return;
+      try {
+        const response = await fetch("/api/profile");
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) {
+          setIsAdmin(data?.profile?.role === "admin");
+        }
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      }
+    };
+
+    loadRole();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.email]);
 
   const submitComment = async () => {
     if (!draft.trim()) return;
@@ -170,7 +195,9 @@ export default function CommentSection({ slug }: CommentSectionProps) {
                   <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
                     {comment.author_name || "Anonymous"}
                   </div>
-                  {session?.user?.email && comment.author_email === session.user.email && (
+                  {(isAdmin ||
+                    (session?.user?.email &&
+                      comment.author_email === session.user.email)) && (
                     <button
                       type="button"
                       onClick={() => deleteComment(comment.id)}
