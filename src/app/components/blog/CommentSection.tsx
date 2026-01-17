@@ -11,6 +11,7 @@ interface CommentSectionProps {
 type Comment = {
   id: string;
   author_name: string;
+  author_email: string;
   content: string;
   created_at: string;
 };
@@ -22,6 +23,7 @@ export default function CommentSection({ slug }: CommentSectionProps) {
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [posting, setPosting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,6 +78,28 @@ export default function CommentSection({ slug }: CommentSectionProps) {
       setError(err instanceof Error ? err.message : "Failed to post comment");
     } finally {
       setPosting(false);
+    }
+  };
+
+  const deleteComment = async (id: string) => {
+    if (!confirm("Delete this comment?")) return;
+    setDeletingId(id);
+    setError(null);
+    try {
+      const response = await fetch("/api/comments", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete comment");
+      }
+      setComments((prev) => prev.filter((comment) => comment.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete comment");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -142,8 +166,20 @@ export default function CommentSection({ slug }: CommentSectionProps) {
                 key={comment.id}
                 className="rounded-lg border border-gray-100 dark:border-gray-800 bg-white dark:bg-slate-900 px-4 py-3"
               >
-                <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {comment.author_name || "Anonymous"}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {comment.author_name || "Anonymous"}
+                  </div>
+                  {session?.user?.email && comment.author_email === session.user.email && (
+                    <button
+                      type="button"
+                      onClick={() => deleteComment(comment.id)}
+                      disabled={deletingId === comment.id}
+                      className="text-xs text-gray-500 hover:text-red-600 disabled:opacity-50"
+                    >
+                      {deletingId === comment.id ? "Deleting..." : "Delete"}
+                    </button>
+                  )}
                 </div>
                 <div className="text-xs text-gray-500">
                   {new Date(comment.created_at).toLocaleString()}
