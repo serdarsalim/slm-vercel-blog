@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono, Merriweather } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/navbar";
 import Footer from "./components/footer";
 import { BlogProvider } from "./blogContext";
 import GoogleTagManager from "./components/GoogleTagManager";
@@ -92,7 +91,6 @@ export default function RootLayout({
         <Analytics />
         <ScrollManager />
         <BlogProvider>
-          <Navbar />
           {children}
           <SpeedInsights />
           <Footer />

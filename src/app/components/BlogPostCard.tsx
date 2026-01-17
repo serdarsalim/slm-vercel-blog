@@ -50,15 +50,6 @@ export default function BlogPostCard({
 
 
 
-  // Format date once
-  const formattedDate = post.date
-    ? new Date(post.date).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      })
-    : "No date available";
-
   // Get primary category
   const primaryCategory =
     Array.isArray(post.categories) && post.categories.length > 0
@@ -110,29 +101,7 @@ export default function BlogPostCard({
               {truncatedExcerpt}
             </p>
 
-            {/* Date display */}
             <div className="flex items-center flex-wrap gap-2 mt-2">
-              <div className="flex items-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500 mr-1"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span className="text-xs text-gray-500 dark:text-gray-400/90">
-                  {formattedDate}
-                </span>
-              </div>
-
               {/* Categories display */}
               {showCategories && (
                 <div className="flex flex-wrap gap-1">

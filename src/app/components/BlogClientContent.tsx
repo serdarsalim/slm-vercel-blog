@@ -63,6 +63,7 @@ export default function BlogClientContent({
   const [searchInput, setSearchInput] = useState(initialSearch);
   const debouncedSearchTerm = useDebounce(searchInput, 300);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   const initialHasDefaultCategory =
     Array.isArray(initialPosts) &&
@@ -126,8 +127,26 @@ export default function BlogClientContent({
   }, [debouncedSearchTerm]);
 
   useEffect(() => {
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    const current = params.get("search") || "";
+    const next = debouncedSearchTerm.trim();
+
+    if (current === next) return;
+
+    if (next) {
+      params.set("search", next);
+    } else {
+      params.delete("search");
+    }
+
+    const query = params.toString();
+    router.push(query ? `/?${query}` : "/");
+  }, [debouncedSearchTerm, router, searchParams]);
+
+  useEffect(() => {
     const nextTerm = searchParams?.get("search") || "";
     setSearchInput(nextTerm);
+    if (nextTerm) setIsSearchExpanded(true);
   }, [searchParams]);
 
   const clearSearchFilters = useCallback(() => {
@@ -293,7 +312,7 @@ const filteredPosts = useMemo(() => {
               initial={{ opacity: 0.9, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
-              className="relative px-5 sm:px-6 pt-14 sm:pt-16 pb-6"
+              className="relative px-4 sm:px-6 pt-12 sm:pt-16 pb-4 sm:pb-6"
             >
               <div className="absolute left-1/2 -translate-x-1/2 -top-10 sm:-top-12">
                 <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-full ring-4 ring-white dark:ring-slate-900 shadow-lg">
@@ -342,53 +361,114 @@ const filteredPosts = useMemo(() => {
 
           {/* Category filters */}
           <div className="w-full flex flex-wrap justify-center gap-2 lg:gap-3 mb-6 select-none">
-            {filterButtons.map(({ name, count }) => (
-              <motion.button
-                key={name}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleCategoryClick(name)}
-                className={`
-                  px-2 py-1 
-                  rounded-lg 
-                  transition-colors
-                  duration-200 
-                  font-normal
-                  text-xs
-                  flex items-center
-                  z-10 relative
-                  cursor-pointer
-                  touch-element
-                  ${
-                    selectedCategories.includes(name)
-                      ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
-                      : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
-                  }
-                `}
-              >
-                <span>
-                  {name === "all"
-                    ? "All"
-                    : name.charAt(0).toUpperCase() + name.slice(1)}
-                  {name === "all" && (
-                    <span
-                      className={`
-                        ml-2
-                        inline-flex items-center justify-center 
-                        px-2 h-5
-                        rounded-full text-[10px] font-medium
-                        ${
-                          selectedCategories.includes(name)
-                            ? "bg-white text-orange-500 dark:bg-orange-800 dark:text-orange-200"
-                            : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
-                        }
-                      `}
+            {filterButtons.map(({ name, count }) => {
+              const button = (
+                <motion.button
+                  key={name}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleCategoryClick(name)}
+                  className={`
+                    px-2 py-1 
+                    rounded-lg 
+                    transition-colors
+                    duration-200 
+                    font-normal
+                    text-xs
+                    flex items-center
+                    z-10 relative
+                    cursor-pointer
+                    touch-element
+                    ${
+                      selectedCategories.includes(name)
+                        ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
+                        : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+                    }
+                  `}
+                >
+                  <span>
+                    {name === "all"
+                      ? "All"
+                      : name.charAt(0).toUpperCase() + name.slice(1)}
+                    {name === "all" && (
+                      <span
+                        className={`
+                          ml-2
+                          inline-flex items-center justify-center 
+                          px-2 h-5
+                          rounded-full text-[10px] font-medium
+                          ${
+                            selectedCategories.includes(name)
+                              ? "bg-white text-orange-500 dark:bg-orange-800 dark:text-orange-200"
+                              : "bg-gray-50 text-gray-600 dark:bg-slate-600 dark:text-gray-300"
+                          }
+                        `}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </span>
+                </motion.button>
+              );
+
+              if (name !== "all") return button;
+
+              return (
+                <React.Fragment key={name}>
+                  {button}
+                  {!isSearchExpanded ? (
+                    <button
+                      type="button"
+                      onClick={() => setIsSearchExpanded(true)}
+                      className="h-7 w-7 rounded-lg border border-gray-200 bg-white text-gray-500 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-200"
+                      aria-label="Search posts"
+                      title="Search posts"
                     >
-                      {count}
-                    </span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-3.5 w-3.5 mx-auto"
+                        aria-hidden="true"
+                      >
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="M20 20l-3.5-3.5" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <div className="relative flex items-center">
+                      <span className="absolute left-2 text-gray-400">
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-3.5 w-3.5"
+                          aria-hidden="true"
+                        >
+                          <circle cx="11" cy="11" r="7" />
+                          <path d="M20 20l-3.5-3.5" />
+                        </svg>
+                      </span>
+                      <input
+                        type="search"
+                        value={searchInput}
+                        onChange={(event) => setSearchInput(event.target.value)}
+                        onBlur={() => {
+                          if (!searchInput.trim()) setIsSearchExpanded(false);
+                        }}
+                        placeholder="Search"
+                        className="h-7 w-32 rounded-lg border border-gray-200 bg-white pl-7 pr-2 text-xs text-gray-700 placeholder:text-gray-400 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-200"
+                      />
+                    </div>
                   )}
-                </span>
-              </motion.button>
-            ))}
+                </React.Fragment>
+              );
+            })}
           </div>
 
           {searchTerm && (
