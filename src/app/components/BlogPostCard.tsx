@@ -58,6 +58,16 @@ export default function BlogPostCard({
       ? post.categories
       : null;
 
+  const decodeEntities = (input: string) =>
+    input
+      .replace(/&ldquo;|&#8220;/g, '"')
+      .replace(/&rdquo;|&#8221;/g, '"')
+      .replace(/&lsquo;|&#8216;/g, "'")
+      .replace(/&rsquo;|&#8217;/g, "'")
+      .replace(/&quot;|&#34;/g, '"')
+      .replace(/&#39;|&apos;/g, "'")
+      .replace(/&amp;/g, "&");
+
   const truncatedExcerpt = React.useMemo(() => {
     const rawContent = post.content || "";
     const plainContent = rawContent
@@ -65,7 +75,7 @@ export default function BlogPostCard({
       .replace(/&nbsp;/g, " ")
       .replace(/\s+/g, " ")
       .trim();
-    const base = plainContent || post.excerpt || "";
+    const base = decodeEntities(plainContent || post.excerpt || "");
 
     return base.length > 220 ? `${base.substring(0, 200).trim()}...` : base;
   }, [post.content, post.excerpt]);
@@ -95,7 +105,7 @@ export default function BlogPostCard({
       >
         <div className="flex flex-row">
           {/* Content section */}
-          <div className="p-4 flex-1 overflow-hidden flex flex-col">
+          <div className="p-4 flex-1 overflow-hidden flex flex-col justify-center sm:justify-start">
             <h3
               className="text-base font-semibold text-gray-900 dark:text-[#bfbfbf] mb-2 group-hover:text-orange-700 dark:group-hover:text-orange-300 transition-colors"
             >

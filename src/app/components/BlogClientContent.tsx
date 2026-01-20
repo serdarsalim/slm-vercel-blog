@@ -222,14 +222,6 @@ const filteredPosts = useMemo(() => {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count);
 
-    const personalIndex = sorted.findIndex(
-      ({ name }) => name === DEFAULT_CATEGORY
-    );
-    if (personalIndex > 0) {
-      const [personal] = sorted.splice(personalIndex, 1);
-      sorted.unshift(personal);
-    }
-
     return [...sorted, { name: "all", count: posts.length }];
   }, [categoryCounts, posts.length]);
 
@@ -387,7 +379,7 @@ const filteredPosts = useMemo(() => {
                     transition-colors
                     duration-200 
                     font-normal
-                    text-xs
+                    text-xs sm:text-sm
                     flex items-center
                     z-10 relative
                     cursor-pointer

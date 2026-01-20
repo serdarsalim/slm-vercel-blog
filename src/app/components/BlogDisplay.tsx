@@ -12,6 +12,7 @@ import ShareButtons from './blog/ShareButtons';
 import { getCategoryArray } from '@/app/utils/categoryHelpers';
 import type { BlogPost } from '@/app/types/blogpost'
 import TableOfContents from './blog/TableOfContents';
+import { useRouter } from "next/navigation";
 
 type TocItem = {
   id: string;
@@ -40,6 +41,7 @@ export default function BlogDisplay({
   const [isInlineEditorOpen, setIsInlineEditorOpen] = useState(false);
   const [fontStyle, setFontStyle] = useState('serif');
   const [tocExpanded, setTocExpanded] = useState(false);
+  const router = useRouter();
   // Detect dark mode
   useEffect(() => {
     const checkDarkMode = () => {
@@ -110,6 +112,15 @@ export default function BlogDisplay({
 
   return (
     <article className="bg-white dark:bg-slate-900 relative">
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="fixed bottom-4 left-6 z-50 inline-flex items-center gap-2 rounded-full bg-orange-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-orange-500"
+        aria-label="Go back"
+      >
+        <span aria-hidden="true">←</span>
+        <span className="hidden sm:inline">Back</span>
+      </button>
       {/* Reading progress bar */}
 
       <div className="container mx-auto px-4 py-10">
@@ -267,47 +278,6 @@ export default function BlogDisplay({
         )}
       </div>
 
-      {/* Back to top button */}
-      <BackToTopButton />
     </article>
-  );
-}
-
-// Separated to its own component for clarity
-function BackToTopButton() {
-  const [visible, setVisible] = useState(false);
-  
-  useEffect(() => {
-    const onScroll = () => {
-      setVisible(window.scrollY > window.innerHeight * 0.3);
-    };
-    
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-  
-  return (
-    <motion.button
-      initial={{ opacity: 0 }}
-      animate={{ opacity: visible ? 1 : 0 }}
-      transition={{ duration: 0.3 }}
-      className="fixed bottom-20 right-6 p-3 rounded-full bg-orange-600 text-white shadow-lg z-30"
-      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      aria-label="Back to top"
-    >
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M5 10l7-7m0 0l7 7m-7-7v18"
-        />
-      </svg>
-    </motion.button>
   );
 }
