@@ -394,8 +394,8 @@ const filteredPosts = useMemo(() => {
                     touch-element
                     ${
                       selectedCategories.includes(name)
-                        ? "bg-orange-100 text-slate-800 dark:bg-orange-800/30 dark:text-gray-200 border border-orange-400 dark:border-orange-800"
-                        : "bg-white dark:bg-slate-700 sm:hover:bg-orange-200 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600"
+                        ? "bg-gradient-to-r from-orange-100 to-amber-100 text-slate-800 dark:from-orange-900/40 dark:to-amber-900/20 dark:text-gray-200 border border-orange-300/70 dark:border-orange-800 shadow-sm"
+                        : "bg-white dark:bg-slate-700 sm:hover:bg-orange-50 sm:dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-slate-600 hover:border-orange-200"
                     }
                   `}
                 >
