@@ -305,23 +305,26 @@ const filteredPosts = useMemo(() => {
       `}</style>
 
       {/* Hero Section */}
-      <section className="pt-20 pb-10 select-none">
-        <div className="max-w-5xl mx-auto px-4">
+      <section className="pt-6 pb-10 select-none">
+        <div className="max-w-3xl mx-auto px-4">
           <div className="relative">
-            <motion.div
-              initial={{ opacity: 0.9, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="relative px-4 sm:px-6 pt-12 sm:pt-16 pb-4 sm:pb-6"
-            >
-              <div className="absolute left-1/2 -translate-x-1/2 -top-10 sm:-top-12">
-                <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-full ring-4 ring-white dark:ring-slate-900 shadow-lg">
+            <div className="relative h-36 sm:h-44 md:h-52 rounded-2xl overflow-hidden shadow-sm">
+              <Image
+                src="/header.jpeg"
+                alt="Blog header"
+                fill
+                sizes="(min-width: 1024px) 1024px, 100vw"
+                className="object-cover"
+                priority
+              />
+              <div className="absolute left-6 sm:left-8 bottom-0 -translate-y-2">
+                <div className="relative h-24 w-24 sm:h-28 sm:w-28 overflow-hidden rounded-full ring-4 ring-white dark:ring-slate-900 shadow-lg">
                   {avatarUrl ? (
                     <Image
                       src={avatarUrl}
                       alt={authorProfile?.name ? `${authorProfile.name} avatar` : "Author avatar"}
                       fill
-                      sizes="96px"
+                      sizes="112px"
                       className="object-cover"
                       priority
                     />
@@ -332,26 +335,37 @@ const filteredPosts = useMemo(() => {
                   )}
                 </div>
               </div>
-
-              <div className="flex flex-col gap-4 sm:gap-5 items-center text-center">
-                <div className="text-center max-w-2xl">
-                  <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
-                    {displayName}
-                  </h1>
-                  <p className="mt-2 text-base text-gray-700 dark:text-gray-300 leading-relaxed">
-                    {bioText}
-                  </p>
-                  {websiteHref && websiteLabel && (
-                    <a
-                      href={websiteHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-3 inline-flex items-center text-sm font-medium text-orange-600 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-200 transition-colors"
-                    >
-                      <span className="mr-2">🌐</span>
-                      {websiteLabel}
-                    </a>
-                  )}
+            </div>
+            <motion.div
+              initial={{ opacity: 0.9, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="relative mt-2 sm:mt-4 px-4 sm:px-6 pb-4 sm:pb-6"
+            >
+              <div className="flex flex-col gap-4 sm:gap-5 items-start text-left">
+                <div className="text-left max-w-2xl">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="text-[18px] sm:text-[20px] font-semibold text-gray-900 dark:text-white">
+                        {displayName}
+                      </h1>
+                      {websiteHref && (
+                        <a
+                          href={websiteHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-base text-orange-600 dark:text-orange-300 hover:text-orange-700 dark:hover:text-orange-200 transition-colors"
+                          aria-label="Visit website"
+                          title={websiteLabel || "Website"}
+                        >
+                          <span>🌐</span>
+                        </a>
+                      )}
+                    </div>
+                    <p className="w-full text-base sm:text-lg text-gray-700 dark:text-gray-300 leading-relaxed text-center font-sans font-normal">
+                      {bioText}
+                    </p>
+                  </div>
                 </div>
 
                 
